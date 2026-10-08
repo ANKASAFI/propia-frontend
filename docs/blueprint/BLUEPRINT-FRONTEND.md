@@ -140,11 +140,12 @@ WAF, cabeceras de seguridad del documento (HSTS, `frame-ancestors`, `Permissions
 | Vue | 3.5.43 |
 | PrimeVue / módulo Nuxt | 4.5.5 |
 | Tailwind | 3.4.19, como dependencia directa |
-| Vitest | 3.2.7 |
-| TypeScript | 5.9.3 |
+| Pinia / `@pinia/nuxt` | 4.0.3 / 1.0.2 |
+| Vitest | 5.0.3 |
+| TypeScript | 6.0.3 |
 | vue-tsc | 3.3.12 |
 
-TypeScript se queda en 5.9. El backend usa 6.0 porque Nest lo exige; Nuxt 4.6 con vue-tsc 3.3 typecheckeó limpio sobre 5.9. Subir el frontend a TypeScript 6 es un PR aparte, cuando Nuxt lo soporte sin el aviso de `vue-router/volar/sfc-route-blocks` que hoy escribe vue-tsc a stderr y con el que, aun así, el comando sale 0.
+TypeScript queda en 6.0.3, el mismo que el backend. vue-tsc 3.3 lo acepta. El aviso de `vue-router/volar/sfc-route-blocks` sigue saliendo por stderr y el comando termina en 0. TypeScript 7 no entra en ninguno de los dos repos: `typescript-eslint` exige `< 6.1` y el CLI de Nest fija `~6.0`. Pinia 4 solo cambia el empaquetado (ESM) y los avisos de desarrollo; `defineStore` sigue igual y el `package.json` ya es `"type": "module"`.
 
 El backend tiene que estar en marcha para probar el login. Para compilar el frontend, no.
 
@@ -178,11 +179,11 @@ Archivo: `package.json`
   "dependencies": {
     "@nuxtjs/color-mode": "^4.0.1",
     "@nuxtjs/google-fonts": "^3.2.0",
-    "@pinia/nuxt": "^0.11.3",
+    "@pinia/nuxt": "^1.0.2",
     "@primevue/nuxt-module": "^4.5.5",
     "echarts": "^6.1.0",
     "nuxt": "^4.4.8",
-    "pinia": "^3.0.4",
+    "pinia": "^4.0.3",
     "primeicons": "^8.0.0",
     "primevue": "^4.5.5",
     "vue": "^3.5.22",
@@ -194,8 +195,8 @@ Archivo: `package.json`
     "@primeuix/themes": "^3.0.0",
     "tailwindcss": "3.4.19",
     "tailwindcss-primeui": "^0.6.1",
-    "typescript": "~5.9.3",
-    "vitest": "^3.2.4",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.3",
     "vue-tsc": "^3.1.0"
   }
 }
