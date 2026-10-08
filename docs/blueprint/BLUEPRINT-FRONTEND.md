@@ -1681,7 +1681,7 @@ El código de los tres middleware está en la sección 10 y pasó `nuxt typechec
 - **Avisos.** La campana del topbar lee `GET /api/notifications`. Al entrar, y cada 60 segundos mientras la pestaña está visible. Marcar leído es `POST /api/notifications/{id}/read`. No hay WebSocket: el email lo manda el backend al crear el aviso.
 - **Tableros.** Los gráficos son los de la sección 13, contra endpoints de agregados. Exportar es un botón que baja el archivo que devuelve la API (CSV, xlsx o PDF). El cliente no arma el PDF.
 - **Responsive.** Escritorio primero, usable en el móvil (8.4). No hay modo offline.
-- **Después del login.** 🆕 V2.2. `me.fichaStatus` manda. Si es `draft`, el `Usuario` cae en la ficha y no ve invertir. Si es `signed`, puede crear una operación. El `Admin` entra a la cola de operaciones `submitted` y no pasa por la ficha. Un 403 `FICHA_NOT_SIGNED` también lleva a la ficha.
+- **Después del login.** 🆕 V2.2. `me.fichaStatus` manda. Si es `draft`, el `Usuario` cae en la ficha y no ve invertir. Si es `signed`, arma la operación, sube el comprobante (PDF, JPEG o PNG, el mismo flujo de documentos) y la envía. No hay pantalla de pago. El `Admin` entra a la cola de operaciones `submitted`, abre el comprobante y aprueba o rechaza. Un 403 `FICHA_NOT_SIGNED` lleva a la ficha. Un 409 `COMPROBANTE_REQUIRED` deja la operación en borrador.
 
 ---
 ## 10. Autenticación en el cliente, end to end
