@@ -1,48 +1,64 @@
-# BLUEPRINT FRONTEND — Nuxt 4 SPA + PrimeVue + Tailwind + Pinia + ECharts
+# BLUEPRINT FRONTEND v2 — Nuxt 4 (SPA estática) + PrimeVue + Tailwind, mismo origen que la API
 
-**Documento de transferencia para un agente de código autónomo que va a construir una aplicación nueva, en un repositorio vacío, reutilizando el stack de un frontend existente.**
+**Plantilla de arranque del cliente. Una sola build se promociona de dev a qa a prod. JavaScript no ve ningún token.**
 
-El agente lector **no tiene acceso** al repositorio de origen. Todo lo que necesita está transcrito aquí literalmente. Si algo no aparece en este documento, no existe para efectos de la implementación.
+> **Versión 2.0 — 2026-10-08.** Reemplaza a la v1. La v1 queda en el historial de git como referencia del sistema visual y **no se usa para implementar** autenticación, llamadas HTTP, configuración de entorno ni despliegue. Cuando las dos no coinciden, manda esta.
+>
+> El núcleo nuevo (configuración, cliente HTTP, middleware, tests y el build estático) se compiló y se ejecutó antes de transcribirlo: Node 24.21, pnpm 12.10.1, Nuxt 4.6.0, Vue 3.5, PrimeVue 4.5, Tailwind 3.4. `pnpm test` (3 tests), `pnpm typecheck` y `pnpm generate` terminaron bien, y el dev server en `127.0.0.1:4200` hizo de proxy de `GET /api/health` hacia el backend en el puerto 3000 (200, con `x-request-id`). El HTML generado lleva `apiBase: "/api"`, sin ningún host incrustado. Lo que no se pudo hacer sin la cuenta AWS (el primer `s3 sync` real) está en el checklist.
 
 ---
-
 ## 0. Propósito y cómo usar este documento
 
 ### 0.1 Qué es esto
 
-Este documento es la **destilación completa** de un frontend Nuxt 4 en producción: un dashboard interno con autenticación contra un backend NestJS que envuelve AWS Cognito, desplegado como sitio estático en S3 + CloudFront vía GitHub Actions con OIDC.
+El cliente de la aplicación: un SPA Nuxt que se genera a HTML/JS/CSS estáticos, se sube al bucket que crea el backend y se sirve por el mismo CloudFront que enruta `/api/*` a la API. No hay servidor Node en producción.
 
-El objetivo es que puedas reconstruir ese mismo esqueleto —**sin el dominio de negocio original**— para una aplicación nueva cuyo dominio todavía no está definido.
+El sistema visual (tokens, layouts, componentes, gráficos, formularios) viene del original y está en las secciones 7, 8, 9 y 12 a 15. La sesión, el cliente HTTP y el despliegue son nuevos y tienen que coincidir con el blueprint del backend v2. Si este documento y el del backend discrepan en una ruta, una cookie o un status, manda el OpenAPI que publica el backend (`openapi.json`); este documento se escribió contra ese contrato el 2026-10-08.
 
-### 0.2 Las tres categorías de contenido
+### 0.2 Quién lee esto
 
-Cada bloque de este documento está etiquetado con una de estas tres marcas. **Respétalas.**
+Un agente que implementa el repositorio `<app-frontend>` y que no tiene el repositorio original. El código de las secciones 4, 5, 10 y 11 se copia. El de las secciones visuales se copia también, sustituyendo marcadores, y se ignoran las frases marcadas en el recuadro del inicio de cada una.
 
-| Marca | Significado | Qué hacer |
+### 0.3 Etiquetas
+
+| Etiqueta | Qué hacer |
+|---|---|
+| 🟩 **NÚCLEO** | Copiar, sustituyendo marcadores |
+| 🆕 **V2** | Copiar igual. La etiqueta solo dice que no estaba así en el original |
+| 🟦 **EJEMPLO DE DOMINIO** | No copiar el contenido de negocio. Copiar la forma |
+| 🟥 **DEUDA — NO REPLICAR** | No copiar. La sección 18 dice qué hacer en su lugar |
+
+### 0.4 Orden
+
+1. Secciones 0 a 3, y el registro de decisiones del backend (allí está el porqué del origen único y de las cookies).
+2. Secciones 4, 5, 10 y 11, que son el contrato.
+3. Sistema visual (7, 8, 12–15) para construir pantallas.
+4. Plan de la sección 19 y checklist de la 20.
+
+### 0.5 Reglas que no se negocian
+
+- Ningún token en JavaScript, ni en `localStorage`, ni en una cookie que el script pueda leer, ni en `Authorization`.
+- `runtimeConfig.public.apiBase` es `'/api'`. No se hornea el host del stage en el build.
+- Toda llamada autenticada pasa por `useApi()` (sección 10). `useFetch` y `$fetch` sueltos no llevan el reintento de refresh.
+- Un 401 refresca una vez y reintenta. Un 403 no cierra la sesión por "token caducado". Un 503 no manda al login como si la sesión hubiera muerto.
+- `ssr: false` y `nitro.preset: 'static'`. El comando de release es `pnpm generate`, no `pnpm build`.
+- Node 24, el mismo que el backend.
+
+### 0.6 Qué cambió respecto a la v1
+
+| Área | v1 | v2 |
 |---|---|---|
-| 🟩 **NÚCLEO REUTILIZABLE** | Código de infraestructura independiente del dominio. Está transcrito completo y verificado contra el archivo real. | **Copiar literalmente**, sustituyendo solo los marcadores de la tabla de la sección 1. |
-| 🟨 **EJEMPLO DE DOMINIO** | Código específico del negocio original. Se incluye como **patrón de referencia**, no para copiarse. | Leer, entender la forma, y reescribir con tu propio dominio. |
-| 🟥 **DEUDA — NO REPLICAR** | Algo que el repositorio original hace mal. Se documenta para que no lo arrastres. | **No copiar.** La sección 18 da la corrección concreta. |
-
-### 0.3 Orden de lectura recomendado para el agente
-
-1. Lee la **sección 1** (marcadores) y **decide los valores reales** antes de escribir una sola línea. Anótalos.
-2. Lee las secciones **2–6** completas: te dan el esqueleto del proyecto (config, dependencias, carpetas).
-3. Ejecuta la **fase 0 y 1** de la sección 19 (plan de implementación) antes de seguir leyendo.
-4. Usa las secciones **7–17** como referencia mientras implementas cada fase.
-5. Aplica la **sección 18** (correcciones obligatorias) **a medida que copias**, no al final.
-6. Cierra con la **sección 20** (checklist de aceptación).
-
-### 0.4 Reglas duras para el agente implementador
-
-- **No inventes props, composables ni APIs.** Si necesitas algo que no está aquí, créalo tú y documéntalo; no asumas que existía en el original.
-- **Todo bloque de código indica su ruta destino** en la línea inmediatamente anterior, con el formato `Archivo: ruta/al/archivo.ext`. Respétala exactamente.
-- **No uses el directorio `app/`** de Nuxt 4. Ver la sección 6.3 para el porqué y las implicaciones.
-- **Verifica después de cada fase** con el comando que la propia fase indica. No encadenes fases sin verificar.
-- Cuando este documento dice *«no se puede determinar desde el repositorio»*, es literal: no lo supongas, decídelo tú y déjalo escrito.
+| Sesión | Cookies legibles (`auth_token`, `auth_refresh_token`, email) y `Authorization: Bearer` | Cookies `httpOnly` que pone el backend. El cliente no las lee |
+| Refresh | `POST /auth/refresh` con `{ email, refreshToken }` en el body | `POST /api/auth/refresh` sin body. Una sola promesa en vuelo |
+| Perfil | `GET /auth/profile`, y se mezclaba con claims del ID token | `GET /api/auth/me`. La fila del backend es la única fuente |
+| API URL | `NUXT_PUBLIC_API_BASE_URL` absoluta, un build por stage | `'/api'` relativo. Un build, tres stages |
+| Local | El navegador llamaba al puerto 3000 y hacía falta CORS | Nuxt en el 4200 hace de proxy de `/api`. Sin CORS |
+| MFA | No había flujo de reto | `status: "challenge"` y las rutas `/auth/challenge` y `/auth/challenge/mfa-setup` |
+| Tests | Un test suelto con el runner de Node | Vitest. `pnpm test` |
+| Node | El original no lo fijaba; el blueprint v1 asumía 22 | Node 24 (`.nvmrc`, `engines`) |
+| Deploy | `nuxt generate` por stage, con la URL incrustada | El artefacto de `verify` se sincroniza al bucket del stage. El rol OIDC lo crea el stack `ci` del backend |
 
 ---
-
 ## Índice
 
 - [0. Propósito y cómo usar este documento](#0-propósito-y-cómo-usar-este-documento)
@@ -67,215 +83,97 @@ Cada bloque de este documento está etiquetado con una de estas tres marcas. **R
 - [19. Plan de implementación ordenado](#19-plan-de-implementación-ordenado)
 - [20. Checklist final de aceptación](#20-checklist-final-de-aceptación)
 - [21. Errores conocidos y cómo evitarlos](#21-errores-conocidos-y-cómo-evitarlos)
-- [22. Lo que no se pudo determinar desde el repositorio](#22-lo-que-no-se-pudo-determinar-desde-el-repositorio)
+- [Anexo A — Puntos abiertos](#anexo-a--puntos-abiertos)
 
 ---
-
 ## 1. Tabla de marcadores y convención de nombres
 
-### 1.1 Marcadores
+Los marcadores de plataforma son los mismos que en el backend y se sustituyen con los mismos valores. Aquí solo se añaden los que son del cliente.
 
-Todos los nombres propios de la aplicación original han sido reemplazados por marcadores. **Antes de escribir código, fija el valor real de cada uno y sustitúyelo de forma consistente en todo el proyecto.**
+| Marcador | Qué es | Valor propuesto |
+|---|---|---|
+| `<org>`, `<app-short>`, `<app_snake>`, `<app>`, `<app-frontend>`, `<GITHUB_ORG>`, `<stage>`, `<ACCOUNT_NONPROD>`, `<ACCOUNT_PROD>`, `<REGION>`, `<DOMINIO_BASE>`, `<ROL_A>`, `<ROL_B>` | Los de la sección 1 del backend | Los mismos |
+| `<prefijo>` | Namespace de los tokens CSS (`--<prefijo>-bg`) y de las clases propias (`. <prefijo>-card` se escribe `.<prefijo>-card`) | `propia` si no se elige otro. 2 a 5 letras, minúsculas |
+| `<descripción corta de la app>` | `<title>` del documento | Pendiente, con el dominio |
 
-| Marcador | Qué representa | Formato esperado | Ejemplo de valor real |
-|---|---|---|---|
-| `<app>` | Slug de la aplicación. Aparece en el nombre del repositorio, del bucket S3, de las rutas SSM y del grupo de concurrencia del CI. | kebab-case, sin espacios | `mi-app`, `portal-ventas` |
-| `<org>` | Organización propietaria: la org de GitHub y el nombre de marca que se muestra en la UI. | PascalCase o nombre comercial | `MiEmpresa`, `ACME S.A.` |
-| `<stage>` | Entorno de despliegue. El CI lo deriva de la rama. | uno de: `dev`, `qa`, `prod` | `dev` |
-| `<REGION>` | Región AWS de todos los recursos. | identificador AWS | `us-east-1` |
-| `<AWS_ACCOUNT_ID>` | Identificador numérico de la cuenta AWS. | 12 dígitos | `123456789012` |
-| `<ROL_OIDC>` | Nombre del rol IAM que GitHub Actions asume vía OIDC. | nombre de rol IAM | `github-actions-deployment-role` |
-| `<BUCKET>` | Bucket S3 que hospeda el sitio estático, uno por stage. | nombre de bucket | `<app>-frontend-<stage>` |
-| `<CF_DIST_ID>` | Id de la distribución CloudFront, uno por stage. | id de CloudFront | `E1A2B3C4D5E6F7` |
-| `<DOMINIO_BASE>` | Dominio público bajo el que se sirve el frontend. | dominio | `example.com` → `app-dev.example.com` |
-| `<ROL_A>` | Grupo de Cognito con permisos operativos ampliados (el perfil «avanzado»). En el original era el grupo de negocio principal. | nombre de grupo Cognito | `Operaciones`, `Analistas` |
-| `<ROL_B>` | Grupo de Cognito con permisos de administración. | nombre de grupo Cognito | `Admin` |
-| `<prefijo>` | **Namespace en minúsculas** para los tokens CSS (`--<prefijo>-bg`), las clases utilitarias propias (`.<prefijo>-card`) y la paleta de Tailwind (`bg-<prefijo>-bg`). | kebab-case corto, 2–5 letras | `ds`, `app`, `acme` |
-| `<Prefijo>` | **El mismo namespace en PascalCase**, para los componentes de marca (`<Prefijo>Icon`, `<Prefijo>Mark`). | PascalCase | `Ds`, `App`, `Acme` |
-| `<correo-ejemplo>` | Email de placeholder en los inputs de login y registro. | email | `usuario@example.com` |
-| `<URL_TERMINOS>` | URL de los términos y condiciones, usada como fallback si el backend no responde. | URL absoluta | `https://example.com/terminos` |
-| `<AÑO>` | Año que aparece en los pies de página de copyright. | año de 4 cifras | `2026` |
+`<AUTOR>` del `package.json` es `<org>`, igual que en el backend.
 
-### 1.2 Convención crítica: `<prefijo>` vs. `App*`
-
-El repositorio original usa **dos familias de nombres de componente** y es importante no fusionarlas:
-
-| Familia | Qué agrupa | Ejemplos originales | Equivalente con marcadores |
-|---|---|---|---|
-| `App*` | Componentes de **shell de aplicación**: los que dibujan el chrome de la interfaz. | `AppSidebar`, `AppTopbar`, `AppBottomNav` | **Se mantienen tal cual: `AppSidebar`, `AppTopbar`, `AppBottomNav`.** No llevan prefijo de marca. |
-| `<Prefijo>*` | Componentes de **marca / design system propio**, los que encapsulan decisiones visuales específicas. | `AnkaIcon`, `AnkaMark`, `AnkaGauge`, `AnkaDataTable` | `<Prefijo>Icon`, `<Prefijo>Mark`, `<Prefijo>Gauge`, `<Prefijo>DataTable` |
-
-> ⚠️ Si eliges `<Prefijo>` = `App`, colisionarás con `AppSidebar`/`AppTopbar`. **Elige un `<Prefijo>` distinto de `App`.**
-
-### 1.3 Cómo renombrar el namespace de tokens CSS
-
-El original define **todos** sus tokens de color y medida como custom properties con el prefijo `--anka-`. Al copiarlos:
-
-1. Sustituye `--anka-` por `--<prefijo>-` en `assets/css/main.css`.
-2. Sustituye `.anka-` por `.<prefijo>-` en las clases utilitarias propias (`.anka-card`, `.anka-gradient-bg`, etc.).
-3. Sustituye la clave `anka` del objeto `theme.extend.colors` de `tailwind.config.ts` por `<prefijo>`, lo que convierte `bg-anka-bg` en `bg-<prefijo>-bg`.
-4. Sustituye en todas las plantillas: `var(--anka-X)` → `var(--<prefijo>-X)`, y `text-anka-muted` → `text-<prefijo>-muted`.
-
-**Nota de sintaxis:** `<prefijo>` es un marcador textual, no CSS válido. Debes sustituirlo por el literal elegido antes de guardar el archivo. Si eliges `<prefijo>` = `ds`, el token queda `--ds-bg` y la clase `.ds-card`.
-
-**Comando de verificación del renombrado** (una vez elegido el valor, debe devolver 0 resultados):
-
-```bash
-grep -rn -- "--anka-\|\.anka-\|Anka\|anka-" --include='*.vue' --include='*.ts' --include='*.css' . | wc -l
-```
+No existe `NUXT_PUBLIC_API_BASE_URL`. Si aparece en un archivo nuevo, es un error: vuelve a incrustar el host en el build.
 
 ---
-
 ## 2. Resumen de arquitectura
 
-### 2.1 Diagrama de flujo
+🆕 **V2.**
 
 ```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                                NAVEGADOR                                  │
-│                                                                           │
-│   1. GET https://app-<stage>.<DOMINIO_BASE>/cualquier/ruta                │
-│      └──> CloudFront ──> S3 (<BUCKET>)                                    │
-│           · index.html         → Cache-Control: no-store                  │
-│           · /_nuxt/*.js|css    → Cache-Control: max-age=31536000, public  │
-│           · 404/403 → index.html (SPA fallback, ver nota 2.5)             │
-│                                                                           │
-│   2. El bundle arranca. Nuxt monta la SPA en el cliente. NO hay SSR.      │
-│                                                                           │
-│   3. Las llamadas de datos salen DIRECTAS del navegador al API:           │
-│      fetch(`${NUXT_PUBLIC_API_BASE_URL}/...`)                             │
-│      con cabecera  Authorization: Bearer <access token de la cookie>      │
-│                              │                                            │
-└──────────────────────────────┼────────────────────────────────────────────┘
-                               │  CORS (el backend declara los orígenes)
-                               ▼
-                 ┌──────────────────────────────────┐
-                 │  BACKEND NestJS  (API Gateway +  │
-                 │  Lambda, o localhost:3000 en dev)│
-                 │                                  │
-                 │   /auth/*  ──> AWS Cognito       │
-                 │   /<dominio>/*  ──> PostgreSQL   │
-                 └──────────────────────────────────┘
+Navegador
+   │  https://<DOMINIO_APP>     (local: http://127.0.0.1:4200)
+   ▼
+CloudFront                      (local: el dev server de Nuxt)
+   │
+   ├─ /*        → bucket S3 del SPA (OAC). Sin extensión → /index.html
+   │
+   └─ /api/*    → API Gateway → Lambda
+                  CloudFront inyecta x-origin-verify y no la deja pasar desde el navegador
 ```
 
-**Punto clave:** CloudFront y S3 sirven **solamente archivos estáticos**. No hay proxy inverso hacia el API, no hay rewrite, no hay función edge. El navegador habla con dos orígenes distintos y por eso **CORS es obligatorio en el backend**.
+El navegador hace `fetch('/api/auth/login', { credentials: 'include' })`. La respuesta trae `Set-Cookie`. La siguiente llamada a `/api/proyectos` adjunta la cookie sola, porque es el mismo origen y `SameSite=Strict` lo permite. No hay preflight de CORS.
 
-### 2.2 Modelo SPA
+En local el proxy de Vite reenvía `/api` a `http://127.0.0.1:3000` y el navegador sigue creyendo que habla con el 4200. Por eso las cookies de local (sin prefijo `__Host-`, porque el origen es HTTP) se guardan para `127.0.0.1` y no para el puerto 3000.
 
-- **Una sola entrada HTML.** `nuxt generate` con `ssr: false` produce un `index.html` que no contiene el marcado de ninguna página: solo el div raíz y las etiquetas `<script>`/`<link>` del bundle.
-- **El router vive en el cliente.** Nuxt construye las rutas desde `pages/` en tiempo de build y resuelve la navegación con el History API.
-- **Toda la lógica de sesión es de cliente.** Las cookies se leen y escriben con `useCookie`, que en modo SPA opera sobre `document.cookie`.
-- **No hay `server/` ni Nitro en runtime.** El preset `static` desactiva el servidor Nitro de producción.
+### 2.1 Por qué el build es estático y no hay SSR
 
-### 2.3 Por qué `ssr: false`
+No hay HTML por usuario. La sesión está en una cookie que el servidor de Nuxt no necesita leer para pintar, porque no pinta datos en el servidor. `ssr: false` evita toda la clase de bugs de hidratación y deja un directorio `.output/public` que S3 sabe servir. El precio es que el primer JS tiene que descargarse antes de pintar; el shell de la sección 8 es pequeño a propósito, y CloudFront cachea los assets con hash un año.
 
-| Razón | Detalle |
-|---|---|
-| **El destino es S3** | S3 sirve objetos, no ejecuta Node. Un build SSR requeriría Lambda@Edge o un contenedor, con el coste y la complejidad operativa asociados. |
-| **Es una consola interna autenticada** | No hay SEO que proteger ni tiempo de primer pintado crítico para un buscador. Todo el contenido está detrás de login. |
-| **La sesión es un token en cookie no-httpOnly** | Un render de servidor necesitaría reenviar el token al backend desde el servidor, duplicando la lógica de auth. Con SPA, el único actor es el navegador. |
-| **Evita la clase entera de bugs de hidratación** | Sin SSR no hay desajustes servidor/cliente por `Date.now()`, `window`, `localStorage` o cookies. |
+### 2.2 Lo que el cliente no decide
 
-**Qué pierdes:** tiempo hasta primer contenido mayor (el usuario ve el HTML vacío hasta que descarga y ejecuta el JS), y cero SEO. Ambas cosas son aceptables para una consola interna.
-
-### 2.4 Por qué `nitro: { preset: 'static' }`
-
-`ssr: false` por sí solo **no** garantiza una salida puramente estática: Nuxt sigue eligiendo un preset de Nitro según el entorno detectado (`node-server` por defecto) y `.output/server/index.mjs` seguiría existiendo.
-
-Con `nitro: { preset: 'static' }`:
-
-- `nuxt generate` escribe todo lo publicable en `.output/public/` y **nada más** es necesario en producción.
-- Se desactiva la generación del handler de servidor.
-- El comando de despliegue se reduce a `aws s3 sync .output/public/ s3://<BUCKET>`.
-
-**Si lo omites:** `.output/` contendrá un `server/` que no se sube a S3; el despliegue seguirá funcionando por casualidad (porque solo se sincroniza `public/`), pero el build tarda más y el `Dockerfile` basado en `node .output/server/index.mjs` da la falsa impresión de ser viable (ver corrección 18.4).
-
-### 2.5 Nota sobre el fallback de rutas en CloudFront
-
-Una SPA con rutas del lado del cliente necesita que **cualquier** path desconocido devuelva `index.html`, o `GET /mi/ruta` en una recarga dará 403/404 de S3.
-
-🟥 **DEUDA — NO REPLICAR (por omisión):** El repositorio original **no contiene ninguna configuración de CloudFront como código**: ni plantilla CloudFormation, ni Terraform, ni CDK. La distribución se administra fuera del repositorio y el workflow solo la invalida por id. **No se puede determinar desde el repositorio** cómo está configurado el fallback 403/404 → `/index.html`.
-
-**Acción obligatoria para el proyecto nuevo:** configura explícitamente en la distribución CloudFront dos *Custom Error Responses*:
-
-| HTTP Error Code | Response Page Path | HTTP Response Code | TTL |
-|---|---|---|---|
-| 403 | `/index.html` | 200 | 0 |
-| 404 | `/index.html` | 200 | 0 |
-
-y documenta esa configuración en el repositorio de infraestructura.
+WAF, cabeceras de seguridad del documento (HSTS, `frame-ancestors`, `Permissions-Policy`), el certificado y el enrutado los pone el stack `web` del backend. El cliente no añade una meta CSP que contradiga esa policy. Si hace falta un `script-src` más laxo por un vendor, se cambia la response headers policy del stack, en un PR, no con una etiqueta en `nuxt.config`.
 
 ---
-
 ## 3. Prerrequisitos
 
-### 3.1 Versiones exactas
+| Herramienta | Versión verificada el 2026-10-08 |
+|---|---|
+| Node | 24.21.0 (`.nvmrc` = `24`, `engines` `>=24.11.0 <25`) |
+| pnpm | 12.10.1 (`packageManager`) |
+| Nuxt | 4.6.0 (rango `^4.4.8`) |
+| Vue | 3.5.43 |
+| PrimeVue / módulo Nuxt | 4.5.5 |
+| Tailwind | 3.4.19, como dependencia directa |
+| Vitest | 3.2.7 |
+| TypeScript | 5.9.3 |
+| vue-tsc | 3.3.12 |
 
-| Herramienta | Versión | Dónde está fijada en el original | Recomendación para el proyecto nuevo |
-|---|---|---|---|
-| **Node.js** | **22** | `.github/workflows/deploy.yml` → `actions/setup-node@v4` con `node-version: 22`. El entorno de desarrollo verificado corre `v22.14.0`. | Fija `22` en CI y añade un `.nvmrc` con `22`. |
-| **pnpm** | **CI: 11 · local: 10.33.3** | CI: `pnpm/action-setup@v3` con `version: 11`. Local verificado: `10.33.3`. | 🟥 **Es una discrepancia real.** Unifica con el campo `packageManager` de `package.json` (ver corrección 18.7). |
-| **Lockfile** | `lockfileVersion: '9.0'` | `pnpm-lock.yaml`, primera línea. | Requiere pnpm ≥ 9. Compatible con 10 y 11. |
-| **Node en Docker** | `node:26-alpine` | `Dockerfile`, ambas etapas. | 🟥 No coincide con el 22 del CI. Ver corrección 18.4. |
+TypeScript se queda en 5.9. El backend usa 6.0 porque Nest lo exige; Nuxt 4.6 con vue-tsc 3.3 typecheckeó limpio sobre 5.9. Subir el frontend a TypeScript 6 es un PR aparte, cuando Nuxt lo soporte sin el aviso de `vue-router/volar/sfc-route-blocks` que hoy escribe vue-tsc a stderr y con el que, aun así, el comando sale 0.
 
-### 3.2 Variables de entorno
-
-Solo existe **una** variable pública, y se resuelve en **tiempo de build**:
-
-| Variable | Dónde se consume | Valor por defecto | Ámbito |
-|---|---|---|---|
-| `NUXT_PUBLIC_API_BASE_URL` | `nuxt.config.ts` → `runtimeConfig.public.apiBase` | `http://localhost:3000` | Build time. Queda **incrustada en el bundle JS**. |
-
-**Implicación fundamental:** el artefacto estático de `dev` **no se puede promocionar** a `qa` o `prod`. Cada stage necesita su propio build. Ver sección 16.6.
-
-### 3.3 Backend disponible
-
-El frontend es inútil sin un backend que exponga, como mínimo, el contrato de autenticación de la sección 10.9. Antes de empezar necesitas:
-
-- Un backend accesible en `NUXT_PUBLIC_API_BASE_URL`.
-- Que ese backend declare como origen CORS permitido el del frontend (`http://localhost:4200` **y** `http://127.0.0.1:4200` en desarrollo; ver sección 21.4).
-- Un user pool de Cognito (o equivalente) con los grupos `<ROL_A>` y `<ROL_B>` creados, y al menos un usuario confirmado en cada uno para poder probar el RBAC.
+El backend tiene que estar en marcha para probar el login. Para compilar el frontend, no.
 
 ---
-
 ## 4. `package.json` completo
 
-🟩 **NÚCLEO REUTILIZABLE.** Transcripción literal del original, con el nombre parametrizado y los scripts de dominio marcados.
+🆕 **V2.** Instalado con pnpm 12.10.1 el 2026-10-08. `tailwindcss` va en `devDependencies` directas: con pnpm el módulo de Nuxt no resuelve `tailwindcss/nesting` si el paquete solo está anidado.
 
 Archivo: `package.json`
 
 ```json
 {
-  "name": "<app>-frontend",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "<app-frontend>",
+  "version": "0.0.1",
+  "private": true,
+  "license": "UNLICENSED",
+  "author": "<AUTOR>",
+  "type": "module",
+  "packageManager": "pnpm@12.10.1",
+  "engines": {
+    "node": ">=24.11.0 <25"
+  },
   "scripts": {
     "dev": "nuxt dev",
-    "build": "nuxt build",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "shoot": "node scripts/audit-shoot.mjs",
-    "parity": "node scripts/parity.mjs",
-    "diff": "node scripts/visual-diff.mjs",
-    "parity:shots": "node scripts/audit-shoot.mjs",
-    "parity:diff": "node scripts/visual-diff.mjs",
-    "test:auth-error": "node --experimental-strip-types --test utils/formatAuthError.test.ts"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module",
-  "devDependencies": {
-    "@nuxtjs/tailwindcss": "^6.14.0",
-    "@primeuix/themes": "^3.0.0",
-    "nuxt": "^4.4.8",
-    "pixelmatch": "^7.2.0",
-    "playwright": "^1.62.1",
-    "pngjs": "^7.0.0",
-    "sharp": "^0.35.3",
-    "tailwindcss-primeui": "^0.6.1"
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run"
   },
   "dependencies": {
     "@nuxtjs/color-mode": "^4.0.1",
@@ -283,425 +181,165 @@ Archivo: `package.json`
     "@pinia/nuxt": "^0.11.3",
     "@primevue/nuxt-module": "^4.5.5",
     "echarts": "^6.1.0",
+    "nuxt": "^4.4.8",
     "pinia": "^3.0.4",
     "primeicons": "^8.0.0",
     "primevue": "^4.5.5",
-    "vue-echarts": "^8.1.0"
+    "vue": "^3.5.22",
+    "vue-echarts": "^8.1.0",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.14.0",
+    "@primeuix/themes": "^3.0.0",
+    "tailwindcss": "3.4.19",
+    "tailwindcss-primeui": "^0.6.1",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.4",
+    "vue-tsc": "^3.1.0"
   }
 }
 ```
 
-### 4.1 Qué hace cada dependencia
+```yaml
+# pnpm-workspace.yaml
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  vue-demi: true
+```
 
-| Paquete | Rango | Ámbito | Para qué sirve | ¿Imprescindible? |
-|---|---|---|---|---|
-| `nuxt` | `^4.4.8` | dev | El framework. Aporta el router file-based, los auto-imports, el sistema de módulos y los comandos `dev`/`build`/`generate`. | **Sí** |
-| `@nuxtjs/tailwindcss` | `^6.14.0` | dev | Módulo que integra Tailwind: inyecta PostCSS, descubre automáticamente los paths de `content` (por eso `tailwind.config.ts` tiene `content: []`) y expone el viewer en dev. | **Sí** |
-| `tailwindcss-primeui` | `^0.6.1` | dev | Plugin de Tailwind que publica como utilidades los tokens semánticos del tema de PrimeVue. Evita que Tailwind y PrimeVue tengan paletas divergentes. | Recomendado |
-| `@primevue/nuxt-module` | `^4.5.5` | prod | Registra PrimeVue en Nuxt y **auto-importa todos los componentes** (`<Button>`, `<InputText>`, `<Password>`, `<Message>`, `<Menu>`, `<AutoComplete>`, `<IconField>`, `<InputIcon>`…) sin necesidad de importarlos. | **Sí** |
-| `primevue` | `^4.5.5` | prod | La librería de componentes en sí. | **Sí** |
-| `@primeuix/themes` | `^3.0.0` | dev | Presets de tema de PrimeVue v4. Se importa `Aura` en `nuxt.config.ts`. ⚠️ Está en `devDependencies` pero se consume en `nuxt.config.ts`, que solo se ejecuta en build: correcto para este flujo. | **Sí** |
-| `primeicons` | `^8.0.0` | prod | Fuente de iconos `pi pi-*`. Se carga vía `css: ['primeicons/primeicons.css']`. Se usa en spinners, campos con icono y menús. | Sí (si usas PrimeVue) |
-| `@nuxtjs/color-mode` | `^4.0.1` | prod | Gestiona la preferencia claro/oscuro, la persiste en `localStorage` y aplica la clase al `<html>` antes del primer pintado (sin flash). | **Sí** |
-| `@nuxtjs/google-fonts` | `^3.2.0` | prod | Descarga y auto-hospeda la familia tipográfica declarada; genera los `@font-face` y el `preload`. | Opcional |
-| `@pinia/nuxt` | `^0.11.3` | prod | Integra Pinia con Nuxt: auto-import de `defineStore` y de los stores de `stores/`. | Sí |
-| `pinia` | `^3.0.4` | prod | El store. Se usa para estado compartido entre pantallas (selección global, filtros). | Sí |
-| `echarts` | `^6.1.0` | prod | Motor de gráficos. Se importa **por módulos** (tree-shaking manual, ver sección 13). | Si hay gráficos |
-| `vue-echarts` | `^8.1.0` | prod | Wrapper Vue del canvas de ECharts. Aporta el componente `VChart` con `autoresize`. | Si hay gráficos |
-| `playwright` | `^1.62.1` | dev | Navegador headless para los scripts de auditoría visual. | 🟨 Solo si copias `scripts/` |
-| `sharp` | `^0.35.3` | dev | Procesamiento de imagen para el comparador visual. | 🟨 Ídem |
-| `pixelmatch` | `^7.2.0` | dev | Comparación pixel a pixel. ⚠️ Declarado pero **no se importa en ningún script del repositorio**: `visual-diff.mjs` usa `sharp` y su propio SSIM. | 🟥 Dependencia muerta |
-| `pngjs` | `^7.0.0` | dev | Lectura/escritura PNG. ⚠️ Igual que `pixelmatch`: declarado y **no importado** en ningún script. | 🟥 Dependencia muerta |
+pnpm 12 aborta el install si un paquete quiere ejecutar un script que no está en `allowBuilds`. Cuando aparezca otro (`sharp`, `unrs-resolver`), se añade en el mismo PR. No se usa `--ignore-scripts`.
 
-### 4.2 Qué hace cada script
+| Script | Qué hace |
+|---|---|
+| `dev` | Nuxt en `127.0.0.1:4200`, con el proxy de `/api` |
+| `generate` | El artefacto de release: `.output/public` |
+| `build` | No se usa para desplegar. Con `preset: 'static'` no produce el sitio que S3 sirve |
+| `typecheck` | `nuxt typecheck` |
+| `test` | Vitest, sobre `utils/**/*.test.ts` |
+| `postinstall` | `nuxt prepare`. Sin esto el editor no tiene tipos |
 
-| Script | Comando | Cuándo se usa | Categoría |
-|---|---|---|---|
-| `dev` | `nuxt dev` | Servidor de desarrollo con HMR en `127.0.0.1:4200` (el puerto y host vienen de `nuxt.config.ts`, no del script). | 🟩 |
-| `build` | `nuxt build` | Build genérico. **Con `preset: 'static'` no produce un servidor usable**; para desplegar usa `generate`. Ver sección 16.1. | 🟩 |
-| `generate` | `nuxt generate` | **El comando de despliegue.** Produce `.output/public/` listo para S3. | 🟩 |
-| `preview` | `nuxt preview` | Sirve localmente la salida de build para inspección. | 🟩 |
-| `postinstall` | `nuxt prepare` | Genera `.nuxt/` (tipos, `tsconfig.json`, declaraciones de auto-imports). **Sin esto el editor no tipa nada.** Ver sección 21.7. | 🟩 |
-| `test:auth-error` | `node --experimental-strip-types --test utils/formatAuthError.test.ts` | El **único** test automatizado del repositorio. Usa el runner nativo de Node y el stripping de tipos nativo (requiere Node ≥ 22). | 🟩 |
-| `shoot`, `parity:shots` | `node scripts/audit-shoot.mjs` | Captura screenshots de cada vista a 1536×1024 contra el dev server. | 🟨 |
-| `parity` | `node scripts/parity.mjs` | Verifica una especificación DOM/texto por pantalla y reporta % de cumplimiento. | 🟨 |
-| `diff`, `parity:diff` | `node scripts/visual-diff.mjs` | Compara screenshots contra imágenes de mockup usando Sobel + SSIM. | 🟨 |
-
-🟥 **Faltan scripts que deberías añadir desde el día uno:** no hay `lint`, no hay `typecheck`, no hay `test` agregador. Ver corrección 18.9.
+No se copian `pixelmatch` ni `pngjs` (estaban declarados y nadie los importaba), ni los scripts de paridad visual contra mockups del dominio original. Playwright se añade el día que haya un flujo de punta a punta que merezca un navegador; no se deja instalado "por si acaso".
 
 ---
-
 ## 5. `nuxt.config.ts` completo
 
-🟩 **NÚCLEO REUTILIZABLE.** Transcripción literal con los textos de marca parametrizados.
-
-Archivo: `nuxt.config.ts`
+🆕 **V2.**
 
 ```ts
+// nuxt.config.ts
 import Aura from '@primeuix/themes/aura'
 
 export default defineNuxtConfig({
   ssr: false,
-  compatibilityDate: '2026-06-26',
+  compatibilityDate: '2026-10-07',
   modules: [
     '@nuxtjs/tailwindcss',
     '@nuxtjs/color-mode',
     '@nuxtjs/google-fonts',
     '@pinia/nuxt',
-    '@primevue/nuxt-module'
+    '@primevue/nuxt-module',
   ],
   css: ['~/assets/css/main.css', 'primeicons/primeicons.css'],
   nitro: { preset: 'static' },
-  // Evita que Vite/chokidar abran watchers sobre salidas y scripts (EMFILE).
-  ignore: ['**/.output/**', '**/.nuxt/**', '**/scripts/**'],
+  ignore: ['**/.output/**', '**/.nuxt/**'],
+  devServer: { host: '127.0.0.1', port: 4200 },
   vite: {
     server: {
-      watch: {
-        ignored: ['**/.git/**', '**/.output/**', '**/.nuxt/**', '**/node_modules/**', '**/scripts/**']
-      }
-    }
-  },
-  devServer: {
-    host: '127.0.0.1',
-    port: 4200
-  },
-  components: {
-    dirs: [{ path: '~/components', pathPrefix: false }]
-  },
-  colorMode: {
-    classSuffix: '',
-    preference: 'dark',
-    fallback: 'dark'
-  },
-  googleFonts: {
-    families: {
-      'Plus Jakarta Sans': [300, 400, 500, 600, 700, 800]
+      proxy: {
+        '/api': { target: 'http://127.0.0.1:3000', changeOrigin: true },
+      },
     },
+  },
+  colorMode: { classSuffix: '', preference: 'dark', fallback: 'dark' },
+  googleFonts: {
+    families: { 'Plus Jakarta Sans': [400, 500, 600, 700] },
     display: 'swap',
-    preload: true
+    preload: true,
   },
   primevue: {
     options: {
       ripple: true,
-      theme: {
-        preset: Aura,
-        options: {
-          darkModeSelector: '.dark'
-        }
-      }
-    }
+      theme: { preset: Aura, options: { darkModeSelector: '.dark' } },
+    },
   },
   app: {
     head: {
-      title: '<org> — <descripción corta de la app>',
-      htmlAttrs: {
-        lang: 'es'
-      },
+      title: '<app-short>',
+      htmlAttrs: { lang: 'es' },
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        {
-          name: 'description',
-          content: '<descripción larga de la app para buscadores y previews>'
-        }
-      ]
-    }
+      ],
+    },
   },
+  // Relativo a propósito: el mismo build se promociona de dev a prod.
+  // En local el proxy de Vite reenvía /api al backend. En AWS lo hace CloudFront.
   runtimeConfig: {
-    public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'
-    }
-  }
+    public: { apiBase: '/api' },
+  },
 })
 ```
 
-### 5.1 Explicación opción por opción
+Qué no se toca sin releer la sección 2:
 
-| Opción | Valor | Por qué está | Qué pasa si se omite |
-|---|---|---|---|
-| `ssr` | `false` | Convierte el proyecto en SPA pura. Es la decisión arquitectónica raíz (sección 2.3). | Nuxt renderiza en servidor: necesitas Node en producción, aparecen errores de hidratación con cookies y `window`, y el despliegue a S3 deja de ser posible. |
-| `compatibilityDate` | `'2026-06-26'` | Congela el comportamiento por defecto de Nitro/Nuxt a esa fecha. Protege de cambios de comportamiento al actualizar menor. | Nuxt emite un warning en cada arranque y adopta los defaults más recientes, que pueden cambiar sin aviso entre versiones menores. |
-| `modules` | 5 módulos | Orden importante solo en un punto: `@nuxtjs/tailwindcss` antes que `@primevue/nuxt-module` para que el plugin `tailwindcss-primeui` tenga el tema disponible. | Sin `@nuxtjs/tailwindcss` no hay Tailwind. Sin `@nuxtjs/color-mode` no hay tema. Sin `@primevue/nuxt-module` los componentes de PrimeVue no se auto-importan y toda plantilla que use `<Button>` falla. |
-| `css` | `['~/assets/css/main.css', 'primeicons/primeicons.css']` | `main.css` trae las directivas `@tailwind` y los tokens. El segundo carga la fuente de iconos `pi pi-*`. El orden importa: los tokens deben cargarse antes para que PrimeVue los pueda sobrescribir. | Sin `main.css` no hay ni Tailwind ni tokens: la app sale sin estilo. Sin `primeicons.css`, los `<span class="pi pi-...">` quedan como cuadrados vacíos. |
-| `nitro.preset` | `'static'` | Fuerza salida 100 % estática (sección 2.4). | Se genera un `.output/server/` innecesario y el build tarda más. |
-| `ignore` | `['**/.output/**', '**/.nuxt/**', '**/scripts/**']` | Excluye del **escaneo de Nuxt** (páginas, componentes, layouts) esas carpetas. Crítico para `scripts/`: sin ello Nuxt intenta analizar los `.mjs` de Playwright. | Nuxt escanea directorios de salida y scripts, lo que aumenta el consumo de descriptores de fichero y puede provocar `EMFILE` (sección 21.1). |
-| `vite.server.watch.ignored` | 5 globs | Es la **segunda mitad** del mismo problema: `ignore` afecta al escáner de Nuxt, esto afecta al **watcher de chokidar de Vite**. Son dos mecanismos distintos y hacen falta los dos. | En máquinas con límite bajo de watchers (`ulimit -n` reducido, contenedores) el dev server muere con `EMFILE: too many open files`. |
-| `devServer.host` | `'127.0.0.1'` | Escucha solo en loopback IPv4. Evita que Node resuelva `localhost` a `::1` y el backend no reconozca el origen. | Puede escuchar en `::1` o en `0.0.0.0`; el origen de las peticiones pasa a ser `http://[::1]:4200`, que no coincide con la lista CORS del backend (sección 21.4). |
-| `devServer.port` | `4200` | Puerto convenido del proyecto. El backend lo tiene en su lista de orígenes permitidos. | Nuxt usa 3000 por defecto, **que es el puerto del backend**: colisión directa. |
-| `components.dirs` | `[{ path: '~/components', pathPrefix: false }]` | **Desactiva el prefijo de carpeta** en los nombres auto-importados. Con esto, `components/ui/StatusChip.vue` se usa como `<StatusChip>` y no como `<UiStatusChip>`. | Todos los componentes en subcarpetas pasan a llamarse con el prefijo de su ruta y **todas las plantillas que los usan se rompen**. |
-| `colorMode.classSuffix` | `''` | Por defecto el módulo añade `-mode`, generando la clase `dark-mode`. Con sufijo vacío la clase es exactamente `dark`, que es **lo que esperan Tailwind (`darkMode: 'class'`) y PrimeVue (`darkModeSelector: '.dark'`)**. | El `<html>` recibe `class="dark-mode"`: ni las utilidades `dark:` de Tailwind ni el tema oscuro de PrimeVue se activan. Es el error silencioso más fácil de cometer. |
-| `colorMode.preference` | `'dark'` | Tema por defecto para un usuario sin preferencia guardada. | Por defecto el módulo usa `'system'`, que sigue al sistema operativo. |
-| `colorMode.fallback` | `'dark'` | Tema a usar cuando `preference` es `'system'` pero no se puede determinar. | Fallback a `'light'`. |
-| `googleFonts.families` | `{'Plus Jakarta Sans': [300,400,500,600,700,800]}` | Los seis pesos que el design system realmente usa (`font-light` … `font-extrabold`). | Sin la familia declarada, `html { font-family: 'Plus Jakarta Sans' }` cae al fallback `system-ui`. |
-| `googleFonts.display` | `'swap'` | Muestra el texto con la fuente de sistema mientras descarga la webfont. Evita el FOIT. | Riesgo de texto invisible durante la descarga. |
-| `googleFonts.preload` | `true` | Emite `<link rel="preload">` para los `.woff2`. | La fuente se descubre tarde en la cascada y el swap es más visible. |
-| `primevue.options.ripple` | `true` | Efecto de onda al pulsar en los componentes de PrimeVue. Puramente estético. | Botones sin feedback táctil. |
-| `primevue.options.theme.preset` | `Aura` | Preset visual de PrimeVue v4. Es la base sobre la que se superponen los tokens propios. | PrimeVue arranca sin tema y los componentes salen sin estilo. |
-| `primevue.options.theme.options.darkModeSelector` | `'.dark'` | **Pieza central del patrón triple de tema (sección 7.1).** Le dice a PrimeVue que su variante oscura se activa cuando existe un ancestro con clase `.dark`. | PrimeVue usa su media query `prefers-color-scheme` por defecto: el toggle manual de la app mueve Tailwind y los tokens propios pero **no** los componentes de PrimeVue, que quedan desincronizados. |
-| `app.head.title` | string | Título por defecto del documento. | Nuxt pone un título genérico. |
-| `app.head.htmlAttrs.lang` | `'es'` | Idioma del documento. Afecta a lectores de pantalla, corrector ortográfico y formateo de números del navegador. | Se asume `en`. |
-| `app.head.meta` | charset, viewport, description | `viewport` es **obligatorio** para que el diseño responsive funcione en móvil. | Sin `viewport`, el móvil renderiza a 980 px y escala: todos los breakpoints de Tailwind se comportan como escritorio. |
-| `runtimeConfig.public.apiBase` | `process.env.NUXT_PUBLIC_API_BASE_URL \|\| 'http://localhost:3000'` | Única configuración de la app. Se lee con `useRuntimeConfig().public.apiBase`. | Sin ella, cada composable tendría que leer `process.env` directamente, cosa que no funciona en el bundle de cliente. |
+- `ssr: false` y `nitro.preset: 'static'`.
+- `runtimeConfig.public.apiBase` es el string `'/api'`. No es `process.env.NUXT_PUBLIC_API_BASE_URL`. En un generate estático, `runtimeConfig` se congela en el HTML: se comprobó que el `index.html` generado contiene `apiBase:"/api"` y ningún host.
+- El proxy vive en `vite.server.proxy`, no en `nitro.devProxy` ni en `routeRules`. El dev server que recibe al navegador es Vite. `routeRules` con `proxy` se hornearía también en el generate y el sitio estático intentaría hacer de proxy, que no puede.
+- `devServer.host` es `127.0.0.1`, no `0.0.0.0`. Las cookies de local son de ese host.
+- No hay `app.head` con una CSP. La pone CloudFront.
 
-### 5.2 Una advertencia sobre `runtimeConfig` en modo estático
+`assets/css/main.css` del esqueleto verificado solo tiene las tres directivas `@tailwind`. El archivo de verdad es el de la sección 7, que lo reemplaza entero y se deja en la misma ruta. El módulo avisa `Using default Tailwind CSS file` cuando no encuentra `assets/css/tailwind.css`; es informativo. Durante el generate apareció también el aviso `tailwindcss/nesting` could not be loaded, y el comando terminó bien (exit 0) generando `.output/public`. No se bloquea el release por ese aviso. El CSS del design system no depende de nesting.
 
-El nombre «runtime config» es engañoso aquí. En una SPA generada estáticamente:
-
-- `process.env.NUXT_PUBLIC_API_BASE_URL` se evalúa **cuando corre `nuxt generate`**, no cuando el usuario abre la página.
-- El valor queda **literalmente escrito** dentro de los `.js` publicados en S3.
-- Cambiar la variable en el servidor no cambia nada: hay que **volver a generar y volver a desplegar**.
-
-Esto es correcto y es el diseño intencional del original, pero debe quedar explícito. Ver sección 16.6 para la alternativa si necesitas configuración en runtime.
+`pnpm typecheck` escribe por stderr que `vue-router/volar/sfc-route-blocks` no está exportado. Es un desajuste de vue-tsc 3.3 con vue-router 4.6. El exit code es 0 y los errores de verdad del proyecto sí fallan el comando (se comprobó al quitar un genérico de `$fetch`).
 
 ---
-
 ## 6. Estructura de carpetas
 
-### 6.1 Árbol objetivo completo
+🆕 **V2.** No se crea un directorio `app/` en la raíz. Nuxt 4, si lo ve, cambia el `srcDir` y deja de ver `pages/`, `components/` y `middleware/` sin un error claro. El esqueleto verificado vive en la raíz y `nuxt prepare` generó los tipos así.
 
 ```
-<app>-frontend/
-├── .cursor/                       # Entorno Cloud Agent (sección 17)
-│   ├── environment.json
-│   ├── install.sh
-│   └── start.sh
-├── .github/
-│   └── workflows/
-│       └── deploy.yml             # CI/CD a S3 + CloudFront (sección 16)
-├── .vscode/
-│   ├── extensions.json
-│   └── settings.json
-├── assets/
-│   └── css/
-│       └── main.css               # Tokens + utilidades propias (sección 7)
-├── components/
-│   ├── <Prefijo>Icon.vue          # Icon set propio (sección 12.4)
-│   ├── <Prefijo>Mark.vue          # Logotipo sensible al tema
-│   ├── AppSidebar.vue             # Shell: navegación lateral
-│   ├── AppTopbar.vue              # Shell: barra superior
-│   ├── AppBottomNav.vue           # Shell: pestañas inferiores en móvil
-│   ├── ThemeToggle.vue            # Shell: conmutador claro/oscuro
-│   ├── ui/                        # Design system transversal (sección 12.3)
-│   │   ├── PageHeader.vue
-│   │   ├── StatusChip.vue
-│   │   ├── SignalDot.vue
-│   │   ├── CoverageChip.vue
-│   │   ├── FilterSelect.vue
-│   │   ├── Sparkline.vue
-│   │   ├── TableFooter.vue
-│   │   ├── ScoreCell.vue
-│   │   ├── MetricTile.vue
-│   │   └── <Prefijo>DataTable.vue
-│   └── <dominio>/                 # Un subdirectorio por área funcional
-├── composables/
-│   ├── useAuth.ts                 # Sesión completa (sección 10)
-│   ├── useApi.ts                  # Cliente HTTP tipado (sección 11)
-│   └── useChartTheme.ts           # Tema de ECharts ligado al color mode
-├── layouts/
-│   ├── default.vue                # Shell de aplicación autenticada
-│   └── auth.vue                   # Shell de pantallas públicas
+<app-frontend>/
+├── .github/workflows/
+│   ├── ci.yml
+│   └── deploy.yml
+├── assets/css/main.css          # tokens, sección 7
+├── components/                  # sección 12. Auto-import sin prefijo de ruta
+├── composables/useApi.ts        # único cliente HTTP
+├── layouts/                     # default (autenticado) y auth (público)
 ├── middleware/
-│   ├── auth.ts                    # Sesión obligatoria + refresco preventivo
-│   ├── guest.ts                   # Solo sin sesión
-│   ├── <rol-a>.ts                 # RBAC: grupo <ROL_A> o <ROL_B>
-│   └── <rol-b>.ts                 # RBAC: solo grupo <ROL_B>
+│   ├── auth.ts
+│   ├── guest.ts
+│   └── role.ts                  # plantilla; el dominio crea uno por rol
 ├── pages/
-│   ├── index.vue
-│   ├── login.vue
-│   ├── signup.vue
-│   └── <resto de rutas>.vue
-├── plugins/
-│   ├── auth.ts                    # Hidrata el perfil al arrancar
-│   └── echarts.client.ts          # Registra VChart y los módulos de ECharts
-├── public/
-│   └── images/
-│       ├── logo-<app>-light.png
-│       └── logo-<app>-dark.png
-├── scripts/                       # 🟨 Auditoría visual opcional (sección 17.5)
-├── stores/
-│   └── <entidad>.ts               # Pinia: estado compartido entre pantallas
-├── types/
-│   └── api.ts                     # Contratos del backend
 ├── utils/
-│   ├── formatAuthError.ts
-│   ├── formatAuthError.test.ts
-│   ├── format.ts
-│   └── countries.ts
-├── .dockerignore
-├── .env.example
+│   ├── http.ts
+│   └── http.test.ts
 ├── .gitignore
-├── .npmrc
-├── Dockerfile                     # 🟥 Ver corrección 18.4
-├── README.md
+├── .nvmrc                       # 24
 ├── nuxt.config.ts
 ├── package.json
-├── pnpm-lock.yaml
 ├── pnpm-workspace.yaml
-└── tailwind.config.ts
+├── tsconfig.json                # extends .nuxt/tsconfig.json
+└── vitest.config.ts
 ```
 
-### 6.2 Rol de cada directorio
-
-| Directorio | Convención de Nuxt | Qué contiene | Auto-import |
-|---|---|---|---|
-| `assets/` | Procesado por Vite | CSS, fuentes locales, SVG que pasan por el bundler. Las URLs se reescriben con hash. | No |
-| `public/` | Copiado tal cual | Archivos servidos en la raíz sin procesar ni hashear: logos, `favicon.ico`, `robots.txt`. Se referencian con rutas absolutas (`/images/logo.png`). | No |
-| `components/` | Auto-import | Componentes Vue. **Con `pathPrefix: false`, el nombre es el del archivo sin la carpeta.** | Sí, global |
-| `composables/` | Auto-import | Funciones `useXxx()` que encapsulan lógica reactiva reutilizable. Se exportan con `export const useX = () => {}`. | Sí, por nombre de export |
-| `layouts/` | Convención | Envoltorios de página. `default.vue` se aplica si la página no declara otro. Deben contener un `<slot />`. | Vía `definePageMeta({ layout })` |
-| `middleware/` | Convención | Guardas de ruta. El nombre del archivo es el identificador usado en `definePageMeta({ middleware })`. | Sí, por nombre de archivo |
-| `pages/` | Router file-based | Cada `.vue` genera una ruta. Ver sección 9. | — |
-| `plugins/` | Auto-registro | Se ejecutan al arrancar la app, en orden alfabético. El sufijo `.client.ts` limita la ejecución al navegador; `.server.ts` al servidor. | Sí |
-| `stores/` | Auto-import (vía `@pinia/nuxt`) | Stores de Pinia con `defineStore`. | Sí, por nombre de export |
-| `types/` | Normal | Interfaces y tipos TypeScript. **No** hay auto-import: requieren `import type { X } from '~/types/api'`. | No |
-| `utils/` | Auto-import | Funciones puras sin reactividad. Nuxt las auto-importa igual que los composables. | Sí, por nombre de export |
-| `scripts/` | Excluido | Herramientas Node sueltas. **Explícitamente excluido** vía `ignore` y `vite.server.watch.ignored`. | No |
-
-### 6.3 Por qué NO se usa el directorio `app/`
-
-Nuxt 4 introdujo una estructura opcional en la que el código de cliente vive bajo `app/` (`app/pages/`, `app/components/`, `app/app.vue`…) y solo la configuración, `server/` y `public/` quedan en la raíz.
-
-**El repositorio original no la usa.** Todo cuelga directamente de la raíz: `pages/`, `components/`, `app.vue`, `error.vue`.
-
-Implicaciones que debes tener claras:
-
-| Implicación | Detalle |
-|---|---|
-| **`srcDir` es la raíz** | Nuxt detecta automáticamente que no existe `app/` y mantiene `srcDir: '.'`. No hay que configurar nada. |
-| **El alias `~` y `@` apuntan a la raíz** | `~/components/X.vue`, `~/utils/format`, `~/types/api` resuelven desde la raíz del repositorio. Si migraras a `app/`, **todos** esos imports cambiarían de destino. |
-| **`app.vue` y `error.vue` van en la raíz** | No en `app/app.vue`. |
-| **No mezclar** | Si creas un directorio `app/` por error (por ejemplo copiando un snippet de la documentación nueva de Nuxt), Nuxt cambia el `srcDir` y **el resto de carpetas de la raíz deja de ser escaneado**: desaparecen las páginas, los componentes y los middleware sin ningún error claro. Es un fallo difícil de diagnosticar. |
-| **Decisión para el proyecto nuevo** | **Mantén la estructura plana de la raíz.** Toda la documentación, todos los paths y todos los bloques de código de este blueprint la asumen. Migrar a `app/` después es un cambio mecánico pero global; hacerlo a medias no funciona. |
-
-### 6.4 Archivos de configuración de raíz
-
-Archivo: `.npmrc` — 🟩 **NÚCLEO**
-
-```
-only-built-dependencies-file=false
-only-built-dependencies=@parcel/watcher,esbuild
-```
-
-Autoriza a pnpm a ejecutar los scripts de instalación (compilación de binarios nativos) **solo** de `@parcel/watcher` y `esbuild`. pnpm ≥ 10 bloquea los scripts de postinstalación por defecto como medida de seguridad; estos dos paquetes los necesitan de verdad.
-
-Archivo: `pnpm-workspace.yaml` — 🟥 **DEUDA — NO REPLICAR TAL CUAL**
-
-```yaml
-allowBuilds:
-  '@parcel/watcher': set this to true or false
-  esbuild: set this to true or false
-```
-
-Este archivo está **sin terminar**: los valores son literalmente el texto de ayuda que pnpm imprime, no booleanos. Además duplica, con otra sintaxis, lo que ya resuelve `.npmrc`. **No lo copies.** Si quieres mantener la autorización explícita, usa una sola de las dos vías; la de `.npmrc` es la que está correcta:
-
-Archivo: `pnpm-workspace.yaml` — versión corregida
-
-```yaml
-onlyBuiltDependencies:
-  - '@parcel/watcher'
-  - esbuild
-```
-
-Archivo: `.gitignore` — 🟩 **NÚCLEO**
-
-```gitignore
-# Nuxt dev / build outputs
-.nuxt
-.output
-dist
-node_modules
-
-
-# Environment variables
-.env
-.env.*
-!.env.example
-
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# OS files
-.DS_Store
-Thumbs.db
-```
-
-Archivo: `.env.example` — 🟩 **NÚCLEO**
-
-```bash
-# ============================================================
-# <org> <app> - Frontend (.env de ejemplo)
-# ------------------------------------------------------------
-# Copia este archivo a `.env`:
-#
-#   cp .env.example .env
-#
-# El archivo `.env` está en .gitignore y no se sube al repo.
-# ============================================================
-
-# URL base del backend NestJS (local por defecto).
-NUXT_PUBLIC_API_BASE_URL=http://localhost:3000
-```
-
-Archivo: `.vscode/extensions.json` — 🟩 **NÚCLEO**
+`tsconfig.json` excluye los `*.test.ts`: vue-tsc no entiende el `vi` de Vitest, y Vitest no necesita pasar por vue-tsc.
 
 ```json
 {
-  "recommendations": [
-    "mikestead.dotenv",
-    "usernamehw.errorlens",
-    "formulahendry.auto-close-tag",
-    "quicktype.quicktype",
-    "bradlc.vscode-tailwindcss",
-    "vue.volar"
-  ]
+  "extends": "./.nuxt/tsconfig.json",
+  "exclude": ["utils/**/*.test.ts"]
 }
 ```
 
-Archivo: `.vscode/settings.json` — 🟩 **NÚCLEO**
+`.gitignore`: `node_modules/`, `.nuxt/`, `.output/`, `dist/`, `.env`, `.env.*` con la excepción `!.env.example`.
 
-```json
-{
-  "git.ignoreLimitWarning": true
-}
-```
-
-Archivo: `.dockerignore` — 🟨 (solo si conservas el Dockerfile; ver corrección 18.4)
-
-```
-node_modules
-.nuxt
-.output
-.git
-.github
-Dockerfile
-.dockerignore
-npm-debug.log
-.env
-```
-
-### 6.5 Sobre `tsconfig.json`
-
-**El repositorio no tiene `tsconfig.json` propio.** Confía enteramente en el `.nuxt/tsconfig.json` que genera `nuxt prepare`. Esto funciona, pero significa que:
-
-- El editor **no tipa nada** hasta que se haya ejecutado `pnpm install` (que dispara `postinstall: nuxt prepare`) o `pnpm dev` al menos una vez.
-- No hay forma de endurecer el chequeo de tipos (`strict`, `noUncheckedIndexedAccess`) sin crear el archivo.
-
-**Recomendación para el proyecto nuevo:** crea un `tsconfig.json` mínimo que extienda el generado. Es una línea y habilita el `typecheck`:
-
-Archivo: `tsconfig.json`
-
-```json
-{
-  "extends": "./.nuxt/tsconfig.json"
-}
-```
+No hay `.env` de API. No hay nada que configurar por stage en el cliente.
 
 ---
+> **Vigente en v2 como sistema visual.** Se copia del original porque el aspecto no cambió. Cualquier frase que hable de `Authorization`, de cookies `auth_token` / `auth_refresh_token`, de un `apiBase` absoluto o de CORS **no se implementa**: la sesión y las llamadas HTTP están en las secciones 10 y 11.
 
 ## 7. Design system completo
 
@@ -1205,6 +843,8 @@ El detalle del componente `<Prefijo>Icon` está en la sección 12.4.
 | Elevación | `box-shadow: none` | El design system **no usa sombras**: la jerarquía se expresa con tres niveles de fondo (`bg` / `bg-sidebar` / `bg-elevated`) más el borde. Las únicas sombras son `shadow-2xl` en las tarjetas de auth. |
 
 ---
+
+> **Vigente en v2 como sistema visual.** Se copia del original porque el aspecto no cambió. Cualquier frase que hable de `Authorization`, de cookies `auth_token` / `auth_refresh_token`, de un `apiBase` absoluto o de CORS **no se implementa**: la sesión y las llamadas HTTP están en las secciones 10 y 11.
 
 ## 8. Layouts y shell de aplicación
 
@@ -1896,1504 +1536,316 @@ Los middleware se ejecutan **en el orden del array**, de izquierda a derecha, y 
 
 ### 9.4 Cómo proteger una ruta
 
-**Regla que no se negocia: toda página privada declara `middleware: ['auth', ...]`, con `'auth'` siempre en primera posición.**
+🆕 **V2.** Esta subsección sustituye a la de la v1. El middleware no lee cookies: le pregunta a la API.
 
-```vue
-<script setup lang="ts">
-// Ruta privada, cualquier usuario autenticado
-definePageMeta({ middleware: ['auth'] })
-</script>
-```
+| Página | `definePageMeta` |
+|---|---|
+| Privada, cualquier usuario con sesión | `{ middleware: 'auth' }` |
+| Privada, solo un rol | `{ middleware: ['auth', 'role'] }` y el middleware de rol compara `me.groups` |
+| Login y signup | `{ layout: 'auth', middleware: 'guest' }` |
 
-```vue
-<script setup lang="ts">
-// Ruta privada, solo <ROL_A> o <ROL_B>
-definePageMeta({ middleware: ['auth', '<rol-a>'] })
-</script>
-```
+`auth` siempre va primero. El de rol asume que ya hay sesión; si se declara solo, un 401 de `me()` se propaga como error de navegación en vez de ir al login.
 
-```vue
-<script setup lang="ts">
-// Ruta privada, solo <ROL_B>
-definePageMeta({ middleware: ['auth', '<rol-b>'] })
-</script>
-```
+Toda página privada lo declara. El middleware es UX: quien llame a la API sin sesión recibe 401 del backend igual. Sirve para no pintar un shell roto.
 
-```vue
-<script setup lang="ts">
-// Ruta pública que un usuario con sesión no debe ver
-definePageMeta({ layout: 'auth', middleware: 'guest' })
-</script>
-```
-
-> **Recordatorio de seguridad:** el middleware de cliente es **UX, no seguridad**. Cualquiera puede desactivar JavaScript, editar la cookie o llamar al API con curl. El control real está en el backend (`JwtAuthGuard` + `RolesGuard`). El middleware existe para que el usuario legítimo no vea pantallas rotas.
+El código de los tres middleware está en la sección 10 y pasó `nuxt typecheck`.
 
 ---
-
 ## 10. Autenticación en el cliente, end to end
 
-### 10.1 Visión general del flujo
+🆕 **V2.** El backend emite las cookies. Este código no las crea, no las lee y no las refresca a mano más que llamando a `POST /api/auth/refresh`.
 
-```
-  ARRANQUE DE LA APP
-  ──────────────────
-  plugins/auth.ts
-    └─ ¿hay cookie auth_token?
-        ├─ no  → nada; el middleware redirigirá al login cuando toque
-        └─ sí  → GET /auth/profile  →  rellena useState('auth_user')
-                   └─ si falla → logout() → /login
+### 10.1 Qué se guarda en el cliente
 
-  NAVEGACIÓN A UNA RUTA PRIVADA
-  ─────────────────────────────
-  middleware/auth.ts
-    ├─ sin token                      → navigateTo('/login')
-    ├─ token expira en < 5 min        → refreshSession()
-    │     └─ si falla                 → logout() → /login
-    └─ sin perfil en memoria          → fetchProfile()
-          └─ si falla                 → logout() → /login
+Nada secreto. El estado de UI es el resultado de `GET /api/auth/me`:
 
-  LLAMADA DE DATOS
-  ────────────────
-  useApi().get(path)  →  useAuth().apiFetch(url)
-    ├─ añade Authorization: Bearer <token>
-    ├─ 2xx                            → devuelve el cuerpo
-    └─ 401 con refresh disponible
-          ├─ refreshSession() OK      → REINTENTA UNA VEZ con el token nuevo
-          └─ refresco falla o 2.º 401 → logout() + aviso + throw
-```
+| Campo | Uso |
+|---|---|
+| `sub` | Identificador. No se muestra |
+| `email`, `firstName`, `lastName` | El shell (nombre en la barra) |
+| `groups` | Qué ítems de navegación se pintan. No es la autorización: esa la vuelve a hacer el backend |
+| `userStatus` | `active`, `blocked`, `observed`, `rejected`. `unknown` solo si la fila no existe; el backend responde 401 antes en ese caso |
+| `sessionExpiresAt` | Informativo. No se usa para decidir un refresh: el 401 lo decide |
 
-### 10.2 `composables/useAuth.ts` transcrito completo
+### 10.2 Recorrido de login
 
-🟩 **NÚCLEO REUTILIZABLE.** Transcripción literal del archivo real (375 líneas), con los grupos parametrizados. Este es **el archivo más importante del repositorio**.
+1. `POST /api/auth/login` con `{ email, password }`.
+2. Si el cuerpo es `{ status: "authenticated", expiresAt }`, las cookies ya viajaron en la respuesta. Se llama a `me()` y se navega a `redirect` o a `/`.
+3. Si el cuerpo es `{ status: "challenge", challenge }`, se queda en la pantalla de login y se muestra el paso que toque:
+   - `SOFTWARE_TOKEN_MFA` o `EMAIL_OTP`: un campo de código, luego `POST /api/auth/challenge` con `{ code }`.
+   - `MFA_SETUP`: primero `POST /api/auth/challenge/mfa-setup` sin código para obtener `{ secretCode, otpauthUri }` y pintar el QR; después el mismo endpoint con `{ code }`.
+   - `NEW_PASSWORD_REQUIRED`: un campo de contraseña nueva, `POST /api/auth/challenge` con `{ newPassword }`.
+4. Cada respuesta de reto vuelve a ser `authenticated` o `challenge`. Se repite hasta autenticar. El estado del reto vive en la cookie `__Host-…_mfa` (o `<app-short>_mfa` en local), que el cliente no lee.
+5. `POST /api/auth/logout` y navegación a `/login`. El backend revoca el refresh aunque el access haya caducado.
 
-Archivo: `composables/useAuth.ts`
+Signup, confirmación, reenvío, olvidé la contraseña y confirmación de contraseña son `POST /api/auth/signup`, `/confirm`, `/resend-code`, `/forgot-password`, `/confirm-password`. Son públicas. El enlace de términos sale de `GET /api/auth/terms-link`.
+
+### 10.3 Clasificación de errores
+
+| HTTP | Qué hace el cliente |
+|---|---|
+| 401 en una ruta que no es `/auth/*` | Un solo `POST /api/auth/refresh` para toda la pestaña, y reintenta la llamada original una vez. Si el refresh falla, al login |
+| 401 en login o en el refresh | Mensaje de credenciales o de sesión caducada. No se intenta refrescar un refresh |
+| 403 | No es una sesión caducada. Si `userStatus` no es `active`, se dice. No se borra una sesión que el backend acaba de rechazar por rol: se avisa |
+| 502, 503, 504 | "Ahora mismo no se puede". No se manda al login. Un 503 de base de datos, en el backend, es exactamente el caso en el que la sesión sigue siendo válida |
+| 400 | El `message` del cuerpo (string o lista de validación) |
+| 409 | Conflicto de negocio, el `message` |
+
+Cinco llamadas que reciben 401 a la vez comparten una promesa. Si cada una refrescara, la rotación de Cognito invalidaría a las demás fuera de la ventana de 10 segundos.
+
+### 10.4 Código verificado
 
 ```ts
-import { ref, computed } from 'vue'
-import { formatAuthError } from '~/utils/formatAuthError'
+// utils/http.ts
+/** Clasificación de status que el cliente debe tratar distinto. */
+export type HttpClass = 'ok' | 'refresh' | 'forbidden' | 'unavailable' | 'error'
 
-interface UserProfile {
+export function classifyHttp(status: number): HttpClass {
+  if (status >= 200 && status < 300) return 'ok'
+  if (status === 401) return 'refresh'
+  if (status === 403) return 'forbidden'
+  if (status === 502 || status === 503 || status === 504) return 'unavailable'
+  return 'error'
+}
+
+export interface Me {
   sub: string
   email: string
-  username: string
+  firstName: string
+  lastName: string
   groups: string[]
-  firstName?: string
-  lastName?: string
-  name?: string
+  userStatus: 'active' | 'blocked' | 'observed' | 'rejected' | 'unknown'
+  sessionExpiresAt: string
 }
 
-function decodeJwtPayload(jwt: string | null | undefined): Record<string, unknown> | null {
-  if (!jwt) return null
-  try {
-    const payloadBase64 = jwt.split('.')[1]
-    const json = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'))
-    return JSON.parse(json)
-  } catch {
-    return null
+export type SessionBody =
+  | { status: 'authenticated'; expiresAt: string }
+  | { status: 'challenge'; challenge: string }
+
+export function isAuthenticated(body: SessionBody): body is { status: 'authenticated'; expiresAt: string } {
+  return body.status === 'authenticated'
+}
+
+/** Una sola promesa en vuelo: cinco 401 a la vez refrescan una vez. */
+export function singleFlight<T>(fn: () => Promise<T>): () => Promise<T> {
+  let inflight: Promise<T> | null = null
+  return () => {
+    if (!inflight) {
+      inflight = fn().finally(() => {
+        inflight = null
+      })
+    }
+    return inflight
   }
 }
+```
 
-function namesFromClaims(claims: Record<string, unknown> | null) {
-  if (!claims) return { firstName: '', lastName: '', email: '', name: '' }
-  const given = typeof claims.given_name === 'string' ? claims.given_name.trim() : ''
-  const family = typeof claims.family_name === 'string' ? claims.family_name.trim() : ''
-  const name = typeof claims.name === 'string' ? claims.name.trim() : ''
-  const emailClaim = typeof claims.email === 'string' ? claims.email.trim() : ''
-  const username = claims['cognito:username'] ?? claims.username
-  const usernameEmail =
-    typeof username === 'string' && username.includes('@') ? username.trim() : ''
-  const parts = name.split(/\s+/).filter(Boolean)
-  return {
-    firstName: given || parts[0] || '',
-    lastName: family || parts.slice(1).join(' ') || '',
-    email: emailClaim || usernameEmail,
-    name
+
+```ts
+// utils/http.test.ts
+import { describe, expect, it, vi } from 'vitest'
+import { classifyHttp, isAuthenticated, singleFlight, type SessionBody } from './http'
+
+describe('classifyHttp', () => {
+  it('un 401 se refresca y un 403 no cierra la sesión por caducidad', () => {
+    expect(classifyHttp(401)).toBe('refresh')
+    expect(classifyHttp(403)).toBe('forbidden')
+    expect(classifyHttp(503)).toBe('unavailable')
+    expect(classifyHttp(400)).toBe('error')
+    expect(classifyHttp(200)).toBe('ok')
+  })
+})
+
+describe('isAuthenticated', () => {
+  it('separa sesión de reto', () => {
+    const session: SessionBody = { status: 'authenticated', expiresAt: '2026-10-07T00:00:00.000Z' }
+    const challenge: SessionBody = { status: 'challenge', challenge: 'SOFTWARE_TOKEN_MFA' }
+    expect(isAuthenticated(session)).toBe(true)
+    expect(isAuthenticated(challenge)).toBe(false)
+  })
+})
+
+describe('singleFlight', () => {
+  it('comparte la promesa mientras está en vuelo', async () => {
+    const fn = vi.fn(async () => 'ok')
+    const run = singleFlight(fn)
+    const [a, b] = await Promise.all([run(), run()])
+    expect(a).toBe('ok')
+    expect(b).toBe('ok')
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+})
+```
+
+
+```ts
+// composables/useApi.ts
+import { classifyHttp, type Me, type SessionBody } from '~/utils/http'
+
+type FetchOptions = NonNullable<Parameters<typeof $fetch>[1]>
+
+// Una sola promesa para toda la pestaña. Si viviera dentro de useApi(),
+// cada componente tendría su propio candado y cinco 401 seguirían disparando cinco refresh.
+let refreshInflight: Promise<void> | null = null
+
+function refreshOnce(baseURL: string): Promise<void> {
+  if (!refreshInflight) {
+    refreshInflight = $fetch('/auth/refresh', { baseURL, method: 'POST', credentials: 'include' }).then(
+      () => undefined,
+      (err: unknown) => {
+        throw err
+      },
+    ).finally(() => {
+      refreshInflight = null
+    })
   }
+  return refreshInflight
 }
 
-export const useAuth = () => {
+/**
+ * Cliente HTTP del SPA. No lee ni guarda tokens: la sesión va en cookies
+ * httpOnly que el navegador adjunta porque la llamada es al mismo origen.
+ */
+export function useApi() {
   const config = useRuntimeConfig()
-  const apiBase = config.public.apiBase
+  const baseURL = config.public.apiBase
 
-  // Cookies de sesión (compatibles con SSR)
-  const token = useCookie<string | null>('auth_token', {
-    maxAge: 3600, // 1 hora (alineado con la vida del access token de Cognito)
-    path: '/',
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production'
-  })
-
-  const refreshTokenCookie = useCookie<string | null>('auth_refresh_token', {
-    maxAge: 60 * 60 * 24 * 30, // 30 días
-    path: '/',
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production'
-  })
-
-  const userEmailCookie = useCookie<string | null>('auth_user_email', {
-    maxAge: 60 * 60 * 24 * 30, // 30 días
-    path: '/',
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production'
-  })
-
-  const idTokenCookie = useCookie<string | null>('auth_id_token', {
-    maxAge: 3600,
-    path: '/',
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production'
-  })
-
-  const userFirstNameCookie = useCookie<string | null>('auth_user_first_name', {
-    maxAge: 60 * 60 * 24 * 30,
-    path: '/',
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production'
-  })
-
-  const userLastNameCookie = useCookie<string | null>('auth_user_last_name', {
-    maxAge: 60 * 60 * 24 * 30,
-    path: '/',
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production'
-  })
-
-  const user = useState<UserProfile | null>('auth_user', () => null)
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-
-  const isAuthenticated = computed(() => !!token.value)
-
-  const handleError = (err: any): string => formatAuthError(err)
-
-  // 1. Login
-  const login = async (email: string, password: string) => {
-    loading.value = true
-    error.value = null
+  async function api<T>(path: string, options: FetchOptions = {}, retry = true): Promise<T> {
     try {
-      const response = await $fetch<any>(`${apiBase}/auth/login`, {
-        method: 'POST',
-        body: { email, password }
-      })
-
-      token.value = response.accessToken
-      refreshTokenCookie.value = response.refreshToken
-      idTokenCookie.value = response.idToken || null
-      userEmailCookie.value = email
-      const fromId = namesFromClaims(decodeJwtPayload(response.idToken))
-      if (fromId.firstName) userFirstNameCookie.value = fromId.firstName
-      if (fromId.lastName) userLastNameCookie.value = fromId.lastName
-
-      await fetchProfile()
-      return { success: true }
-    } catch (err: any) {
-      const errStr = handleError(err)
-      error.value = errStr
-      return { success: false, error: errStr }
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // 2. Registro
-  const signUp = async (data: {
-    email: string
-    password: string
-    phoneNumber: string
-    firstName: string
-    lastName: string
-    acceptedTerms: boolean
-  }) => {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await $fetch<any>(`${apiBase}/auth/signup`, {
-        method: 'POST',
-        body: data
-      })
-      return { success: true, message: response.message }
-    } catch (err: any) {
-      const errStr = handleError(err)
-      error.value = errStr
-      return { success: false, error: errStr }
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // 3. Confirmación de registro
-  const confirmSignUp = async (email: string, code: string) => {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await $fetch<any>(`${apiBase}/auth/confirm`, {
-        method: 'POST',
-        body: { email, code }
-      })
-      return { success: true, message: response.message }
-    } catch (err: any) {
-      const errStr = handleError(err)
-      error.value = errStr
-      return { success: false, error: errStr }
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // 4. Reenvío del código de confirmación
-  const resendCode = async (email: string) => {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await $fetch<any>(`${apiBase}/auth/resend-code`, {
-        method: 'POST',
-        body: { email }
-      })
-      return { success: true, message: response.message }
-    } catch (err: any) {
-      const errStr = handleError(err)
-      error.value = errStr
-      return { success: false, error: errStr }
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // 5. Solicitud de recuperación de contraseña
-  const forgotPassword = async (email: string) => {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await $fetch<any>(`${apiBase}/auth/forgot-password`, {
-        method: 'POST',
-        body: { email }
-      })
-      return { success: true, message: response.message }
-    } catch (err: any) {
-      const errStr = handleError(err)
-      error.value = errStr
-      return { success: false, error: errStr }
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // 6. Confirmación del restablecimiento de contraseña
-  const confirmForgotPassword = async (data: {
-    email: string
-    code: string
-    newPassword: string
-  }) => {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await $fetch<any>(`${apiBase}/auth/confirm-password`, {
-        method: 'POST',
-        body: data
-      })
-      return { success: true, message: response.message }
-    } catch (err: any) {
-      const errStr = handleError(err)
-      error.value = errStr
-      return { success: false, error: errStr }
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // 7. Perfil
-  const fetchProfile = async () => {
-    if (!token.value) return
-    try {
-      const response = await $fetch<any>(`${apiBase}/auth/profile`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token.value}`
-        }
-      })
-      const fromId = namesFromClaims(decodeJwtPayload(idTokenCookie.value))
-      const fromAccess = namesFromClaims(decodeJwtPayload(token.value))
-      const profile = response.user || {}
-      const firstName =
-        profile.firstName || fromId.firstName || fromAccess.firstName || userFirstNameCookie.value || ''
-      const lastName =
-        profile.lastName || fromId.lastName || fromAccess.lastName || userLastNameCookie.value || ''
-      user.value = {
-        ...profile,
-        email: profile.email || fromId.email || fromAccess.email || userEmailCookie.value || '',
-        firstName,
-        lastName,
-        name: profile.name || fromId.name || [firstName, lastName].filter(Boolean).join(' ')
+      return (await $fetch(path, { ...options, baseURL, credentials: 'include' })) as T
+    } catch (err: unknown) {
+      const status = typeof err === 'object' && err && 'status' in err ? Number(err.status) : 0
+      const kind = classifyHttp(status)
+      if (kind === 'refresh' && retry && !path.startsWith('/auth/')) {
+        await refreshOnce(baseURL)
+        return api<T>(path, options, false)
       }
-      if (firstName) userFirstNameCookie.value = firstName
-      if (lastName) userLastNameCookie.value = lastName
-      if (user.value.email) userEmailCookie.value = user.value.email
-    } catch (err) {
-      // Si falla, la sesión es inválida o está bloqueada
-      await logout()
-    }
-  }
-
-  // 8. Refresco de sesión
-  const refreshSession = async (): Promise<boolean> => {
-    if (!refreshTokenCookie.value || !userEmailCookie.value) {
-      await logout()
-      return false
-    }
-
-    try {
-      const response = await $fetch<any>(`${apiBase}/auth/refresh`, {
-        method: 'POST',
-        body: {
-          email: userEmailCookie.value,
-          refreshToken: refreshTokenCookie.value
-        }
-      })
-      token.value = response.accessToken
-      if (response.idToken) idTokenCookie.value = response.idToken
-      return true
-    } catch (err) {
-      console.error('Session refresh failed:', err)
-      await logout()
-      return false
-    }
-  }
-
-  // 9. Cierre de sesión
-  const logout = async () => {
-    if (token.value) {
-      try {
-        await $fetch<any>(`${apiBase}/auth/logout`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token.value}`
-          }
-        })
-      } catch (err) {
-        console.error('Error during backend global logout:', err)
-      }
-    }
-    // Limpia cookies y estado local
-    token.value = null
-    refreshTokenCookie.value = null
-    idTokenCookie.value = null
-    userEmailCookie.value = null
-    userFirstNameCookie.value = null
-    userLastNameCookie.value = null
-    user.value = null
-
-    navigateTo('/login')
-  }
-
-  // 10. Envoltorio de fetch con token automático y reintento único ante 401
-  const apiFetch = async <T = any>(request: string, options: any = {}): Promise<T> => {
-    const headers = { ...options.headers }
-    if (token.value) {
-      headers['Authorization'] = `Bearer ${token.value}`
-    }
-
-    try {
-      return await $fetch<T>(request, {
-        ...options,
-        headers
-      })
-    } catch (err: any) {
-      // Sesión expirada: intenta refrescar una sola vez
-      if (err.status === 401 && refreshTokenCookie.value && userEmailCookie.value) {
-        const refreshed = await refreshSession()
-        if (refreshed && token.value) {
-          const retryHeaders = { ...options.headers }
-          retryHeaders['Authorization'] = `Bearer ${token.value}`
-          return await $fetch<T>(request, {
-            ...options,
-            headers: retryHeaders
-          })
-        }
-      }
-
-      // Si sigue sin autorizar o el refresco falló, cierra sesión y propaga
-      if (err.status === 401) {
-        await logout()
-        const feedbackMsg = err.data?.message || 'Su cuenta ha sido bloqueada o la sesión ha expirado.'
-        alert(feedbackMsg)
-      }
-
       throw err
     }
   }
 
-  const isAdmin = computed(() => user.value?.groups?.includes('<ROL_B>') || false)
-
   return {
-    token,
-    user,
-    loading,
-    error,
-    isAuthenticated,
-    isAdmin,
-    login,
-    signUp,
-    confirmSignUp,
-    resendCode,
-    forgotPassword,
-    confirmForgotPassword,
-    fetchProfile,
-    refreshSession,
-    logout,
-    apiFetch
+    api,
+    login: (body: { email: string; password: string }) =>
+      api<SessionBody>('/auth/login', { method: 'POST', body }),
+    challenge: (body: { code?: string; newPassword?: string }) =>
+      api<SessionBody>('/auth/challenge', { method: 'POST', body }),
+    mfaSetup: (body: { code: string }) =>
+      api<SessionBody>('/auth/challenge/mfa-setup', { method: 'POST', body }),
+    me: () => api<Me>('/auth/me'),
+    logout: () => api<void>('/auth/logout', { method: 'POST' }),
   }
 }
 ```
 
-### 10.3 Explicación método por método
-
-| Miembro | Firma | Qué hace |
-|---|---|---|
-| `decodeJwtPayload` | `(jwt) => Record<string,unknown> \| null` | Helper privado. Decodifica **solo el payload** de un JWT con `atob`, convirtiendo base64url a base64 estándar (`-`→`+`, `_`→`/`). **No verifica la firma** y no debe usarse para decisiones de seguridad: solo para leer claims de presentación. Devuelve `null` ante cualquier error. |
-| `namesFromClaims` | `(claims) => {firstName,lastName,email,name}` | Helper privado. Normaliza los claims de Cognito a nombre y apellido. Prioriza `given_name`/`family_name`; si no están, parte `name` por espacios; para el email cae en `email` y, si falta, en `cognito:username` cuando contiene `@`. |
-| `token` | `CookieRef<string\|null>` | Cookie `auth_token`. El access token. `isAuthenticated` se deriva solo de su presencia. |
-| `user` | `Ref<UserProfile\|null>` vía `useState('auth_user')` | **Estado global compartido.** `useState` garantiza que todos los componentes vean la misma instancia. |
-| `loading` | `Ref<boolean>` | 🟥 Creado con `ref()`, **no** con `useState`: **cada llamada a `useAuth()` crea su propio `loading`**. Dos componentes que llamen al composable no comparten el indicador. Ver corrección 18.8. |
-| `error` | `Ref<string\|null>` | Mismo problema que `loading`. |
-| `isAuthenticated` | `ComputedRef<boolean>` | `!!token.value`. Solo mira si **existe** la cookie, no si el token es válido ni si expiró. |
-| `isAdmin` | `ComputedRef<boolean>` | `user.groups.includes('<ROL_B>')`. ⚠️ Es `false` mientras el perfil no esté cargado. **No se usa en ninguna parte del repositorio original.** |
-| `login(email, password)` | `Promise<{success, error?}>` | `POST /auth/login`. Guarda los tres tokens y el email en cookies, extrae nombre y apellido del `idToken` y llama a `fetchProfile()`. **No navega**: la página decide a dónde ir. |
-| `signUp(data)` | `Promise<{success, message?, error?}>` | `POST /auth/signup`. No inicia sesión: deja al usuario en el paso de confirmación. |
-| `confirmSignUp(email, code)` | `Promise<{success, message?, error?}>` | `POST /auth/confirm`. Valida el OTP. |
-| `resendCode(email)` | `Promise<{success, message?, error?}>` | `POST /auth/resend-code`. |
-| `forgotPassword(email)` | `Promise<{success, message?, error?}>` | `POST /auth/forgot-password`. Dispara el envío del código. |
-| `confirmForgotPassword({email, code, newPassword})` | `Promise<{success, message?, error?}>` | `POST /auth/confirm-password`. |
-| `fetchProfile()` | `Promise<void>` | `GET /auth/profile` con Bearer. **Fusiona tres fuentes** en este orden de prioridad: respuesta del backend → claims del `idToken` → claims del `accessToken` → cookies de respaldo. Reescribe las cookies con lo que resuelva. **Ante cualquier error hace `logout()`**: asume que el fallo significa sesión inválida o cuenta bloqueada. |
-| `refreshSession()` | `Promise<boolean>` | `POST /auth/refresh` con `{email, refreshToken}`. Actualiza `auth_token` y, si viene, `auth_id_token`. **El backend no devuelve un refresh token nuevo**, así que `auth_refresh_token` no se rota: su validez es la que fije Cognito. Ante fallo, `logout()` y `false`. |
-| `logout()` | `Promise<void>` | Intenta `POST /auth/logout` (revocación global en Cognito), ignora el fallo, **borra las seis cookies**, vacía `user` y navega a `/login`. |
-| `apiFetch<T>(url, options)` | `Promise<T>` | Ver 10.5. |
-
-**Nota sobre `handleError`:** es un alias de una línea de `formatAuthError`. Existe como punto de extensión por si quieres meter telemetría; hoy no aporta nada.
-
-### 10.4 Tabla completa de cookies
-
-🟩 **NÚCLEO REUTILIZABLE.** Las seis cookies comparten `path: '/'`, `sameSite: 'lax'` y `secure: process.env.NODE_ENV === 'production'`.
-
-| Nombre | Contenido | `maxAge` | Por qué existe |
-|---|---|---|---|
-| `auth_token` | Access token de Cognito (JWT). | `3600` (1 h) | La credencial que se envía en `Authorization: Bearer`. Su `maxAge` iguala la vida que Cognito da al token. |
-| `auth_refresh_token` | Refresh token de Cognito (opaco). | `2592000` (30 d) | Permite obtener un access token nuevo sin volver a pedir contraseña. |
-| `auth_id_token` | ID token de Cognito (JWT con los claims de identidad). | `3600` (1 h) | **No se envía al API.** Solo se decodifica localmente para extraer `given_name`, `family_name`, `name` y `email`. |
-| `auth_user_email` | Email en texto plano. | `2592000` (30 d) | **Imprescindible para el refresco:** el endpoint `POST /auth/refresh` exige `{email, refreshToken}` porque el backend necesita calcular el `SECRET_HASH` de Cognito. Sin esta cookie no se puede refrescar. |
-| `auth_user_first_name` | Nombre. | `2592000` (30 d) | Caché de presentación: evita que el avatar y el nombre parpadeen mientras se carga el perfil. |
-| `auth_user_last_name` | Apellido. | `2592000` (30 d) | Ídem. |
-
-**Observaciones críticas:**
-
-1. 🟥 **Ninguna es `httpOnly`.** No puede serlo: las escribe JavaScript. Significa que **cualquier XSS roba la sesión completa**. Es una característica inherente a este diseño; mitígala con una CSP estricta y sanitizando todo HTML dinámico. La alternativa real (cookie `httpOnly` emitida por el backend) exigiría `credentials: 'include'`, CORS con origen explícito y cambios en el backend.
-2. 🟥 **`secure: process.env.NODE_ENV === 'production'`** funciona porque Vite sustituye `process.env.NODE_ENV` en el bundle, pero es frágil y confuso. Usa `!import.meta.dev`, que es la forma idiomática de Nuxt.
-3. **`maxAge` no es la validez real del token.** Es cuándo el navegador borra la cookie. Un access token puede expirar antes (reloj desfasado) o la cookie sobrevivir a un token ya revocado. Por eso el middleware decodifica el `exp` en lugar de fiarse de la existencia de la cookie.
-4. **`sameSite: 'lax'`** bloquea el envío en peticiones cross-site de terceros pero permite la navegación de primer nivel. Correcto para este caso.
-
-### 10.5 El flujo de `apiFetch` con reintento único
-
-```
-apiFetch(url, options)
-   │
-   ├─ clona options.headers
-   ├─ si hay token → headers.Authorization = `Bearer ${token}`
-   │
-   ├─ $fetch(url, {...options, headers})
-   │     └─ 2xx → RETORNA el cuerpo tipado
-   │
-   └─ catch (err)
-         │
-         ├─ ¿err.status === 401 Y hay refresh token Y hay email?
-         │     │
-         │     ├─ SÍ → refreshSession()
-         │     │        ├─ ok y hay token nuevo
-         │     │        │    └─ reconstruye headers DESDE options.headers (no desde los ya usados)
-         │     │        │       y repite $fetch  →  RETORNA o lanza
-         │     │        └─ falla → refreshSession ya hizo logout()
-         │     │
-         │     └─ NO → sigue
-         │
-         ├─ ¿err.status === 401 (todavía)?
-         │     └─ logout()  +  alert(err.data?.message ?? mensaje por defecto)
-         │
-         └─ throw err      ← SIEMPRE propaga, incluso tras el logout
-```
-
-**Detalles que importan:**
-
-- **El reintento es exactamente uno.** El segundo `$fetch` no está en un `try`, así que si vuelve a dar 401 la excepción sale directa sin disparar otro ciclo. No hay bucle infinito posible.
-- **Los headers del reintento se reconstruyen desde `options.headers`**, no desde la variable `headers` ya mutada. Es correcto: evita arrastrar el `Authorization` caducado.
-- **Siempre se hace `throw`.** La capa llamante recibe el error aunque se haya cerrado sesión. Las páginas deben manejarlo.
-- 🟥 **`alert()` es inaceptable en producción.** Bloquea el hilo, no se puede estilar y es imposible de testear. Sustitúyelo por el `ToastService` de PrimeVue. Ver corrección 18.6.
-- 🟥 **No hay deduplicación de refrescos.** Si cinco llamadas fallan con 401 a la vez, se disparan cinco `POST /auth/refresh` en paralelo. Con Cognito puede provocar invalidaciones cruzadas. La corrección es memorizar la promesa en vuelo:
-  ```ts
-  let refreshing: Promise<boolean> | null = null
-  const refreshSession = (): Promise<boolean> => {
-    if (!refreshing) {
-      refreshing = doRefresh().finally(() => { refreshing = null })
-    }
-    return refreshing
-  }
-  ```
-- **No se manejan 403 ni 429.** Un 403 (sin permiso) se propaga crudo. Decide en tu app si merece tratamiento central.
-
-### 10.6 `middleware/auth.ts` — refresco preventivo
-
-🟩 **NÚCLEO REUTILIZABLE.** Transcripción literal.
-
-Archivo: `middleware/auth.ts`
 
 ```ts
-function isTokenExpired(jwtToken: string): boolean {
+// middleware/auth.ts
+import { classifyHttp } from '~/utils/http'
+
+export default defineNuxtRouteMiddleware(async (to) => {
+  const api = useApi()
   try {
-    const payloadBase64 = jwtToken.split('.')[1]
-    const decodedJson = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'))
-    const payload = JSON.parse(decodedJson)
-    const bufferSeconds = 300 // margen de 5 minutos para refrescar antes de la expiración real
-    return (payload.exp - bufferSeconds) < (Date.now() / 1000)
-  } catch (err) {
-    return true
-  }
-}
-
-export default defineNuxtRouteMiddleware(async (to, from) => {
-  const { token, user, fetchProfile, refreshSession } = useAuth()
-
-  // Sin token, al login
-  if (!token.value) {
-    return navigateTo('/login')
-  }
-
-  // Refresco preventivo: si el access token expiró o está por expirar, renuévalo
-  if (isTokenExpired(token.value)) {
-    const refreshed = await refreshSession()
-    if (!refreshed || !token.value) {
-      return navigateTo('/login')
-    }
-  }
-
-  // Token presente pero perfil vacío (recarga de página): cárgalo
-  if (!user.value) {
-    await fetchProfile()
-
-    // Si la carga falló y limpió el token, al login
-    if (!token.value) {
-      return navigateTo('/login')
-    }
+    await api.me()
+  } catch (err: unknown) {
+    const status = typeof err === 'object' && err && 'status' in err ? Number(err.status) : 0
+    const motivo = classifyHttp(status) === 'forbidden' ? 'bloqueado' : classifyHttp(status) === 'unavailable' ? 'no-disponible' : 'sesion'
+    return navigateTo({ path: '/login', query: { motivo, redirect: to.fullPath } })
   }
 })
 ```
 
-**Por qué el margen de 5 minutos:** sin él, un token que expira en 10 segundos pasaría el control, la navegación ocurriría y la primera llamada de datos de la página fallaría con 401, disparando el camino de reintento. Refrescar antes convierte un fallo visible en una renovación silenciosa. El coste es una llamada `POST /auth/refresh` extra en los últimos 5 minutos de vida del token.
-
-**Por qué `catch { return true }`:** si el token está corrupto o no es un JWT, se trata como expirado. Eso fuerza un refresco que, al fallar, hace `logout()`. Es el comportamiento seguro.
-
-**Dónde se ejecuta:** en modo SPA, siempre en el navegador. En la primera carga, después de los plugins.
-
-### 10.7 Los otros tres middleware
-
-Archivo: `middleware/guest.ts` — 🟩 **NÚCLEO**
 
 ```ts
-export default defineNuxtRouteMiddleware((to, from) => {
-  const { token } = useAuth()
-
-  // Si ya hay sesión, al dashboard
-  if (token.value) {
-    return navigateTo('/')
-  }
-})
-```
-
-Archivo: `middleware/<rol-a>.ts` — 🟩 **NÚCLEO** (nombre del archivo en minúsculas, sin acentos)
-
-```ts
+// middleware/guest.ts
 export default defineNuxtRouteMiddleware(async () => {
-  const { user, token, fetchProfile } = useAuth()
-
-  if (token.value && !user.value) {
-    await fetchProfile()
+  const api = useApi()
+  try {
+    await api.me()
+  } catch {
+    return
   }
-
-  const groups = user.value?.groups || []
-  const allowed = groups.includes('<ROL_A>') || groups.includes('<ROL_B>')
-
-  if (!allowed) {
-    return navigateTo('/')
-  }
+  return navigateTo('/')
 })
 ```
 
-Nota: `<ROL_B>` (el grupo de administración) está incluido deliberadamente, de modo que un administrador puede entrar en todo lo del rol operativo.
-
-Archivo: `middleware/<rol-b>.ts` — 🟥 **DEUDA, versión original**
 
 ```ts
-export default defineNuxtRouteMiddleware((to, from) => {
-  const { user } = useAuth()
-
-  // Guarda de ruta solo para administradores
-  if (!user.value || !user.value.groups?.includes('<ROL_B>')) {
-    return navigateTo('/')
-  }
-})
-```
-
-**Dos problemas:** (a) **no está referenciado por ninguna página** del repositorio, es código muerto; (b) a diferencia del middleware de `<ROL_A>`, **no hidrata el perfil**: si `user` es `null` (recarga directa de una URL de administración), rechaza incluso a un administrador legítimo. Solo funciona encadenado tras `'auth'`. Versión corregida:
-
-Archivo: `middleware/<rol-b>.ts` — versión corregida
-
-```ts
-export default defineNuxtRouteMiddleware(async () => {
-  const { user, token, fetchProfile } = useAuth()
-
-  if (token.value && !user.value) {
-    await fetchProfile()
-  }
-
-  if (!user.value?.groups?.includes('<ROL_B>')) {
-    return navigateTo('/')
-  }
-})
-```
-
-### 10.8 `plugins/auth.ts`
-
-🟩 **NÚCLEO REUTILIZABLE.** Transcripción literal.
-
-Archivo: `plugins/auth.ts`
-
-```ts
-export default defineNuxtPlugin(async (nuxtApp) => {
-  const { token, user, fetchProfile } = useAuth()
-
-  // Al arrancar, si hay token pero no hay perfil en memoria,
-  // hidrátalo globalmente para que esté listo en cualquier layout o componente.
-  if (token.value && !user.value) {
-    try {
-      await fetchProfile()
-    } catch (err) {
-      console.error('Failed to restore user profile on app startup:', err)
-    }
-  }
-})
-```
-
-**Por qué existe si el middleware ya hace lo mismo:** el middleware solo corre al navegar a una ruta que lo declara. El plugin corre **siempre**, incluso en rutas públicas. Gracias a él, el `AppTopbar` tiene nombre y rol desde el primer render, y una página sin middleware (por descuido) no queda sin perfil.
-
-**Es un plugin universal, no `.client`.** Con `ssr: false` da igual: solo existe el cliente.
-
-**El plugin es `async`, lo que retrasa la primera pintura** hasta que `GET /auth/profile` responde. En una red lenta son cientos de milisegundos de pantalla en blanco. Si te importa, quita el `await` y deja que el perfil llegue de forma asíncrona (los componentes ya son reactivos a `user`).
-
-### 10.9 Contrato EXACTO esperado del backend
-
-🟩 **NÚCLEO.** Verificado contra el controlador y el servicio reales del backend NestJS. Esto es exactamente lo que tu backend debe implementar.
-
-| # | Método | Ruta | Auth | Body de petición | Respuesta 2xx | Consumido por |
-|---|---|---|---|---|---|---|
-| 1 | `GET` | `/auth/terms-link` | — | — | `200 { url: string }` | `pages/signup.vue` en `onMounted` |
-| 2 | `POST` | `/auth/login` | — | `{ email: string, password: string }` | `200 { accessToken, idToken, refreshToken, expiresIn, tokenType }` | `useAuth().login` |
-| 3 | `POST` | `/auth/signup` | — | `{ email, password, phoneNumber, firstName, lastName, acceptedTerms }` | `201 { message, userSub, userConfirmed }` | `useAuth().signUp` |
-| 4 | `POST` | `/auth/confirm` | — | `{ email: string, code: string }` | `200 { message }` | `useAuth().confirmSignUp` |
-| 5 | `POST` | `/auth/resend-code` | — | `{ email: string }` | `200 { message }` | `useAuth().resendCode` |
-| 6 | `POST` | `/auth/forgot-password` | — | `{ email: string }` | `200 { message }` | `useAuth().forgotPassword` |
-| 7 | `POST` | `/auth/confirm-password` | — | `{ email, code, newPassword }` | `200 { message }` | `useAuth().confirmForgotPassword` |
-| 8 | `POST` | `/auth/refresh` | — | `{ email: string, refreshToken: string }` | `200 { accessToken, idToken, expiresIn, tokenType }` | `useAuth().refreshSession` |
-| 9 | `POST` | `/auth/logout` | Bearer | — | `200 { message }` | `useAuth().logout` |
-| 10 | `GET` | `/auth/profile` | Bearer | — | `200 { message, user: { sub, email, username, groups: string[], firstName, lastName, name? } }` | `useAuth().fetchProfile` |
-
-**Detalles no obvios del contrato:**
-
-1. **`POST /auth/refresh` exige el email**, no solo el refresh token. Con Cognito y un App Client con secreto, el flujo `REFRESH_TOKEN_AUTH` requiere un `SECRET_HASH` calculado sobre el nombre de usuario real. **Esta es la razón de la cookie `auth_user_email`.**
-2. **`/auth/refresh` NO devuelve `refreshToken`.** El refresh token original sigue siendo válido hasta que Cognito lo caduca. El cliente no lo rota.
-3. **`/auth/profile` envuelve el perfil en una clave `user`.** El composable lee `response.user`, no `response`. Si tu backend devuelve el perfil plano, `fetchProfile` leerá `{}` y perderá los grupos: el RBAC dejará de funcionar silenciosamente.
-4. **`groups` viene del claim `cognito:groups`** del access token, propagado por el guard. Es el único dato del que depende todo el RBAC de cliente.
-5. **Las respuestas de error deben traer `{ message: string | string[] }`.** `formatAuthError` lo busca en `err.data.message` y une los arrays con espacios. Un backend NestJS con `ValidationPipe` ya devuelve `message` como array de strings.
-6. **Códigos relevantes:** `401` para credenciales inválidas o token caducado (es el único que dispara el reintento de `apiFetch`), `403` sin permiso, `4xx`/`5xx` para el resto.
-7. **CORS:** el backend debe permitir el origen del frontend con `credentials: true`. Ver sección 21.4.
-
-### 10.10 `utils/formatAuthError.ts`
-
-🟩 **NÚCLEO REUTILIZABLE.** Transcripción literal.
-
-Archivo: `utils/formatAuthError.ts`
-
-```ts
-export type AuthFailure = {
-  status?: number
-  statusCode?: number
-  name?: string
-  message?: string
-  data?: { message?: string | string[] }
-  cause?: { name?: string; message?: string }
-}
-
-function pickStatus(err: AuthFailure): number | undefined {
-  const raw = err.status ?? err.statusCode
-  return typeof raw === 'number' && raw > 0 ? raw : undefined
-}
-
-function pickServerMessage(err: AuthFailure): string | undefined {
-  const raw = err.data?.message
-  if (Array.isArray(raw) && raw.length) return raw.join(' ')
-  if (typeof raw === 'string' && raw.trim()) return raw.trim()
-  return undefined
-}
-
-function isOffline(): boolean {
-  return typeof navigator !== 'undefined' && navigator.onLine === false
-}
+// middleware/role.ts
+import type { Me } from '~/utils/http'
 
 /**
- * Convierte el fallo de $fetch/ofetch en un texto que el usuario puede actuar.
- * Un 500 sin CORS llega como TypeError/"Failed to fetch": no es "sin internet".
+ * Plantilla. El nombre del archivo es el grupo en minúsculas que la ruta exige,
+ * o se generaliza leyendo `to.meta.role`. Aquí se muestra el caso de un rol concreto
+ * sustituyendo `<ROL_A>` por su forma en minúsculas al crear el archivo.
  */
-export function formatAuthError(err: AuthFailure): string {
-  const status = pickStatus(err)
-  const serverMessage = pickServerMessage(err)
-  const raw = [err.message, err.cause?.message].filter(Boolean).join(' — ')
-
-  if (status) {
-    const prefix = `Error HTTP ${status}`
-    if (serverMessage) return `${prefix}: ${serverMessage}`
-    if (status === 401) return `${prefix}: credenciales inválidas o cuenta no confirmada.`
-    if (status === 403) return `${prefix}: no tienes permiso para esta operación.`
-    if (status >= 500) {
-      return `${prefix}: la API falló al procesar el login.${raw ? ` Detalle: ${raw}` : ''}`
-    }
-    return serverMessage ? `${prefix}: ${serverMessage}` : `${prefix}.`
+export default defineNuxtRouteMiddleware(async () => {
+  const api = useApi()
+  const me: Me = await api.me()
+  const required = '<ROL_A>'
+  if (!me.groups.includes(required)) {
+    return navigateTo('/')
   }
-
-  if (isOffline()) {
-    return 'Sin conexión a internet. Revisa la red e inténtalo de nuevo.'
-  }
-
-  const blob = `${err.name ?? ''} ${raw}`.toLowerCase()
-  if (
-    blob.includes('failed to fetch') ||
-    blob.includes('networkerror') ||
-    blob.includes('cors') ||
-    blob.includes('access-control-allow-origin') ||
-    err.name === 'TypeError'
-  ) {
-    return (
-      'La API no respondió de forma usable (a menudo un 500 al arrancar, o CORS). ' +
-      `Detalle: ${raw || err.name || 'sin cuerpo de respuesta'}.`
-    )
-  }
-
-  return serverMessage || raw || 'Ocurrió un error inesperado. Inténtalo de nuevo.'
-}
-```
-
-**El problema que resuelve, y por qué merece su propio archivo y sus propios tests:** cuando el backend devuelve 500 **sin** cabeceras CORS, el navegador bloquea la respuesta y `fetch` rechaza con un `TypeError: Failed to fetch` **indistinguible de estar sin internet**. La implementación ingenua («si falla el fetch, es que no hay red») manda al usuario a reiniciar el router mientras el verdadero problema es que la API no arranca. Esta función distingue los dos casos y, en el ambiguo, dice explícitamente las dos causas probables.
-
-**Orden de evaluación:** (1) ¿hay código HTTP? → mensaje del servidor o texto por estado; (2) ¿`navigator.onLine === false`? → sin conexión; (3) ¿la firma del error huele a CORS/fetch fallido? → mensaje combinado; (4) cualquier otra cosa.
-
-Archivo: `utils/formatAuthError.test.ts` — 🟩 **NÚCLEO**. Transcripción literal.
-
-```ts
-import assert from 'node:assert/strict'
-import { test } from 'node:test'
-import { formatAuthError } from './formatAuthError.ts'
-
-test('muestra el mensaje del servidor con el status HTTP', () => {
-  const text = formatAuthError({
-    status: 503,
-    data: {
-      message:
-        'La API no pudo arrancar: AccessDeniedException en /<app>/backend/<stage>/db_password'
-    }
-  })
-  assert.match(text, /Error HTTP 503/)
-  assert.match(text, /AccessDeniedException/)
-  assert.doesNotMatch(text, /conexión a internet/)
-})
-
-test('401 usa el mensaje de negocio si viene', () => {
-  const text = formatAuthError({
-    status: 401,
-    data: { message: 'Credenciales inválidas. Correo o contraseña incorrectos.' }
-  })
-  assert.equal(
-    text,
-    'Error HTTP 401: Credenciales inválidas. Correo o contraseña incorrectos.'
-  )
-})
-
-test('fetch fallido por CORS/500 no se disfraza de internet', () => {
-  const text = formatAuthError({
-    name: 'TypeError',
-    message: 'Failed to fetch'
-  })
-  assert.match(text, /API no respondió/)
-  assert.match(text, /Failed to fetch/)
-  assert.doesNotMatch(text, /verifica tu conexión a internet/)
-})
-
-test('500 sin cuerpo sigue siendo HTTP 500', () => {
-  const text = formatAuthError({ status: 500, message: 'FetchError' })
-  assert.match(text, /Error HTTP 500/)
-  assert.match(text, /API falló/)
 })
 ```
 
-Se ejecuta con `pnpm test:auth-error`. No necesita Vitest ni Jest: usa el runner nativo de Node y el stripping de tipos nativo (`--experimental-strip-types`), disponible desde Node 22. **Es el único test del repositorio.**
 
-### 10.11 `pages/login.vue` completo
+El middleware `role.ts` es la plantilla: el dominio crea `middleware/<rol>.ts` (el nombre del archivo es el que se pone en `definePageMeta`) y compara contra el grupo real, que es `<ROL_A>` o `<ROL_B>` tal como están en Cognito, no una versión en minúsculas inventada. El original comparaba grupos pasados a minúsculas y el backend no: se comparan como llegan en `me.groups`.
 
-🟩 **NÚCLEO REUTILIZABLE.** Transcripción literal. Una sola página con **tres estados**: `login`, `forgot` y `reset`.
+`auth.ts` y `guest.ts` están referenciados por las páginas del esqueleto (`pages/index.vue` con `middleware: 'auth'`, `pages/login.vue` con `middleware: 'guest'`) y entraron en el typecheck.
 
-Archivo: `pages/login.vue`
+### 10.5 Contrato que el cliente usa
 
-```vue
-<template>
-  <div class="w-full">
-    <div class="text-center mb-8">
-      <div class="inline-flex flex-col items-center gap-3 mb-2">
-        <<Prefijo>Mark :size="56" />
-        <p class="text-xs uppercase tracking-[0.3em] text-<prefijo>-muted font-semibold">{{ brandSuffix }}</p>
-      </div>
-      <h1 class="text-2xl font-bold tracking-tight mt-4">
-        {{ heading }}
-      </h1>
-      <p class="text-<prefijo>-muted text-sm mt-1">{{ subheading }}</p>
-    </div>
+Rutas bajo `/api`. Cuerpo de error siempre `{ statusCode, message, requestId, timestamp, path }`. El `requestId` se muestra en el mensaje de error inesperado para que soporte pueda buscar la línea de log.
 
-    <div class="<prefijo>-card p-8 shadow-2xl">
-      <div class="space-y-3 mb-4" v-if="error || successMessage">
-        <Message v-if="error" severity="error" :closable="false">{{ error }}</Message>
-        <Message v-if="successMessage" severity="success" :closable="false">{{ successMessage }}</Message>
-      </div>
+| Método y ruta | Body | Respuesta |
+|---|---|---|
+| `POST /auth/login` | `{ email, password }` | `{ status: "authenticated", expiresAt }` o `{ status: "challenge", challenge }` |
+| `POST /auth/challenge` | `{ code }` o `{ newPassword }` | La misma unión |
+| `POST /auth/challenge/mfa-setup` | `{}` y luego `{ code }` | `{ secretCode, otpauthUri }` y luego la unión de sesión |
+| `POST /auth/refresh` | vacío | 200 vacío de tokens. Las cookies nuevas vienen en `Set-Cookie` |
+| `POST /auth/logout` | vacío | `{ message }` |
+| `POST /auth/logout-all` | vacío | `{ message }` |
+| `GET /auth/me` | — | `Me` (10.1) |
+| `GET /auth/terms-link` | — | `{ url }` |
+| `POST /auth/signup` | email, password, firstName, lastName, acceptedTerms, phone opcional | `{ message }` |
+| `POST /auth/confirm` | `{ email, code }` | `{ message }` |
+| `POST /auth/resend-code` | `{ email }` | `{ message }` |
+| `POST /auth/forgot-password` | `{ email }` | `{ message }` |
+| `POST /auth/confirm-password` | `{ email, code, newPassword }` | `{ message }` |
 
-      <form v-if="viewState === 'login'" @submit.prevent="handleLogin" class="space-y-5">
-        <div class="space-y-1.5">
-          <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-<prefijo>-muted">
-            Correo electrónico
-          </label>
-          <IconField>
-            <InputIcon class="pi pi-envelope" />
-            <InputText id="email" v-model="email" type="email" required placeholder="<correo-ejemplo>" class="w-full" />
-          </IconField>
-        </div>
+La contraseña, en signup y en el cambio, es la misma regla que Cognito: 12 a 128 caracteres, mayúscula, minúscula, número y un carácter que no sea letra ni número. Se valida en el cliente para no dar un rodeo, y el backend la vuelve a validar.
 
-        <div class="space-y-1.5">
-          <div class="flex justify-between items-center">
-            <label for="password" class="block text-xs font-semibold uppercase tracking-wider text-<prefijo>-muted">
-              Contraseña
-            </label>
-            <button type="button" class="text-xs text-[var(--<prefijo>-accent)] hover:opacity-80" @click="changeState('forgot')">
-              ¿Olvidaste tu contraseña?
-            </button>
-          </div>
-          <IconField>
-            <InputIcon class="pi pi-lock" />
-            <Password id="password" v-model="password" required placeholder="••••••••" :feedback="false" toggle-mask class="w-full" input-class="w-full" />
-          </IconField>
-        </div>
-
-        <Button type="submit" label="Ingresar" icon="pi pi-sign-in" class="w-full" :loading="loading" />
-      </form>
-
-      <form v-else-if="viewState === 'forgot'" @submit.prevent="handleForgotPassword" class="space-y-5">
-        <div class="space-y-1.5">
-          <label for="forgotEmail" class="block text-xs font-semibold uppercase tracking-wider text-<prefijo>-muted">
-            Correo electrónico
-          </label>
-          <IconField>
-            <InputIcon class="pi pi-envelope" />
-            <InputText id="forgotEmail" v-model="email" type="email" required placeholder="<correo-ejemplo>" class="w-full" />
-          </IconField>
-        </div>
-        <Button type="submit" label="Enviar código de recuperación" class="w-full" :loading="loading" />
-        <div class="text-center">
-          <button type="button" class="text-xs text-<prefijo>-muted hover:text-[var(--<prefijo>-text)]" @click="changeState('login')">
-            Volver al inicio de sesión
-          </button>
-        </div>
-      </form>
-
-      <form v-else @submit.prevent="handleConfirmPassword" class="space-y-4">
-        <div class="space-y-1.5">
-          <label for="resetCode" class="block text-xs font-semibold uppercase tracking-wider text-<prefijo>-muted">
-            Código de recuperación
-          </label>
-          <InputText id="resetCode" v-model="resetCode" required maxlength="6" placeholder="123456" class="w-full text-center tracking-widest font-bold" />
-        </div>
-        <div class="space-y-1.5">
-          <label for="newPassword" class="block text-xs font-semibold uppercase tracking-wider text-<prefijo>-muted">
-            Nueva contraseña
-          </label>
-          <Password id="newPassword" v-model="newPassword" required placeholder="Nueva contraseña" toggle-mask class="w-full" input-class="w-full" />
-        </div>
-        <Button type="submit" label="Restablecer contraseña" class="w-full mt-2" :loading="loading" />
-        <div class="text-center">
-          <button type="button" class="text-xs text-<prefijo>-muted hover:text-[var(--<prefijo>-text)]" @click="changeState('forgot')">
-            Reenviar código
-          </button>
-        </div>
-      </form>
-
-      <div v-if="viewState === 'login'" class="text-center mt-5">
-        <p class="text-sm text-<prefijo>-muted">
-          ¿No tienes una cuenta?
-          <NuxtLink to="/signup" class="text-[var(--<prefijo>-accent)] hover:opacity-80 font-medium">Regístrate aquí</NuxtLink>
-        </p>
-      </div>
-    </div>
-
-    <p class="text-center mt-6 text-xs text-<prefijo>-muted">&copy; <AÑO> <org>. Todos los derechos reservados.</p>
-  </div>
-</template>
-
-<script setup lang="ts">
-definePageMeta({
-  layout: 'auth',
-  middleware: 'guest'
-})
-
-const { login, forgotPassword, confirmForgotPassword, loading, error } = useAuth()
-
-const brandSuffix = '<sufijo de marca>'
-
-const viewState = ref<'login' | 'forgot' | 'reset'>('login')
-const email = ref('')
-const password = ref('')
-const resetCode = ref('')
-const newPassword = ref('')
-const successMessage = ref('')
-
-const heading = computed(() => {
-  if (viewState.value === 'login') return 'Bienvenido de nuevo'
-  if (viewState.value === 'forgot') return 'Recuperar contraseña'
-  return 'Establecer contraseña'
-})
-
-const subheading = computed(() => {
-  if (viewState.value === 'login') return 'Ingresa tus credenciales para acceder'
-  if (viewState.value === 'forgot') return 'Te enviaremos un código de confirmación a tu correo'
-  return 'Ingresa el código recibido y tu nueva contraseña'
-})
-
-function changeState(newState: 'login' | 'forgot' | 'reset') {
-  viewState.value = newState
-  successMessage.value = ''
-  if (error.value) error.value = null
-}
-
-async function handleLogin() {
-  if (!email.value || !password.value) return
-  const result = await login(email.value, password.value)
-  if (result.success) {
-    navigateTo('/')
-  }
-}
-
-async function handleForgotPassword() {
-  successMessage.value = ''
-  const result = await forgotPassword(email.value)
-  if (result.success) {
-    successMessage.value = result.message || 'Código de confirmación enviado a tu correo.'
-    changeState('reset')
-  }
-}
-
-async function handleConfirmPassword() {
-  successMessage.value = ''
-  const result = await confirmForgotPassword({
-    email: email.value,
-    code: resetCode.value,
-    newPassword: newPassword.value
-  })
-  if (result.success) {
-    successMessage.value = result.message || 'Contraseña restablecida correctamente.'
-    changeState('login')
-    password.value = ''
-  }
-}
-</script>
-```
-
-**Estados y transiciones:**
-
-| Estado | Titular | Acción | Siguiente |
-|---|---|---|---|
-| `login` | «Bienvenido de nuevo» | `login()` | `navigateTo('/')` si tiene éxito |
-| `forgot` | «Recuperar contraseña» | `forgotPassword()` | `reset` si tiene éxito |
-| `reset` | «Establecer contraseña» | `confirmForgotPassword()` | `login` con el campo de contraseña vacío |
-
-**Detalles que merece la pena imitar:**
-- `@submit.prevent` en el `<form>` en lugar de `@click` en el botón: habilita el envío con Enter y la validación nativa de `required`.
-- `changeState` limpia `successMessage` **y** `error` en cada transición: ningún mensaje viejo sobrevive al cambio de pantalla.
-- El campo `email` se comparte entre los tres estados: quien pide el código ya no lo vuelve a teclear.
-- `:loading="loading"` en el `<Button>` de PrimeVue pone el spinner y deshabilita el botón, evitando el doble envío.
-- `error` es un `ref` del composable mutado directamente desde la página (`error.value = null`). Funciona, pero acopla la página al estado interno del composable; expón un método `clearError()` si quieres hacerlo limpio.
-
-### 10.12 `pages/signup.vue` completo
-
-🟩 **NÚCLEO** en su lógica; 🟥 **deuda en su estilado** (ver nota final). Transcripción literal. Dos pasos: formulario de registro y confirmación OTP.
-
-Archivo: `pages/signup.vue`
-
-```vue
-<template>
-  <div class="w-full">
-    <!-- Marca -->
-    <div class="text-center mb-8">
-      <div class="inline-flex justify-center mb-4">
-        <<Prefijo>Mark :size="56" />
-      </div>
-      <h1 class="text-2xl font-bold tracking-tight">
-        {{ isRegistered ? 'Confirmar cuenta' : 'Crear una cuenta' }}
-      </h1>
-      <p class="text-<prefijo>-muted text-sm mt-1">
-        {{ isRegistered ? 'Ingresa el código OTP enviado a tu correo' : 'Regístrate para comenzar' }}
-      </p>
-    </div>
-
-    <div class="<prefijo>-card p-8 shadow-2xl">
-
-      <!-- Alertas -->
-      <div class="space-y-3 mb-4" v-if="error || statusMessage">
-        <Message v-if="error" severity="error" :closable="false">{{ error }}</Message>
-        <Message v-if="statusMessage" severity="success" :closable="false">{{ statusMessage }}</Message>
-      </div>
-
-      <!-- Paso 1: registro -->
-      <form v-if="!isRegistered" @submit.prevent="handleSignUp" class="space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div class="space-y-1.5">
-            <label for="firstName" class="block text-xs font-semibold uppercase tracking-wider text-<prefijo>-muted">
-              Nombres *
-            </label>
-            <InputText id="firstName" v-model="form.firstName" type="text" required placeholder="Ej. María" class="w-full" />
-          </div>
-
-          <div class="space-y-1.5">
-            <label for="lastName" class="block text-xs font-semibold uppercase tracking-wider text-<prefijo>-muted">
-              Apellidos *
-            </label>
-            <InputText id="lastName" v-model="form.lastName" type="text" required placeholder="Ej. García López" class="w-full" />
-          </div>
-        </div>
-
-        <!-- Teléfono con prefijo de país -->
-        <div class="space-y-1.5">
-          <label for="phone" class="block text-xs font-semibold uppercase tracking-wider text-<prefijo>-muted">
-            Teléfono *
-          </label>
-          <div class="flex items-center rounded-xl border border-<prefijo>-border bg-[var(--<prefijo>-bg)] focus-within:border-[var(--<prefijo>-accent)] transition-all duration-200">
-            <select
-              v-model="selectedCountryCode"
-              aria-label="Prefijo de país"
-              class="bg-transparent border-none pl-3.5 pr-1 py-2.5 focus:outline-none focus:ring-0 text-xs font-semibold select-none cursor-pointer max-w-[85px] shrink-0"
-            >
-              <option v-for="c in countries" :key="c.code" :value="c.dialCode">
-                {{ c.flag }} {{ c.dialCode }}
-              </option>
-            </select>
-            <div class="h-5 w-px bg-[var(--<prefijo>-border)] shrink-0"></div>
-            <input
-              id="phone"
-              v-model="rawPhone"
-              type="tel"
-              required
-              placeholder="999999999"
-              class="w-full bg-transparent border-none pl-3 pr-4 py-2.5 focus:outline-none focus:ring-0"
-            />
-          </div>
-        </div>
-
-        <!-- Correo -->
-        <div class="space-y-1.5">
-          <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-<prefijo>-muted">
-            Correo electrónico *
-          </label>
-          <IconField>
-            <InputIcon class="pi pi-envelope" />
-            <InputText id="email" v-model="form.email" type="email" required placeholder="<correo-ejemplo>" class="w-full" />
-          </IconField>
-        </div>
-
-        <!-- Contraseña -->
-        <div class="space-y-1.5">
-          <label for="password" class="block text-xs font-semibold uppercase tracking-wider text-<prefijo>-muted">
-            Contraseña *
-          </label>
-          <IconField>
-            <InputIcon class="pi pi-lock" />
-            <Password id="password" v-model="form.password" required :feedback="false" toggle-mask class="w-full" input-class="w-full" />
-          </IconField>
-
-          <!-- Checklist de requisitos -->
-          <div v-if="form.password" class="space-y-1.5 mt-2 text-[11px] text-<prefijo>-muted">
-            <p class="font-medium">Requisitos de contraseña:</p>
-            <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 border border-<prefijo>-border p-2.5 rounded-lg" style="background: var(--<prefijo>-track)">
-              <div class="flex items-center space-x-1.5">
-                <span :class="[passChecks.length ? 'pi pi-check-circle text-[var(--<prefijo>-success)]' : 'pi pi-circle', 'text-[10px]']"></span>
-                <span>Mínimo 8 caracteres</span>
-              </div>
-              <div class="flex items-center space-x-1.5">
-                <span :class="[passChecks.upper ? 'pi pi-check-circle text-[var(--<prefijo>-success)]' : 'pi pi-circle', 'text-[10px]']"></span>
-                <span>Una mayúscula</span>
-              </div>
-              <div class="flex items-center space-x-1.5">
-                <span :class="[passChecks.lower ? 'pi pi-check-circle text-[var(--<prefijo>-success)]' : 'pi pi-circle', 'text-[10px]']"></span>
-                <span>Una minúscula</span>
-              </div>
-              <div class="flex items-center space-x-1.5">
-                <span :class="[passChecks.specialAndDigit ? 'pi pi-check-circle text-[var(--<prefijo>-success)]' : 'pi pi-circle', 'text-[10px]']"></span>
-                <span>Número y especial</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Términos -->
-        <div class="flex items-start space-x-3 py-1">
-          <input
-            id="terms"
-            v-model="form.acceptedTerms"
-            type="checkbox"
-            required
-            class="mt-1 h-4 w-4 rounded border-<prefijo>-border"
-          />
-          <label for="terms" class="text-xs text-<prefijo>-muted leading-normal">
-            Acepto los <a :href="termsUrl" target="_blank" rel="noopener" class="text-[var(--<prefijo>-accent)] hover:underline font-medium">términos y condiciones</a> de la plataforma. *
-          </label>
-        </div>
-
-        <Button type="submit" :label="loading ? 'Registrando…' : 'Registrar'" class="w-full mt-6" :loading="loading" />
-      </form>
-
-      <!-- Paso 2: confirmación OTP -->
-      <form v-else @submit.prevent="handleConfirm" class="space-y-5">
-        <div class="space-y-1.5">
-          <label for="otpCode" class="block text-xs font-semibold uppercase tracking-wider text-<prefijo>-muted">
-            Código de confirmación (6 dígitos) *
-          </label>
-          <IconField>
-            <InputIcon class="pi pi-key" />
-            <InputText
-              id="otpCode"
-              v-model="code"
-              type="text"
-              required
-              maxlength="6"
-              placeholder="123456"
-              class="w-full text-center tracking-widest text-lg font-bold"
-            />
-          </IconField>
-        </div>
-
-        <div class="text-right">
-          <button
-            type="button"
-            @click="handleResendCode"
-            :disabled="loading"
-            class="text-xs text-[var(--<prefijo>-accent)] hover:opacity-80 font-medium disabled:opacity-50"
-          >
-            Reenviar código de verificación
-          </button>
-        </div>
-
-        <Button type="submit" :label="loading ? 'Verificando…' : 'Confirmar código'" class="w-full" :loading="loading" />
-      </form>
-
-      <div class="text-center mt-5">
-        <p class="text-sm text-<prefijo>-muted">
-          ¿Ya tienes una cuenta?
-          <NuxtLink to="/login" class="text-[var(--<prefijo>-accent)] hover:opacity-80 font-medium">
-            Inicia sesión
-          </NuxtLink>
-        </p>
-      </div>
-    </div>
-
-    <p class="text-center mt-6 text-xs text-<prefijo>-muted">&copy; <AÑO> <org>. Todos los derechos reservados.</p>
-  </div>
-</template>
-
-<script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { useAuth } from '~/composables/useAuth'
-import { countries } from '~/utils/countries'
-
-definePageMeta({
-  layout: 'auth',
-  middleware: 'guest'
-})
-
-const config = useRuntimeConfig()
-const apiBase = config.public.apiBase
-
-const { signUp, confirmSignUp, login, resendCode, loading, error } = useAuth()
-
-const form = ref({
-  email: '',
-  password: '',
-  phoneNumber: '',
-  firstName: '',
-  lastName: '',
-  acceptedTerms: false
-})
-
-const rawPhone = ref('')
-const selectedCountryCode = ref('+51')
-const code = ref('')
-const isRegistered = ref(false)
-const statusMessage = ref('')
-const termsUrl = ref('<URL_TERMINOS>')
-
-// El input de teléfono solo acepta dígitos
-watch(rawPhone, (newValue) => {
-  rawPhone.value = newValue.replace(/\D/g, '')
-})
-
-onMounted(async () => {
-  try {
-    const res = await $fetch<{ url: string }>(`${apiBase}/auth/terms-link`)
-    if (res && res.url) {
-      termsUrl.value = res.url
-    }
-  } catch (err) {
-    console.error('Error fetching terms link:', err)
-  }
-})
-
-const passChecks = computed(() => {
-  const pass = form.value.password || ''
-  return {
-    length: pass.length >= 8,
-    upper: /[A-Z]/.test(pass),
-    lower: /[a-z]/.test(pass),
-    digit: /\d/.test(pass),
-    special: /[!@#$%^&*(),.?":{}|<>_+\-=\[\]\\/;']/.test(pass),
-    specialAndDigit: /\d/.test(pass) && /[!@#$%^&*(),.?":{}|<>_+\-=\[\]\\/;']/.test(pass)
-  }
-})
-
-const isPasswordValid = computed(() => {
-  return passChecks.value.length &&
-         passChecks.value.upper &&
-         passChecks.value.lower &&
-         passChecks.value.digit &&
-         passChecks.value.special
-})
-
-const handleSignUp = async () => {
-  statusMessage.value = ''
-  if (!form.value.acceptedTerms) {
-    error.value = 'Debe aceptar los términos y condiciones para continuar.'
-    return
-  }
-  if (!isPasswordValid.value) {
-    error.value = 'La contraseña no cumple con los requisitos mínimos de seguridad.'
-    return
-  }
-  if (!rawPhone.value) {
-    error.value = 'El número de teléfono es obligatorio.'
-    return
-  }
-
-  // Construye el número en formato E.164
-  form.value.phoneNumber = `${selectedCountryCode.value}${rawPhone.value}`
-
-  const result = await signUp(form.value)
-  if (result.success) {
-    isRegistered.value = true
-    statusMessage.value = result.message || 'Código enviado a tu correo. Por favor verifícalo.'
-  }
-}
-
-const handleConfirm = async () => {
-  statusMessage.value = ''
-  const result = await confirmSignUp(form.value.email, code.value)
-  if (result.success) {
-    // Intenta iniciar sesión automáticamente
-    const loginResult = await login(form.value.email, form.value.password)
-    if (loginResult.success) {
-      navigateTo('/')
-    } else {
-      navigateTo('/login')
-    }
-  }
-}
-
-const handleResendCode = async () => {
-  statusMessage.value = ''
-  const result = await resendCode(form.value.email)
-  if (result.success) {
-    statusMessage.value = result.message || 'Código de confirmación reenviado.'
-  }
-}
-</script>
-```
-
-**Qué hay que entender de esta página:**
-
-| Elemento | Explicación |
-|---|---|
-| **Dos pasos en una sola ruta** | `isRegistered` conmuta entre el formulario y el OTP. **No se pierde la contraseña**, por eso el login automático tras confirmar es posible. |
-| **Teléfono E.164** | `selectedCountryCode` (un `<select>` alimentado por `utils/countries.ts`, 195 países con bandera y prefijo) se concatena con `rawPhone` justo antes de enviar. El `watch` sobre `rawPhone` elimina todo lo que no sea dígito en cada tecla. |
-| **`termsUrl` dinámico** | Se pide a `GET /auth/terms-link` en `onMounted`. Si falla, se queda el valor por defecto. Permite cambiar el enlace legal sin desplegar el frontend. |
-| **`passChecks` espeja la política de Cognito** | Las cinco comprobaciones (longitud, mayúscula, minúscula, dígito, especial) replican lo que el backend exige. El checklist solo aparece cuando el campo tiene contenido. **`specialAndDigit` solo existe para pintar una cuarta casilla en una rejilla 2×2**; la validación real usa `isPasswordValid`, que comprueba las cinco por separado. |
-| **Validación previa al envío** | `handleSignUp` comprueba términos, contraseña y teléfono **antes** de llamar al API, escribiendo directamente en `error.value`. Ahorra un viaje de red. |
-| **Login automático** | Tras confirmar el OTP, se intenta `login()` con las credenciales que siguen en memoria. Si falla (cuenta pendiente de aprobación, por ejemplo), cae a `/login` en lugar de dejar al usuario atascado. |
-
-🟥 **Deuda corregida en la transcripción anterior:** el original estila esta página con **inputs HTML crudos y colores de Tailwind fijos** (`bg-slate-950`, `border-slate-800`, `text-slate-100`), mientras que `login.vue` usa componentes de PrimeVue y tokens. El resultado es que **signup se ve distinto de login y no respeta el tema claro**. El bloque de arriba ya está migrado a PrimeVue + tokens. Si transcribes el original literal, arrastrarás esa inconsistencia.
+No se decodifica el JWT en el cliente. No hay librería `jwt-decode` en el `package.json`. El `exp` no se consulta: cuando el access caduca, la siguiente llamada recibe 401 y el refresh ocurre entonces. El margen de "refrescar cinco minutos antes" de la v1 obligaba a leer el token.
 
 ---
-
 ## 11. Capa de datos
 
-### 11.1 `composables/useApi.ts` transcrito
+### 11.1 El cliente
 
-🟩 **NÚCLEO REUTILIZABLE.** Transcripción literal (34 líneas). Es una capa finísima sobre `apiFetch` cuyo único cometido es componer la URL y fijar el método.
-
-Archivo: `composables/useApi.ts`
+🆕 **V2.** `useApi().api(path, options)` es la única forma de hablar con el backend. `path` es relativo a `/api` (`'/projects'`, no `'/api/projects'` y no una URL absoluta). `credentials: 'include'` va dentro del composable; repetirlo en cada llamada es innecesario y olvidarlo en un `$fetch` suelto es el bug.
 
 ```ts
-export const useApi = () => {
-  const config = useRuntimeConfig()
-  const { apiFetch } = useAuth()
-
-  const apiUrl = (path: string) => {
-    const base = config.public.apiBase.replace(/\/$/, '')
-    const normalized = path.startsWith('/') ? path : `/${path}`
-    return `${base}${normalized}`
-  }
-
-  const get = <T>(path: string, options: Record<string, unknown> = {}) =>
-    apiFetch<T>(apiUrl(path), { ...options, method: 'GET' })
-
-  const post = <T>(path: string, body?: unknown, options: Record<string, unknown> = {}) =>
-    apiFetch<T>(apiUrl(path), {
-      ...options,
-      method: 'POST',
-      body
-    })
-
-  const put = <T>(path: string, body?: unknown, options: Record<string, unknown> = {}) =>
-    apiFetch<T>(apiUrl(path), {
-      ...options,
-      method: 'PUT',
-      body
-    })
-
-  return {
-    apiUrl,
-    get,
-    post,
-    put
-  }
-}
+const api = useApi()
+const page = await api.api<{ data: Project[]; meta: { page: number; limit: number; total: number; pageCount: number } }>(
+  '/projects',
+  { query: { page: 1, limit: 20, q: search } },
+)
 ```
 
-| Miembro | Firma | Notas |
-|---|---|---|
-| `apiUrl(path)` | `(string) => string` | Quita la barra final de la base y garantiza la inicial del path: `apiUrl('items')` y `apiUrl('/items')` dan el mismo resultado. Expuesto para casos que necesitan la URL cruda (por ejemplo, un `<a download>`). |
-| `get<T>(path, options?)` | `Promise<T>` | Los query params van en `options.query`: `get('/items', { query: { q: 'x', limit: 10 } })`. `$fetch` los serializa. |
-| `post<T>(path, body?, options?)` | `Promise<T>` | `body` se serializa a JSON automáticamente si es un objeto plano. |
-| `put<T>(path, body?, options?)` | `Promise<T>` | Igual. |
+La envoltura de listado es la de `PageDto` del backend: `{ data, meta }`. `limit` máximo 100.
 
-🟥 **Faltan `patch` y `delete`.** El repositorio original nunca los necesitó. Añádelos siguiendo el mismo patrón en cuanto te hagan falta; no uses `$fetch` directo, porque te saltarías el Bearer y el reintento.
+No se usa `useFetch` ni `useAsyncData` para datos autenticados. Tienen su propio `$fetch` y no pasan por el refresh de `useApi`. En un SPA tampoco aportan la deduplicación de SSR que justifica su existencia.
 
-**El `Authorization` lo pone `apiFetch`, no `useApi`.** Esa es la razón de que toda llamada autenticada deba pasar por aquí.
+Un 401 lo resuelve `useApi`. La página solo distingue 403, 503 y 400 para pintar el mensaje, y enseña `requestId` cuando el status es 5xx.
 
-### 11.2 Patrón de llamada desde una página
+### 11.2 Subida de documentos
 
-🟨 **EJEMPLO** — pero el patrón es 🟩 núcleo. Esta es la forma canónica, extraída de una página real del repositorio (la de solo lectura, que es la más limpia).
+El `POST /api/documents/uploads` devuelve la URL prefirmada y las cabeceras que hay que mandar (`Content-Type`, `Content-Length`, `x-amz-checksum-sha256`). El `PUT` de los bytes va **a esa URL de S3**, no a `/api`, así que no pasa por `useApi` y no lleva la cookie. Es un `fetch` suelto, a propósito, y es el único `fetch` suelto permitido. En local no hay S3: el backend expone `PUT /api/documents/:id/content` y ese sí pasa por `useApi`, con el binario en el body.
 
-Archivo: `pages/<mi-ruta>.vue` (esqueleto a copiar)
+### Lo que sigue es del original y sigue vigente
 
-```vue
-<template>
-  <div class="space-y-6">
-    <PageHeader
-      title="Título de la sección"
-      subtitle="Una frase que explica qué se ve aquí."
-      :refreshing="loading"
-      @refresh="load"
-    />
-
-    <!-- Estado: cargando -->
-    <div v-if="loading" class="<prefijo>-card p-8 text-center text-<prefijo>-muted">
-      <span class="inline-flex items-center gap-2">
-        <<Prefijo>Icon name="refresh" :size="14" class="animate-spin" />Cargando…
-      </span>
-    </div>
-
-    <!-- Estado: error -->
-    <div
-      v-else-if="error"
-      class="<prefijo>-card p-6"
-      :style="{
-        borderColor: 'color-mix(in srgb, var(--<prefijo>-danger) 35%, transparent)',
-        background: 'color-mix(in srgb, var(--<prefijo>-danger) 6%, transparent)'
-      }"
-    >
-      <p class="font-medium" style="color: var(--<prefijo>-danger)">{{ error }}</p>
-      <button type="button" class="mt-4 text-sm hover:underline" style="color: var(--<prefijo>-accent)" @click="load">
-        Reintentar
-      </button>
-    </div>
-
-    <!-- Estado: vacío -->
-    <div v-else-if="!items.length" class="<prefijo>-card p-10 text-center text-<prefijo>-muted">
-      No hay registros todavía.
-    </div>
-
-    <!-- Estado: con datos -->
-    <section v-else class="<prefijo>-card overflow-hidden">
-      <!-- … -->
-    </section>
-  </div>
-</template>
-
-<script setup lang="ts">
-import type { MiEntidad } from '~/types/api'
-
-definePageMeta({ middleware: ['auth'] })
-
-const { get } = useApi()
-
-const loading = ref(true)
-const error = ref<string | null>(null)
-const items = ref<MiEntidad[]>([])
-
-onMounted(() => load())
-
-async function load() {
-  loading.value = true
-  error.value = null
-  try {
-    items.value = await get<MiEntidad[]>('/mi-recurso')
-  } catch (err: any) {
-    items.value = []
-    error.value = err?.data?.message || 'No se pudieron cargar los datos.'
-  } finally {
-    loading.value = false
-  }
-}
-</script>
-```
-
-**Las cinco reglas de este patrón:**
-
-1. **Tres refs por recurso:** `loading`, `error`, `data`. Siempre los tres, siempre con esos nombres.
-2. **`loading` arranca en `true`.** Evita el parpadeo del estado vacío antes de la primera carga.
-3. **En el `catch`, vacía los datos.** Nunca dejes datos viejos junto a un mensaje de error.
-4. **`finally` siempre apaga `loading`.** Sin excepciones.
-5. **Cuatro estados en la plantilla, en este orden:** cargando → error → vacío → datos. `v-if` / `v-else-if` encadenados, nunca `v-if` independientes.
-
-**Variante reactiva:** si la página depende de un estado global (entidad seleccionada, filtro), usa un `watch` con `immediate: true` en lugar de `onMounted`. Así recarga sola al cambiar la dependencia:
-
-```ts
-watch(() => entityStore.selectedId, () => load(), { immediate: true })
-```
-
-🟥 **No uses `useFetch` ni `useAsyncData` para datos autenticados.** Ambos tienen su propia instancia de `$fetch` y no pasan por `apiFetch`: perderías el Bearer y el reintento tras refresco. Si quieres su ergonomía (deduplicación, caché, `refresh()`), configura un `$fetch` personalizado vía `useNuxtApp().provide` y pásalo en la opción `$fetch`; el repositorio original no lo hace.
+Formato de números e importes, países, cuándo usar Pinia y el store de ejemplo. El `useApi` descrito más arriba en el original (Bearer, `apiFetch`) no está en este extracto.
 
 ### 11.3 Cuándo Pinia y cuándo `useState`
 
@@ -3658,6 +2110,8 @@ export const countries: Country[] = [
 **Dos detalles:** el país local va **primero**, fuera del orden alfabético, para que sea el valor por defecto del `<select>`; y la bandera es el emoji Unicode, no una imagen, así que no requiere assets.
 
 ---
+
+> **Vigente en v2 como sistema visual.** Se copia del original porque el aspecto no cambió. Cualquier frase que hable de `Authorization`, de cookies `auth_token` / `auth_refresh_token`, de un `apiBase` absoluto o de CORS **no se implementa**: la sesión y las llamadas HTTP están en las secciones 10 y 11.
 
 ## 12. Componentes
 
@@ -4156,6 +2610,8 @@ Dos PNG en `public/images/`, uno por tema. El factor `0.42` es la relación de a
 
 ---
 
+> **Vigente en v2 como sistema visual.** Se copia del original porque el aspecto no cambió. Cualquier frase que hable de `Authorization`, de cookies `auth_token` / `auth_refresh_token`, de un `apiBase` absoluto o de CORS **no se implementa**: la sesión y las llamadas HTTP están en las secciones 10 y 11.
+
 ## 13. Gráficos con ECharts
 
 ### 13.1 El plugin de cliente transcrito
@@ -4483,6 +2939,8 @@ const option = computed(() => ({
 
 ---
 
+> **Vigente en v2 como sistema visual.** Se copia del original porque el aspecto no cambió. Cualquier frase que hable de `Authorization`, de cookies `auth_token` / `auth_refresh_token`, de un `apiBase` absoluto o de CORS **no se implementa**: la sesión y las llamadas HTTP están en las secciones 10 y 11.
+
 ## 14. Formularios y validación
 
 ### 14.1 Cómo se hace hoy
@@ -4588,6 +3046,8 @@ async function onFormSubmit({ valid, values }: { valid: boolean; values: SignUpI
 **Alternativa sin dependencias nuevas:** extrae las reglas a `utils/validators.ts` como funciones puras `(value) => string | null`, y mantén un `errors` reactivo por campo. Es menos potente pero ya resuelve la duplicación, y es testeable con el mismo runner nativo de Node que usa `formatAuthError`.
 
 ---
+
+> **Vigente en v2 como sistema visual.** Se copia del original porque el aspecto no cambió. Cualquier frase que hable de `Authorization`, de cookies `auth_token` / `auth_refresh_token`, de un `apiBase` absoluto o de CORS **no se implementa**: la sesión y las llamadas HTTP están en las secciones 10 y 11.
 
 ## 15. Accesibilidad y responsive
 
@@ -4739,1275 +3199,351 @@ Antes de dar por buena una pantalla:
 
 ## 16. Build y despliegue
 
-### 16.1 `build` frente a `generate`: cuál usar
+🆕 **V2.** Un solo `pnpm generate`. El artefacto no contiene el dominio del stage. El workflow lo sube al bucket que el stack del backend publicó en SSM.
 
-El `package.json` expone los dos comandos porque Nuxt los trae de serie, pero con esta configuración **no son intercambiables**:
+### 16.1 Verificación
 
-| Comando | Qué hace | Salida | ¿Sirve aquí? |
-|---|---|---|---|
-| `pnpm build` | Compila el servidor Nitro y el cliente | `.output/server/index.mjs` + `.output/public/` | **No.** Con `ssr: false` el servidor solo serviría un `index.html` vacío; con `nitro.preset: 'static'` el artefacto de servidor ni siquiera es el que necesitas. |
-| `pnpm generate` | Compila el cliente y **prerenderiza** las rutas a HTML estático | `.output/public/` autosuficiente | **Sí.** Es lo que sube el workflow a S3. |
+```yaml
+# .github/workflows/ci.yml
+name: CI/CD
 
-**Regla:** en este proyecto el comando de producción es **`pnpm generate`**, y el artefacto desplegable es **`.output/public/`**. `pnpm build` solo tiene sentido si algún día quitas `ssr: false`, cosa que cambiaría el modelo entero (ver §2).
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
 
-Consecuencia directa: el `Dockerfile` del original está roto (corrección 18.4). Ejecuta `pnpm build` y luego `CMD ["node", ".output/server/index.mjs"]`, un fichero que con `preset: 'static'` **no se genera**. El contenedor fallaría al arrancar. O lo borras, o lo conviertes en un contenedor de servidor estático:
+permissions:
+  contents: read
 
-```dockerfile
-# Dockerfile  🟩 versión corregida (solo si realmente necesitas contenedor)
-FROM node:22-alpine AS builder
-WORKDIR /app
-RUN corepack enable
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
-COPY . .
-ARG NUXT_PUBLIC_API_BASE_URL
-ENV NUXT_PUBLIC_API_BASE_URL=$NUXT_PUBLIC_API_BASE_URL
-RUN pnpm generate
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-FROM nginx:alpine
-COPY --from=builder /app/.output/public /usr/share/nginx/html
-# Imprescindible: fallback SPA, igual que en CloudFront.
-RUN printf 'server {\n  listen 80;\n  root /usr/share/nginx/html;\n  location / {\n    try_files $uri $uri/ /index.html;\n  }\n}\n' > /etc/nginx/conf.d/default.conf
-EXPOSE 80
+jobs:
+  verify:
+    name: Verificar y construir
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm typecheck
+      - run: pnpm generate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-${{ github.sha }}
+          path: .output/public
+          retention-days: 30
+          if-no-files-found: error
+
+  deploy-dev:
+    if: github.event_name == 'push'
+    needs: verify
+    uses: ./.github/workflows/deploy.yml
+    with:
+      stage: dev
+      account: '<ACCOUNT_NONPROD>'
+    permissions:
+      contents: read
+      id-token: write
+
+  deploy-qa:
+    needs: deploy-dev
+    uses: ./.github/workflows/deploy.yml
+    with:
+      stage: qa
+      account: '<ACCOUNT_NONPROD>'
+    permissions:
+      contents: read
+      id-token: write
+
+  deploy-prod:
+    needs: deploy-qa
+    uses: ./.github/workflows/deploy.yml
+    with:
+      stage: prod
+      account: '<ACCOUNT_PROD>'
+    permissions:
+      contents: read
+      id-token: write
 ```
 
-Fíjate en el `ARG`: la URL del API tiene que entrar **en build**, no en runtime (§16.5). Esa es exactamente la razón por la que una imagen Docker aporta poco aquí: no puedes reutilizarla entre entornos.
+`pnpm typecheck` escribe un aviso de `vue-router/volar/sfc-route-blocks` por stderr y termina 0. Un error de tipos de verdad termina distinto de 0: el job falla.
 
-### 16.2 El workflow completo, parametrizado
+### 16.2 Promoción
 
-🟩 **Núcleo reutilizable.** Esta es la transcripción del workflow real con todos los nombres propios sustituidos por marcadores. Cambia los marcadores y funciona tal cual.
+`qa` y `prod` usan el GitHub Environment del mismo nombre, con revisores, igual que el backend. El rol que se asume lo crea el stack `ci` del backend: `<app-short>-github-frontend-deploy`. Solo puede escribir en el bucket web y crear una invalidación. No puede tocar la API ni la base.
 
 ```yaml
 # .github/workflows/deploy.yml
-name: Deploy Frontend to AWS (S3 + CloudFront)
+name: Desplegar stage
 
 on:
-  push:
-    branches:
-      - dev
-      - qa
-      - master
+  workflow_call:
+    inputs:
+      stage:
+        required: true
+        type: string
+      account:
+        required: true
+        type: string
 
 permissions:
-  id-token: write    # imprescindible para OIDC
   contents: read
+  id-token: write
 
 jobs:
   deploy:
-    name: Build and Deploy Nuxt Static Site
+    name: Publicar ${{ inputs.stage }}
     runs-on: ubuntu-latest
-    # El environment y el stage se derivan de la rama: dev -> dev, qa -> qa, master -> prod.
     environment:
-      name: ${{ github.ref_name == 'master' && 'prod' || github.ref_name }}
+      name: ${{ inputs.stage }}
+    timeout-minutes: 20
     concurrency:
-      group: <app>-frontend-deploy-${{ github.ref_name }}
-      cancel-in-progress: true
-    env:
-      AWS_EC2_METADATA_DISABLED: true
-      AWS_DEFAULT_REGION: <REGION>
-      STAGE: ${{ github.ref_name == 'master' && 'prod' || github.ref_name }}
-
+      group: deploy-${{ inputs.stage }}
+      cancel-in-progress: false
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
         with:
-          version: 11
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+          name: web-${{ github.sha }}
+          path: .output/public
+      - uses: aws-actions/configure-aws-credentials@v5
         with:
-          node-version: 22
-
-      # AWS_ROLE_ARN es un secret por environment. El fallback apunta al rol
-      # compartido de despliegue (un ARN de rol no es una credencial).
-      - name: Configure AWS Credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN || 'arn:aws:iam::<AWS_ACCOUNT_ID>:role/<ROL_OIDC>' }}
-          aws-region: ${{ vars.AWS_REGION || '<REGION>' }}
-          audience: sts.amazonaws.com
-
-      - name: Fetch Deployment Parameters from AWS SSM Parameter Store
+          role-to-assume: arn:aws:iam::${{ inputs.account }}:role/<app-short>-github-frontend-deploy
+          aws-region: <REGION>
+      - name: Subir el mismo build al bucket del stage
+        env:
+          STAGE: ${{ inputs.stage }}
         run: |
-          echo "Recuperando parámetros desde AWS SSM para el stage: $STAGE"
-
-          API_URL=$(aws ssm get-parameter --name "/<app>-frontend/$STAGE/api-base-url" --with-decryption --query "Parameter.Value" --output text --region $AWS_DEFAULT_REGION)
-          echo "NUXT_PUBLIC_API_BASE_URL=$API_URL" >> .env
-          echo "::add-mask::$API_URL"
-
-          S3_BUCKET=$(aws ssm get-parameter --name "/<app>-frontend/$STAGE/s3-bucket-name" --with-decryption --query "Parameter.Value" --output text --region $AWS_DEFAULT_REGION)
-          echo "AWS_S3_BUCKET=$S3_BUCKET" >> $GITHUB_ENV
-
-          CLOUDFRONT_ID=$(aws ssm get-parameter --name "/<app>-frontend/$STAGE/cloudfront-dist-id" --with-decryption --query "Parameter.Value" --output text --region $AWS_DEFAULT_REGION)
-          echo "AWS_CLOUDFRONT_DISTRIBUTION_ID=$CLOUDFRONT_ID" >> $GITHUB_ENV
-
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
-
-      - name: Generate Static Web Application
-        run: pnpm generate
-
-      - name: Deploy static site to S3 Bucket
-        run: |
-          echo "Sincronizando archivos estáticos con S3 bucket: ${{ env.AWS_S3_BUCKET }}"
-          aws s3 sync .output/public/ "s3://${{ env.AWS_S3_BUCKET }}" --delete --cache-control "max-age=31536000, public" --region $AWS_DEFAULT_REGION
-          aws s3 cp .output/public/index.html "s3://${{ env.AWS_S3_BUCKET }}/index.html" --metadata-directive REPLACE --cache-control "no-store, no-cache, must-revalidate, max-age=0" --region $AWS_DEFAULT_REGION
-
-      - name: Invalidate CloudFront CDN Cache
-        run: |
-          echo "Invalidando la caché para la distribución de CloudFront: ${{ env.AWS_CLOUDFRONT_DISTRIBUTION_ID }}"
-          aws cloudfront create-invalidation --distribution-id "${{ env.AWS_CLOUDFRONT_DISTRIBUTION_ID }}" --paths "/*" --region $AWS_DEFAULT_REGION
+          set -euo pipefail
+          PREFIX="/<org>/<app-short>/${STAGE}"
+          BUCKET="$(aws ssm get-parameter --name "$PREFIX/web/bucket-name" --query Parameter.Value --output text)"
+          DIST="$(aws ssm get-parameter --name "$PREFIX/web/distribution-id" --query Parameter.Value --output text)"
+          aws s3 sync .output/public "s3://${BUCKET}" --delete \
+            --cache-control 'public,max-age=31536000,immutable' --exclude 'index.html' --exclude '*.html'
+          aws s3 sync .output/public "s3://${BUCKET}" --exclude '*' --include '*.html' \
+            --cache-control 'no-cache'
+          aws cloudfront create-invalidation --distribution-id "$DIST" --paths '/*' >/dev/null
 ```
 
-Decisiones del workflow que conviene entender antes de tocarlo:
+El `s3 sync` parte en dos a propósito. Los archivos con hash en el nombre (`/_nuxt/*`) se cachean un año e `immutable`. Los HTML no se cachean: son los que apuntan a los hashes nuevos. Un único sync con `max-age` largo dejaría el `index.html` viejo en el edge y el usuario seguiría pidiendo chunks que ya no existen.
 
-| Elemento | Por qué está |
-|---|---|
-| `permissions: id-token: write` | Sin esto, GitHub no emite el token OIDC y `configure-aws-credentials` falla con un error poco descriptivo. Es el olvido más común. |
-| Tres ramas disparadoras | `dev`, `qa` y `master` corresponden uno a uno a los tres stages. No hay despliegue manual ni etiquetas. |
-| `environment: name:` derivado de la rama | Permite tener secrets y reglas de protección distintos por entorno en GitHub (por ejemplo, aprobación obligatoria para `prod`). |
-| `concurrency` con `cancel-in-progress` | Si empujas dos commits seguidos a `dev`, el primer despliegue se cancela. Evita que una ejecución vieja sobrescriba una nueva en S3. El grupo incluye la rama, así que `dev` y `prod` no se cancelan entre sí. |
-| `AWS_EC2_METADATA_DISABLED: true` | Impide que la CLI pierda tiempo intentando leer el servicio de metadatos del runner (que no existe) antes de caer en las credenciales OIDC. Ahorra segundos y evita errores intermitentes. |
-| Fallback literal del ARN del rol | El secret `AWS_ROLE_ARN` solo está definido en algunos entornos. Un ARN de rol **no es un secreto** (no sirve sin la relación de confianza OIDC), así que el fallback en claro es aceptable. |
-| `--ignore-scripts` en el install | Bloquea los scripts post-instalación de dependencias por seguridad. **Ojo:** también bloquea el `postinstall: nuxt prepare` del propio proyecto. Funciona porque `nuxt generate` vuelve a preparar el proyecto, pero es frágil; ver corrección 18.9. |
-| `--with-decryption` en parámetros no cifrados | Es inofensivo: si el parámetro es `String` en vez de `SecureString`, la bandera se ignora. Deja que esté, por si mañana ciframos alguno. |
-| `::add-mask::$API_URL` | Oculta la URL del API en los logs de la ejecución. Las otras dos no se enmascaran (nombre de bucket e ID de distribución se consideran no sensibles). |
+La invalidación es `/*`. El sitio es pequeño; una invalidación selectiva que se olvida de un HTML es un incidente más caro que la invalidación.
 
-### 16.3 Los tres parámetros SSM
+El orden respecto al backend: el stage del backend (CloudFront, bucket, parámetros SSM) tiene que existir antes del primer deploy del frontend. No hace falta coordinar cada release: el frontend no migra datos. Sí hace falta que el contrato que el frontend llama exista ya en ese stage. Por eso el frontend se promueve después del backend cuando el cambio toca los dos.
 
-El workflow no lleva ninguna configuración de entorno dentro del repositorio: la lee de **AWS Systems Manager Parameter Store** en tiempo de despliegue. Esto hay que crearlo **una vez por stage** antes del primer despliegue, y **no lo hace el agente**: lo hace una persona o un PR de infraestructura.
+### 16.3 Lo que ya no se hace
 
-| Parámetro | Tipo | Ejemplo de valor | Consumido por |
-|---|---|---|---|
-| `/<app>-frontend/<stage>/api-base-url` | `String` o `SecureString` | `https://api-<stage>.<DOMINIO_BASE>` | Se escribe en `.env` **antes** de `pnpm generate`, y Nuxt lo hornea en el bundle |
-| `/<app>-frontend/<stage>/s3-bucket-name` | `String` | `<app>-frontend-<stage>` | `aws s3 sync` |
-| `/<app>-frontend/<stage>/cloudfront-dist-id` | `String` | `EXXXXXXXXXXXXX` | `aws cloudfront create-invalidation` |
-
-Con `<stage>` ∈ `{dev, qa, prod}`. El rol OIDC necesita, como mínimo:
-
-- `ssm:GetParameter` sobre `arn:aws:ssm:<REGION>:<AWS_ACCOUNT_ID>:parameter/<app>-frontend/*`
-- `s3:ListBucket` sobre el bucket y `s3:PutObject` / `s3:DeleteObject` sobre `<BUCKET>/*` (el `--delete` del sync necesita borrar)
-- `cloudfront:CreateInvalidation` sobre la distribución concreta
-
-Sin comodines de servicio completo. Esta es la misma regla de mínimo privilegio que aplica el backend.
-
-### 16.4 Estrategia de caché en S3, y por qué
-
-Son dos comandos deliberadamente distintos:
-
-```bash
-# 1. Todo, con caché agresiva de un año.
-aws s3 sync .output/public/ "s3://<BUCKET>" --delete \
-  --cache-control "max-age=31536000, public"
-
-# 2. Encima, index.html otra vez, sin caché ninguna.
-aws s3 cp .output/public/index.html "s3://<BUCKET>/index.html" \
-  --metadata-directive REPLACE \
-  --cache-control "no-store, no-cache, must-revalidate, max-age=0"
-```
-
-El razonamiento:
-
-- **Los activos que genera Nuxt llevan un hash en el nombre** (`_nuxt/entry.B7xK2p.js`). Si el contenido cambia, el nombre cambia. Por tanto, un fichero con un nombre dado es **inmutable para siempre** y puede cachearse un año en el navegador y en el borde de CloudFront. Es el patrón de "activos con huella digital".
-- **`index.html` no lleva hash**: siempre se llama igual y es quien apunta a los activos hasheados. Si se cachea, el navegador sigue pidiendo el bundle viejo aunque hayas desplegado uno nuevo, y el usuario ve la versión anterior hasta que expire la caché. Por eso se vuelve a subir con `no-store`.
-- El orden importa: `sync` sube todo (incluido `index.html`, con la cabecera equivocada) y el `cp` posterior **corrige** solo ese fichero. `--metadata-directive REPLACE` es obligatorio: sin él, `cp` conserva los metadatos del objeto existente y la corrección no se aplica.
-- `--delete` elimina del bucket lo que ya no está en `.output/public/`. Mantiene el bucket limpio de bundles antiguos. El riesgo es que, durante los segundos que dura el sync, un usuario con el HTML viejo ya cargado puede pedir un chunk que acaba de desaparecer, y obtener un 404. Es una ventana pequeña y conocida; si te molesta, quita `--delete` y limpia con una regla de ciclo de vida de S3 a 30 días.
-
-### 16.5 Cómo entra la URL del API, y por qué no es configurable en runtime
-
-Esta es **la implicación arquitectónica más importante de toda la sección** y conviene entenderla antes de diseñar los entornos.
-
-La cadena es:
-
-```
-SSM /<app>-frontend/<stage>/api-base-url
-      │
-      ▼  (paso "Fetch Deployment Parameters")
-  fichero .env en el runner:  NUXT_PUBLIC_API_BASE_URL=https://…
-      │
-      ▼  (pnpm generate; Nuxt lee .env y mapea NUXT_PUBLIC_* a runtimeConfig.public)
-  valor literal incrustado en el JavaScript generado
-      │
-      ▼
-  .output/public/_nuxt/*.js   ← la URL viaja dentro del bundle
-```
-
-Nuxt mapea variables `NUXT_PUBLIC_<CLAVE>` a `runtimeConfig.public.<clave>` en **arranque del servidor**. En una aplicación con servidor Nitro, eso ocurre en cada arranque y la variable **sí** es de runtime. Aquí no hay servidor: el sitio es estático y lo sirve S3. El único momento en que existe un proceso Node capaz de leer el entorno es durante `pnpm generate`. Por tanto, el valor queda **congelado en el bundle**.
-
-Consecuencias prácticas, todas de obligado conocimiento:
-
-1. **Un build por stage.** No puedes promocionar el mismo artefacto de `dev` a `qa` a `prod`. Cada rama produce su propio bundle con su propia URL. Si tu proceso de release asume "construye una vez, despliega en todas partes", este modelo lo rompe.
-2. **La URL del API es pública.** Está en texto plano dentro de un `.js` descargable por cualquiera. El `::add-mask::` solo oculta la URL en los *logs de CI*, no en el artefacto. No pongas nada secreto en una variable `NUXT_PUBLIC_*`: **todas** acaban en el navegador.
-3. **Cambiar la URL del API exige redesplegar**, no basta con editar el parámetro SSM. El parámetro solo se lee en build.
-4. **En local, `.env` cumple exactamente el mismo papel** que el fichero que escribe el workflow. Por eso `.env.example` contiene solo esa línea.
-
-Si algún día necesitas configuración verdaderamente de runtime (por ejemplo, un mismo bundle que apunte a backends distintos según el dominio), el patrón es: sube un `config.json` **sin hash y sin caché** junto a `index.html`, y haz que un plugin de cliente lo lea con `$fetch` antes del primer render. No lo hagas sin necesidad: añade una petición bloqueante al arranque.
-
-### 16.6 CloudFront: lo que el repositorio NO configura
-
-⚠️ **Hay una pieza imprescindible que no está en ningún fichero del repositorio original y que tienes que configurar a mano o en tu IaC.** En una SPA con enrutado del lado del cliente, si el usuario entra directamente a `https://<DOMINIO_BASE>/<ruta>` o recarga esa URL, CloudFront pide a S3 el objeto `/<ruta>`, que no existe, y devuelve un error. La aplicación nunca llega a cargar.
-
-La distribución necesita **respuestas de error personalizadas**:
-
-| Código de error HTTP | Página de respuesta | Código de respuesta |
-|---|---|---|
-| 403 | `/index.html` | 200 |
-| 404 | `/index.html` | 200 |
-
-El 403 es el que la gente olvida: si el bucket está detrás de un Origin Access Control (lo recomendable), S3 devuelve 403 en lugar de 404 para objetos inexistentes, porque el rol no tiene `s3:ListBucket`.
-
-Resto de la configuración que el workflow da por hecha y no crea:
-
-- Bucket S3 **privado**, servido mediante Origin Access Control, no como website endpoint público.
-- `Default Root Object` = `index.html`.
-- Certificado ACM en `us-east-1` para el dominio, independientemente de en qué región esté el bucket.
-- Rol IAM con la relación de confianza OIDC hacia `token.actions.githubusercontent.com`, restringida por `sub` al repositorio y, preferiblemente, a las ramas concretas.
-
-Todo esto va en un **PR de infraestructura separado**, nunca en el PR de aplicación.
+- No se pasa `NUXT_PUBLIC_API_BASE_URL` en el generate.
+- No hay un bucket de deploy distinto del bucket del sitio: el origen de CloudFront es ese bucket, con OAC. El workflow no crea infraestructura.
+- No hay Dockerfile.
 
 ---
-
 ## 17. Entorno de desarrollo local y Cursor Cloud
 
-### 17.1 Puesta en marcha mínima, sin Cursor
+### 17.1 Arranque
 
-```bash
-# 1. Node 22 y pnpm.
-node --version        # v22.x
-corepack enable
-
-# 2. Dependencias.
+```
+corepack enable && corepack prepare pnpm@12.10.1 --activate
 pnpm install
-
-# 3. Configuración.
-cp .env.example .env  # apunta al backend local
-
-# 4. Servidor de desarrollo.
-pnpm dev              # http://127.0.0.1:4200
+pnpm dev
 ```
 
-El puerto **4200** lo fija `devServer` en `nuxt.config.ts` (§5), no es el 3000 por defecto de Nuxt. La razón es evitar la colisión con el backend NestJS, que ocupa el 3000. El `host: '127.0.0.1'` también es deliberado: hace que el origen del navegador sea exactamente el que el backend tiene en su lista CORS (ver §21).
+Queda en `http://127.0.0.1:4200`. El backend tiene que estar en `http://127.0.0.1:3000`. Comprobación, con los dos en marcha:
 
-### 17.2 `.env`
-
-🟩 **Núcleo.** El fichero de ejemplo completo:
-
-```bash
-# .env.example
-# ============================================================
-# <app> - Frontend (.env de ejemplo)
-# ------------------------------------------------------------
-# Copia este archivo a `.env`:
-#
-#   cp .env.example .env
-#
-# El archivo `.env` está en .gitignore y no se sube al repo.
-# ============================================================
-
-# URL base del backend (local por defecto).
-NUXT_PUBLIC_API_BASE_URL=http://localhost:3000
+```
+curl -sS http://127.0.0.1:4200/api/health
 ```
 
-Una sola variable. Resiste la tentación de añadir más: cada `NUXT_PUBLIC_*` acaba incrustada en el bundle público (§16.5), y cada variable no pública es inútil en un sitio estático.
+Tiene que devolver el JSON del backend (`status: ok`), no el HTML de Nuxt. El 2026-10-08 esa llamada respondió 200 en 9 ms a través del proxy, con `x-request-id` y `cache-control: no-store`.
 
-### 17.3 Entorno Cursor Cloud
+No hay `.env`. Si alguien crea `NUXT_PUBLIC_API_BASE_URL`, Nuxt no la lee: `runtimeConfig` no está mapeado a esa variable.
 
-Los tres ficheros viven en `.cursor/`. En el repositorio original **no están en `master`**, sino en una rama aparte; en tu proyecto nuevo ponlos en la rama principal desde el principio.
+### 17.2 Cursor Cloud
 
-#### `.cursor/environment.json`
+Igual que el backend: no hay `.cursor/environment.json` verificado en este núcleo. El entorno necesita Node 24 y pnpm 12.10.1. El frontend no necesita PostgreSQL; necesita al backend si se va a probar el login.
 
-🟩 **Núcleo, adaptando nombres.** Versión parametrizada:
+### 17.3 Telemetría de Nuxt
 
-```json
-{
-  "name": "<app> (frontend + backend)",
-  "user": "ubuntu",
-  "install": "bash /agent/repos/<app>-frontend/.cursor/install.sh",
-  "start": "bash /agent/repos/<app>-frontend/.cursor/start.sh",
-  "terminals": [
-    {
-      "name": "backend (:3000)",
-      "command": "if [ -d /agent/repos/<app>-backend ]; then cd /agent/repos/<app>-backend && npm run start:dev; else echo '<app>-backend not checked out; skipping backend dev server'; fi"
-    },
-    {
-      "name": "frontend (Nuxt :4200)",
-      "command": "cd /agent/repos/<app>-frontend && pnpm dev"
-    }
-  ],
-  "ports": [3000, 4200],
-  "repositoryDependencies": ["github.com/<org>/<app>-backend"]
-}
-```
-
-Claves del diseño:
-
-- **`install` frente a `start`.** `install` corre una vez al construir la imagen del entorno: instala paquetes del sistema y dependencias. `start` corre en **cada arranque** de la máquina: levanta servicios y aplica migraciones. Lo que dependa de un proceso vivo (PostgreSQL) va en `start`, no en `install`. El comentario del original lo dice explícitamente y es la distinción que más se equivoca.
-- **`repositoryDependencies`** hace que Cursor clone también el backend en `/agent/repos/<app>-backend`, de modo que el front pueda desarrollarse contra un API real y no contra mocks.
-- **Los dos terminales** arrancan los dos servidores de desarrollo. El condicional `if [ -d … ]` en el backend evita que el entorno falle cuando el repositorio secundario no está disponible: degrada en lugar de romper.
-- **`ports`** expone ambos para que los puedas abrir desde el navegador del host.
-
-#### `.cursor/install.sh`
-
-🟨 **Ejemplo adaptable.** El original instala PostgreSQL y `poppler-utils` porque el backend de riesgos los necesita. En un proyecto nuevo, **quita lo que no uses**: `poppler-utils` casi con seguridad sobra.
-
-```bash
-#!/usr/bin/env bash
-# Bootstrap idempotente del entorno Cloud Agent de <app>.
-#
-# Cubre el frontend (<app>-frontend, principal) más el backend
-# (<app>-backend, clonado como dependencia de repositorio) y una instancia
-# local de PostgreSQL 16.
-#
-# Las migraciones y semillas NO se ejecutan aquí: van en start.sh (dependen de
-# un PostgreSQL arrancado y deben ser idempotentes).
-set -euo pipefail
-
-FRONTEND_DIR="/agent/repos/<app>-frontend"
-BACKEND_DIR="/agent/repos/<app>-backend"
-
-echo "==> Asegurando PostgreSQL 16"
-if ! command -v pg_ctlcluster >/dev/null 2>&1; then
-  sudo apt-get update -y
-  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql postgresql-contrib
-fi
-
-echo "==> Asegurando pnpm"
-if ! command -v pnpm >/dev/null 2>&1; then
-  corepack enable >/dev/null 2>&1 || npm install -g pnpm
-fi
-
-echo "==> Instalando dependencias del frontend"
-cd "$FRONTEND_DIR"
-pnpm install --frozen-lockfile
-if [ ! -f "$FRONTEND_DIR/.env" ]; then
-  echo "==> Escribiendo .env del frontend"
-  echo "NUXT_PUBLIC_API_BASE_URL=http://localhost:3000" > "$FRONTEND_DIR/.env"
-fi
-
-if [ -d "$BACKEND_DIR" ] && [ -f "$BACKEND_DIR/package.json" ]; then
-  echo "==> Instalando dependencias del backend ($BACKEND_DIR)"
-  cd "$BACKEND_DIR"
-  npm ci
-  if [ ! -f "$BACKEND_DIR/.env" ]; then
-    echo "==> Escribiendo .env del backend con valores locales (AWS/Cognito son placeholders)"
-    cat > "$BACKEND_DIR/.env" <<'EOF'
-NODE_ENV=dev
-PORT=3000
-ALLOWED_ORIGINS=http://localhost:4200,http://localhost:3000
-
-# AWS / Cognito.
-# Los placeholders permiten que el API arranque en local. Para ejercitar los
-# flujos reales de autenticación, aporta valores reales como Cursor Secrets
-# (se inyectan como variables de entorno y tienen prioridad sobre estos).
-AWS_ACCESS_KEY_ID=local-dev-placeholder
-AWS_SECRET_ACCESS_KEY=local-dev-placeholder
-AWS_REGION=<REGION>
-AWS_S3_BUCKET_NAME=local-dev-placeholder
-COGNITO_USER_POOL_ID=local-dev-placeholder
-COGNITO_CLIENT_ID=local-dev-placeholder
-COGNITO_CLIENT_SECRET=local-dev-placeholder
-COGNITO_REGION=<REGION>
-
-# PostgreSQL local
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=postgres
-DB_NAME=<app>_dev
-EOF
-  fi
-else
-  echo "==> Repositorio de backend no encontrado; se omite su preparación"
-fi
-
-echo "==> install.sh completado"
-```
-
-Patrones que merece la pena copiar literalmente:
-
-- **`set -euo pipefail`** en la primera línea. Sin `-e`, un paso que falla no detiene el script y acabas con un entorno medio construido que parece correcto.
-- **Idempotencia por comprobación previa** (`if ! command -v …`, `if [ ! -f … ]`). El script puede ejecutarse dos veces sin romper nada ni pisar un `.env` que el desarrollador haya editado a mano.
-- **Placeholders para credenciales, nunca credenciales reales.** El backend valida su configuración con Zod al arrancar y se niega a levantar si falta una variable; los placeholders satisfacen la validación sin filtrar nada. Los valores reales entran como **Cursor Secrets**, que se inyectan como variables de entorno y tienen prioridad sobre el `.env`.
-- **Degradación suave** cuando el repositorio secundario no está.
-
-#### `.cursor/start.sh`
-
-🟨 **Ejemplo adaptable.** Reconciliación por arranque:
-
-```bash
-#!/usr/bin/env bash
-# Reconciliación por arranque del entorno Cloud Agent de <app>.
-# Arranca PostgreSQL, asegura rol y base de datos, y aplica migraciones y
-# semillas del backend. Es seguro ejecutarlo repetidamente (idempotente).
-set -euo pipefail
-
-BACKEND_DIR="/agent/repos/<app>-backend"
-
-echo "==> Arrancando el clúster PostgreSQL 16"
-sudo pg_ctlcluster 16 main start 2>/dev/null || true
-
-echo "==> Esperando a que PostgreSQL acepte conexiones"
-for _ in $(seq 1 30); do
-  if sudo -u postgres pg_isready -q; then
-    break
-  fi
-  sleep 1
-done
-sudo -u postgres pg_isready
-
-echo "==> Asegurando contraseña del rol y base de datos"
-sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER USER postgres WITH PASSWORD 'postgres';" >/dev/null
-if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='<app>_dev'" | grep -q 1; then
-  sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE DATABASE <app>_dev;"
-fi
-
-if [ -d "$BACKEND_DIR" ] && [ -f "$BACKEND_DIR/package.json" ]; then
-  echo "==> Aplicando migraciones y semillas del backend"
-  cd "$BACKEND_DIR"
-  npm run migration:run
-  npm run db:seed
-else
-  echo "==> Repositorio de backend ausente; se omiten migraciones y semillas"
-fi
-
-echo "==> start.sh completado"
-```
-
-Dos detalles no obvios:
-
-- **El bucle de espera de 30 intentos con `pg_isready`.** `pg_ctlcluster … start` retorna antes de que el servidor acepte conexiones. Sin la espera, la migración siguiente falla de forma intermitente, que es el peor modo de fallo posible. El `pg_isready` final sin `-q` deja un mensaje en el log si se agotaron los intentos.
-- **`|| true` tras el arranque del clúster.** Si PostgreSQL ya estaba arrancado, `pg_ctlcluster` devuelve código distinto de cero, y con `set -e` eso mataría el script en el segundo arranque. El `|| true` es lo que lo hace idempotente.
-
-### 17.4 Levantar el front contra el backend local
-
-1. Backend en el puerto **3000** con `ALLOWED_ORIGINS=http://localhost:4200,http://localhost:3000`.
-2. Frontend en el **4200** con `NUXT_PUBLIC_API_BASE_URL=http://localhost:3000`.
-3. Abre siempre la URL que coincida con el origen permitido. El backend del original expande por su cuenta los alias `localhost` ↔ `127.0.0.1` en su configuración CORS, pero **no des eso por supuesto en tu backend nuevo**: si tu API no hace esa expansión, entrar por `http://127.0.0.1:4200` cuando la lista dice `http://localhost:4200` produce un fallo CORS que el navegador reporta de forma confusa (ver §21).
-4. El backend debe responder con `Access-Control-Allow-Credentials: true`. Aunque el front manda el token en la cabecera `Authorization` y no en cookie de sesión del servidor, la configuración original lo activa y conviene mantener la simetría.
-
-Comprobación rápida de que el canal funciona, antes de depurar nada en el front:
-
-```bash
-curl -i -X POST http://localhost:3000/auth/login \
-  -H 'Content-Type: application/json' \
-  -H 'Origin: http://localhost:4200' \
-  -d '{"email":"<correo-ejemplo>","password":"…"}'
-```
-
-Si ahí no ves la cabecera `Access-Control-Allow-Origin`, el problema es del backend y no vas a arreglarlo tocando Nuxt.
-
-### 17.5 El directorio `scripts/`: qué es y si merece copiarlo
-
-🟨🟥 **Ejemplo de dominio con deuda incorporada. Recomendación: NO lo copies tal cual.**
-
-El original trae once ficheros en `scripts/` que forman un arnés de captura de pantalla y comparación visual con Playwright, construido para validar la implementación contra las fotos del diseño:
-
-| Fichero | Qué hace |
-|---|---|
-| `harness.mjs` | Arranca un contexto de Playwright, inyecta las cookies de sesión falsas e intercepta las llamadas al API para servir fixtures |
-| `fixture.mjs` | Define un JWT falso y un perfil de usuario con grupos, además de las respuestas simuladas del API |
-| `shoot.mjs` / `audit-shoot.mjs` | Capturan pantallas de rutas concretas |
-| `parity-spec.mjs` / `parity.mjs` | Describen y ejecutan las comparaciones de paridad con el diseño |
-| `visual-diff.mjs` | Compara píxel a píxel las capturas con las imágenes de referencia |
-| `design-ruler.mjs` / `design-grid.json` | Miden el mockup y producen las medidas que consume `useDesignGrid` |
-| `icon-boxes.mjs` / `layout-fit.mjs` | Utilidades de verificación de iconos y encaje del layout |
-
-Problemas concretos:
-
-- `visual-diff.mjs` tiene **una ruta absoluta de la máquina de un desarrollador** codificada (`/Users/…/Downloads/…`). No funciona en ninguna otra máquina ni en CI.
-- Depende de imágenes de referencia que **no están en el repositorio**.
-- `pixelmatch` y `pngjs` están declaradas en `package.json` pero **ningún fichero las importa**: son dependencias muertas (corrección 18.10).
-- Todo el arnés está acoplado a rutas, fixtures y grupos de usuario del dominio original.
-
-**Qué sí vale la pena rescatar**, si vas a trabajar contra mockups medidos al píxel: la *idea* de `harness.mjs` y `fixture.mjs`, es decir, un contexto de Playwright que inyecta la sesión por cookie e intercepta el API con respuestas fijas. Eso te permite capturar cualquier pantalla autenticada de forma determinista, sin backend. Reescríbelo desde cero para tus rutas, con rutas relativas al repositorio y las imágenes de referencia versionadas, o no lo hagas.
-
-**Qué no:** `visual-diff.mjs`, `design-ruler.mjs` y `design-grid.json` solo tienen sentido con el flujo de trabajo "el diseño llega como PNG de 1536×1024 y hay que calcarlo". Si tu diseño llega como componentes de Figma o como especificación en tokens, todo ese subsistema sobra, y con él `useDesignGrid` y las clases `.<prefijo>-grid-*` (§15.3).
+El primer `nuxt dev` en una máquina nueva pregunta si quieres participar. En CI no es interactivo y no pregunta. En local se responde y no vuelve a salir. No cambia el build.
 
 ---
-
 ## 18. Correcciones obligatorias respecto al original
 
-🟥 Esta sección es la lista cerrada de **deuda que NO debes replicar**. Cada entrada tiene la misma estructura: qué hace el original, por qué está mal, y el cambio concreto. Son referencias que aparecen citadas a lo largo de todo el documento.
+El código de las secciones 4, 5, 10, 11 y 16 ya las aplica. Están aquí para que un PR no las deshaga "porque el original lo hacía así".
 
-### 18.1 Un solo módulo de autenticación: borra `stores/auth.ts`
+### 18.1 Un solo cliente HTTP, sin store de auth paralelo
 
-**Qué hace el original.** Conviven dos implementaciones de autenticación: el composable `useAuth.ts` (375 líneas, el que realmente usa la aplicación) y un store de Pinia `stores/auth.ts` (115 líneas) que **ningún fichero importa**.
+El original tenía `composables/useAuth.ts` y, además, un `stores/auth.ts` que nadie llamaba y que hablaba con rutas que no existían (`/auth/register`, cuerpo `{ token }`). No se crea el store. El estado de sesión es el resultado de `me()`, guardado en un `useState` si hace falta pintarlo en el shell, no un segundo cliente.
 
-**Por qué está mal.** El store huérfano no es solo código muerto, es código muerto *peligroso*:
+### 18.2 Las cookies de token no se recrean
 
-| Problema | Detalle |
-|---|---|
-| Endpoints inexistentes | Llama a `/auth/register` y `/auth/me`; el backend expone `/auth/signup` y no tiene `/auth/me` |
-| Colisión de cookie | Escribe en la **misma** cookie `auth_token` que `useAuth`, pero con `maxAge: 60*60*24*7` en lugar de `3600`. Si alguien lo activa, la sesión queda desincronizada con la caducidad real del token de Cognito |
-| Modelo de permisos divergente | Usa `role?: string` (un rol); el sistema real usa `groups: string[]` del claim `cognito:groups` |
-| Navegación desde el store | Llama a `navigateTo` dentro de las acciones, mezclando estado y enrutado |
-| Sin refresco de token | No implementa el flujo de refresco; una sesión caducaría sin recuperación |
-| Sin decodificación de JWT | No lee los claims, así que no puede resolver permisos |
-| Duplica la verdad | Dos fuentes para "¿quién es el usuario?" garantizan que en algún momento discrepen |
+`auth_token`, `auth_refresh_token`, `auth_id_token` y `auth_user_email` no existen. Eran legibles por cualquier script de la página. La v2 no las sustituye por otras cookies escritas desde JavaScript.
 
-**Qué hacer.** No lo copies. Punto. La autenticación vive **solo** en `composables/useAuth.ts`. Si en algún momento necesitas estado global de sesión reactivo entre componentes, ya lo tienes: `useAuth` usa `useState('auth_user')`, que *es* el singleton.
+### 18.3 No se refresca con el email en el body
 
-### 18.2 `definePageMeta` con la cadena completa de middleware en toda ruta privada
+El `POST /auth/refresh` del original exigía el email para calcular `SECRET_HASH`. El backend v2 no lo pide. Mandar `{ email, refreshToken }` es un 400.
 
-**Qué hace el original.** La asignación de middleware por página es inconsistente. Algunas rutas privadas declaran `middleware: 'auth'`, otras declaran solo el middleware de rol, y otras no declaran nada.
+### 18.4 Un 401 no es lo mismo que un 403 ni que un 503
 
-**Por qué está mal.** El middleware de rol asume que el perfil ya está cargado y que hay token. Si se ejecuta sin `auth` delante, en el mejor caso redirige al login por un camino equivocado y en el peor deja pasar.
+`fetchProfile` del original hacía logout ante cualquier error. Un corte de red o un usuario desactivado se veían como "vuelve a escribir la contraseña". La tabla de la sección 10.3 es la que manda.
 
-**Qué hacer.** Regla sin excepciones: **`auth` siempre primero, el rol después**, y en toda página que no sea pública.
+### 18.5 Un build para todos los stages
 
-```ts
-// Página privada de cualquier rol autenticado
-definePageMeta({ middleware: ['auth'] })
+La sección 16.5 de la v1 explicaba por qué la URL del API quedaba incrustada y por qué no se podía promocionar el artefacto. Eso deja de ser verdad porque la URL es relativa. No reintroducir la variable.
 
-// Página restringida a <ROL_A>
-definePageMeta({ middleware: ['auth', '<rol-a>'] })
+### 18.6 Middleware de rol encadenado detrás de auth
 
-// Página pública con redirección si ya hay sesión
-definePageMeta({ middleware: ['guest'], layout: 'auth' })
-```
+Varias rutas del original declaraban solo el middleware de rol y un anónimo acababa en `/` en vez de en el login. `['auth', 'role']`, en ese orden.
 
-Añade a tu revisión de código: *ninguna página sin `definePageMeta`*. Una página sin metadatos es una página pública por accidente.
+### 18.7 Sin Dockerfile
 
-### 18.3 Cablea o borra el middleware de rol secundario
+El original tenía una imagen que no coincidía con `nuxt generate`. No se añade.
 
-**Qué hace el original.** `middleware/admin.ts` existe, pero **ninguna página lo referencia**. Además, a diferencia de `middleware/riesgos.ts`, **no hidrata el perfil del usuario** antes de comprobar el grupo: lee `user.value?.groups` directamente.
+### 18.8 pnpm fijado, sin dependencias muertas
 
-**Por qué está mal.** En una SPA, tras una recarga completa el estado en memoria está vacío aunque las cookies existan. `riesgos.ts` resuelve esto llamando a la carga del perfil antes de comprobar; `admin.ts` no. El día que alguien lo enganche a una página, fallará solo al recargar: el bug más difícil de reproducir que existe.
+`packageManager` es `pnpm@12.10.1`. No se declaran paquetes que nadie importa.
 
-**Qué hacer.** O lo borras, o lo arreglas para que sea idéntico en estructura al de `<ROL_A>`:
+### 18.9 `alert()` no es el sistema de errores
 
-```ts
-// middleware/<rol-b>.ts  🟩 versión corregida
-export default defineNuxtRouteMiddleware(async () => {
-  const { user, fetchProfile } = useAuth()
+Los errores de formulario usan el `Message` de PrimeVue (sección 14). `alert()` se cuela en el original en más de un sitio.
 
-  // Tras una recarga completa el estado en memoria está vacío aunque la
-  // cookie siga ahí: hay que rehidratar antes de decidir.
-  if (!user.value) {
-    await fetchProfile()
-  }
+### 18.10 El identificador de la entidad va en la ruta
 
-  if (!user.value?.groups?.includes('<ROL_B>')) {
-    return navigateTo('/')
-  }
-})
-```
-
-Mejor todavía: **genera los middleware de rol desde una fábrica** y elimina la posibilidad de divergencia.
-
-```ts
-// utils/roleGuard.ts  🟩
-export function roleGuard(group: string) {
-  return defineNuxtRouteMiddleware(async () => {
-    const { user, fetchProfile } = useAuth()
-    if (!user.value) await fetchProfile()
-    if (!user.value?.groups?.includes(group)) return navigateTo('/')
-  })
-}
-```
-
-```ts
-// middleware/<rol-a>.ts
-export default roleGuard('<ROL_A>')
-```
-
-### 18.4 Alinea el `Dockerfile` con `generate`, o bórralo
-
-**Qué hace el original.** Un `Dockerfile` de dos etapas que usa `node:26-alpine`, ejecuta `pnpm install` (sin `--frozen-lockfile`) y `pnpm build`, y arranca con `CMD ["node", ".output/server/index.mjs"]`.
-
-**Por qué está mal.** Tres fallos encadenados:
-
-1. `node:26-alpine` no coincide con el Node 22 que usan CI y el entorno local. Tres versiones mayores de diferencia en el runtime que compila el bundle.
-2. `pnpm build` no es el comando de este proyecto; el de producción es `pnpm generate` (§16.1).
-3. `.output/server/index.mjs` **no existe** con `nitro.preset: 'static'`. El contenedor construye sin error y falla al arrancar.
-4. `pnpm install` sin `--frozen-lockfile` puede resolver versiones distintas de las del lockfile, haciendo que la imagen no sea reproducible.
-
-**Qué hacer.** Si no necesitas contenedor —y en un despliegue S3 + CloudFront **no lo necesitas**—, bórralo junto con `.dockerignore`. Un fichero de infraestructura roto es peor que no tenerlo: alguien lo usará. Si lo necesitas, usa la versión corregida de §16.1 (build con `generate`, servir con nginx y fallback SPA).
-
-### 18.5 Decide el sistema de iconos antes de escribir componentes
-
-**Qué hace el original.** Dos sistemas conviven: `AnkaIcon.vue`, un componente monolítico de 348 líneas con ~46 iconos SVG como ramas `v-if`/`v-else-if`, y `primeicons`, instalado como dependencia y usado con clases `pi pi-*`.
-
-**Por qué está mal.** El fichero monolítico tiene ventajas reales (control total del trazo, cero peticiones, tipado de nombres con una unión de literales) y un coste real (todos los iconos entran en el bundle aunque uses tres; añadir uno obliga a editar un fichero de 350 líneas y a tocar el tipo; los conflictos de merge son constantes si dos personas añaden iconos a la vez). Tener **los dos** es lo peor de ambos mundos: dos estilos visuales distintos en la misma interfaz.
-
-**Qué hacer.** Elige uno, al principio, y documéntalo:
-
-- **Opción A (recomendada para empezar rápido):** una librería con tree-shaking real, por ejemplo `unplugin-icons` con un conjunto de Iconify. Importas por nombre, solo entra lo que usas, y no mantienes SVG a mano.
-- **Opción B (recomendada si el diseño exige un trazo propio):** mantén el componente monolítico, pero **borra `primeicons`** y no uses `pi pi-*` en ningún sitio. Si llegas a ~60 iconos, parte el fichero en un mapa `Record<string, string>` de rutas SVG en vez de ramas `v-if`.
-
-Lo que no es opción: dejar los dos.
-
-### 18.6 Sustituye `alert()` por el servicio de notificaciones de PrimeVue
-
-**Qué hace el original.** `useAuth.ts` llama a `alert()` dentro del flujo de `apiFetch` cuando la sesión no se puede recuperar.
-
-**Por qué está mal.** Bloquea el hilo, no se puede estilar, es imposible de testear, roba el foco de forma modal y, en algunos navegadores con pestañas en segundo plano, no se muestra en absoluto. Además, un composable no debería hacer E/S de interfaz.
-
-**Qué hacer.** PrimeVue ya está instalado y trae `ToastService`.
-
-```ts
-// plugins/primevue-toast.ts  🟩
-import ToastService from 'primevue/toastservice'
-
-export default defineNuxtPlugin((nuxtApp) => {
-  nuxtApp.vueApp.use(ToastService)
-})
-```
-
-```vue
-<!-- layouts/default.vue y layouts/auth.vue: añade una vez -->
-<Toast position="top-right" />
-```
-
-```ts
-// Dentro de useAuth, donde estaba el alert()
-const toast = useToast()
-toast.add({
-  severity: 'warn',
-  summary: 'Sesión expirada',
-  detail: 'Vuelve a iniciar sesión para continuar.',
-  life: 5000,
-})
-```
-
-Si no quieres acoplar el composable al servicio de toast, la alternativa limpia es que `useAuth` **no notifique nada** y se limite a lanzar un error tipado; que la página decida cómo mostrarlo.
-
-### 18.7 Fija la versión de pnpm en el repositorio
-
-**Qué hace el original.** El `package.json` **no declara `packageManager` ni `engines`**. El workflow de CI instala pnpm **11**. El lockfile está en formato 9.0, generado por una versión local distinta (10.x).
-
-**Por qué está mal.** Dos versiones mayores de pnpm resolviendo el mismo lockfile pueden diferir, y `--frozen-lockfile` en CI fallará con un error de lockfile desactualizado que en local no se reproduce.
-
-**Qué hacer.** Declara ambos y alinea el CI:
-
-```json
-{
-  "packageManager": "pnpm@11.0.0",
-  "engines": {
-    "node": ">=22 <23",
-    "pnpm": ">=11"
-  }
-}
-```
-
-Con `packageManager` declarado y Corepack activo, `pnpm` usa automáticamente esa versión en cualquier máquina. En el workflow, puedes entonces simplificar `pnpm/action-setup` quitando el `version: 11` fijo, para que lo lea del `package.json`.
-
-### 18.8 `loading` y `error` en el composable deben ser estado global
-
-**Qué hace el original.** En `useAuth.ts`, `user` se declara con `useState('auth_user')` —estado global compartido— pero `loading` y `error` se declaran con `ref()` plano.
-
-**Por qué está mal.** Un composable de Nuxt se ejecuta de nuevo en cada invocación. `useState` devuelve siempre la misma referencia; `ref()` crea una nueva cada vez. Resultado: si el componente A llama a `useAuth().login()` y el componente B observa `useAuth().loading`, **B nunca ve el cambio**, porque tiene su propio `ref`. Hoy no se nota porque solo la página de login observa su propio `loading`, pero es una trampa que explota en cuanto alguien pone un indicador de carga global.
-
-**Qué hacer.**
-
-```ts
-// composables/useAuth.ts  🟩 corregido
-const loading = useState<boolean>('auth_loading', () => false)
-const error = useState<string | null>('auth_error', () => null)
-```
-
-Regla general para este proyecto: **dentro de un composable, todo estado que deba compartirse entre llamadas usa `useState` con clave; nunca `ref()`.** Un `ref()` dentro de un composable solo es correcto si el estado es intencionadamente por-invocación, y en ese caso ponle un comentario diciéndolo.
-
-### 18.9 Añade scripts de `lint`, `typecheck` y `test`
-
-**Qué hace el original.** El `package.json` tiene once scripts y **ninguno** es `lint`, `typecheck` o `test`. No hay ESLint configurado. El único test del repositorio (`utils/formatAuthError.test.ts`) se ejecuta con un script específico, `test:auth-error`, que nombra el fichero a mano. **No hay `tsconfig.json`** en el repositorio: se depende por completo del que genera Nuxt en `.nuxt/`.
-
-**Por qué está mal.** Sin `typecheck`, los errores de tipo solo aparecen en el editor, y en CI nunca. Sin `lint`, no hay norma de código ejecutable. Y un script de test que nombra ficheros uno a uno deja de encontrar tests nuevos en cuanto alguien añade el segundo.
-
-**Qué hacer.**
-
-```json
-{
-  "scripts": {
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "typecheck": "nuxt typecheck",
-    "test": "node --experimental-strip-types --test \"**/*.test.ts\""
-  }
-}
-```
-
-Instala `@nuxt/eslint` (módulo oficial, genera la configuración plana y la mantiene sincronizada con la estructura de Nuxt) y `vue-tsc` (lo requiere `nuxt typecheck`). Añade un `tsconfig.json` mínimo como el de §6. Y añade un job de verificación al CI, previo al despliegue:
-
-```yaml
-  verify:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-```
-
-Fíjate en que aquí **no** se pasa `--ignore-scripts`: el job necesita que `postinstall: nuxt prepare` genere `.nuxt/tsconfig.json`, o `typecheck` falla. En el job de despliegue el original sí usa `--ignore-scripts` y funciona de milagro, porque `nuxt generate` vuelve a preparar el proyecto por su cuenta. Si quieres mantener `--ignore-scripts` por seguridad, añade un `pnpm exec nuxt prepare` explícito después del install en ambos jobs; es más honesto que depender de un efecto secundario.
-
-### 18.10 Elimina el código y las dependencias muertas
-
-**Qué hace el original.** Arrastra artefactos sin uso.
-
-| Elemento | Estado verificado |
-|---|---|
-| `components/ui/AnkaDataTable.vue` | Cero referencias |
-| `components/ui/MetricTile.vue` | Cero referencias |
-| `components/ui/ScoreCell.vue` | Cero referencias |
-| `components/KpiCard.vue` | Cero referencias |
-| `components/RatioTable.vue` | Cero referencias |
-| `stores/auth.ts` | Cero referencias (ver 18.1) |
-| `pixelmatch` (dependencia) | Declarada, nunca importada |
-| `pngjs` (dependencia) | Declarada, nunca importada |
-| `--anka-brand-purple` (token CSS) | Definido, nunca consumido |
-| `isAdmin` (en `useAuth`) | Exportado, nunca consumido |
-| Botones de `ui/TableFooter.vue` | Renderizan pero **no emiten ningún evento**: son decorativos |
-
-**Por qué está mal.** Un componente sin uso es un componente sin probar que alguien copiará creyendo que funciona. `TableFooter` es el caso más insidioso: parece una paginación y no pagina nada.
-
-**Qué hacer.** En un repositorio nuevo esto es gratis: simplemente **no los crees**. Crea un componente cuando tengas la segunda pantalla que lo necesite, no antes. Y si copias `ui/TableFooter.vue`, dale `defineEmits` de verdad o quítale los botones.
-
-### 18.11 Resuelve la anchura de la barra lateral en un solo sitio
-
-**Qué hace el original.** `main.css` define `--anka-sidebar-width`, pero los componentes del shell fijan la anchura con utilidades Tailwind literales (`w-64`, `w-20`, y los desplazamientos correspondientes en el contenido).
-
-**Por qué está mal.** La variable sugiere que cambiar un valor basta; en realidad hay que cambiar cuatro clases repartidas en dos ficheros, y el estado colapsado tiene su propio par de valores. Es exactamente el tipo de trampa que hace que un cambio visual pequeño rompa el layout en un breakpoint.
-
-**Qué hacer.** Elige una de las dos y sé consistente:
-
-- **Opción simple (recomendada):** borra la variable y deja las utilidades de Tailwind. Documenta en un comentario del layout las cuatro clases que tienen que moverse juntas.
-- **Opción completa:** usa la variable de verdad, con dos valores, y aplícala con `style` en vez de clases:
-
-```css
-:root {
-  --<prefijo>-sidebar-width: 16rem;
-  --<prefijo>-sidebar-width-collapsed: 5rem;
-}
-```
-
-```vue
-<aside :style="{ width: collapsed ? 'var(--<prefijo>-sidebar-width-collapsed)' : 'var(--<prefijo>-sidebar-width)' }">
-```
-
-### 18.12 Deduplica el refresco de token
-
-**Qué hace el original.** `apiFetch` detecta un 401, llama a `refreshSession()` y reintenta una vez.
-
-**Por qué está mal.** Si una página lanza tres peticiones en paralelo y las tres reciben 401, se disparan **tres** refrescos simultáneos. Cognito invalida el token de refresco en uso en algunas configuraciones, así que dos de los tres pueden fallar y cerrar la sesión de un usuario perfectamente válido.
-
-**Qué hacer.** Comparte una única promesa en vuelo.
-
-```ts
-// composables/useAuth.ts  🟩
-const refreshPromise = useState<Promise<boolean> | null>('auth_refresh_inflight', () => null)
-
-async function refreshSessionOnce(): Promise<boolean> {
-  if (!refreshPromise.value) {
-    refreshPromise.value = refreshSession().finally(() => {
-      refreshPromise.value = null
-    })
-  }
-  return refreshPromise.value
-}
-```
-
-Y que `apiFetch` llame a `refreshSessionOnce()`, nunca a `refreshSession()` directamente.
-
-### 18.13 Calcula la bandera `secure` de las cookies con la API de Nuxt
-
-**Qué hace el original.** Las seis cookies se declaran con `secure: process.env.NODE_ENV === 'production'`.
-
-**Por qué está mal.** `process.env` en código de cliente depende de que el empaquetador lo sustituya; en un bundle estático el resultado es frágil y poco explícito. Nuxt ofrece una bandera pensada exactamente para esto.
-
-**Qué hacer.**
-
-```ts
-const cookieOptions = {
-  sameSite: 'lax' as const,
-  secure: !import.meta.dev,
-}
-
-const token = useCookie<string | null>('auth_token', { maxAge: 3600, ...cookieOptions })
-```
-
-De paso, **extrae las opciones comunes a una constante**: en el original se repiten `sameSite` y `secure` seis veces, lo que garantiza que algún día una de las seis quede distinta.
-
-### 18.14 Nunca escondas un fallo de red detrás de datos de demostración
-
-**Qué hace el original.** `composables/useEvaluation.ts` implementa `fetchWithFallback`: captura **cualquier** error de la llamada al API y devuelve datos de demostración.
-
-**Por qué está mal.** La interfaz muestra números plausibles cuando el backend está caído, mal configurado o devolviendo 500. Nadie se entera. En una aplicación cuyo propósito es mostrar datos para tomar decisiones, esto no es un atajo de desarrollo: es un fallo de corrección.
-
-**Qué hacer.** Los datos de demostración, si los necesitas, van detrás de una bandera explícita y visible, nunca en el camino de error:
-
-```ts
-const config = useRuntimeConfig()
-const useMocks = config.public.useMocks === true   // nunca true en producción
-
-const data = useMocks ? demoData : await apiFetch<T>(url)
-```
-
-Y el error de red se propaga a la página, que lo muestra. Si decides mantener un modo demo, pinta un banner permanente en pantalla mientras esté activo.
-
-### 18.15 Termina `pnpm-workspace.yaml`
-
-**Qué hace el original.** El fichero contiene literalmente marcadores sin resolver:
-
-```yaml
-allowBuilds:
-  '@parcel/watcher': set this to true or false
-  esbuild: set this to true or false
-```
-
-**Por qué está mal.** Son valores de plantilla que nadie rellenó. pnpm los ignora o avisa, y la intención queda sin expresar.
-
-**Qué hacer.** Decide. Ambos paquetes tienen binarios y necesitan ejecutar su script de instalación:
-
-```yaml
-# pnpm-workspace.yaml
-onlyBuiltDependencies:
-  - '@parcel/watcher'
-  - esbuild
-```
-
-Esto es coherente con lo que ya dice el `.npmrc` del repositorio (`only-built-dependencies=@parcel/watcher,esbuild`); mantén una sola de las dos declaraciones, no las dos.
-
-### 18.16 La página de error debe respetar el tema
-
-**Qué hace el original.** `error.vue` fija `bg-slate-950` y `text-slate-100` directamente: **siempre oscura**, aunque el usuario tenga el modo claro activo.
-
-**Por qué está mal.** Es la única pantalla de la aplicación que ignora el sistema de temas, y aparece justo en el peor momento.
-
-**Qué hacer.** Usa los tokens, como todo lo demás: `bg-[var(--<prefijo>-bg)]` y `text-[var(--<prefijo>-text)]`. La versión corregida completa está en §8.
-
-### 18.17 No mezcles utilidades Tailwind crudas con el sistema de tokens
-
-**Qué hace el original.** `pages/signup.vue` está escrita con clases Tailwind literales de la paleta `slate` (`bg-slate-950`, `border-slate-800`, `text-slate-100`, `placeholder-slate-500`) repetidas en cada campo, mientras que `pages/login.vue` usa los tokens y los componentes de PrimeVue.
-
-**Por qué está mal.** Las dos pantallas de autenticación tienen estilos divergentes, `signup` no responde al cambio de tema, y la cadena de clases de un input se repite seis veces palabra por palabra.
-
-**Qué hacer.** Un único sistema: componentes de PrimeVue estilados por el preset Aura, con tokens para lo que haya que ajustar. La versión migrada de `signup` está en §10.
+La v1 lo deja escrito como deuda (sección 9.1): el original guardaba la selección en Pinia y los enlaces con query no leían el query. Las pantallas nuevas usan `/<entidad>/[id]`. El store, si existe, es caché de lo que la ruta ya dice.
 
 ---
-
 ## 19. Plan de implementación ordenado
 
-Cada fase termina con un **comando de verificación** que tiene que pasar antes de continuar. No avances con una fase en rojo: en este stack los fallos se encadenan y depurar la fase 6 con la 2 rota es tiempo perdido.
+### Fase 0 — Esqueleto
 
-### Fase 0 — Decisiones previas (sin código)
+Copiar `package.json`, `pnpm-workspace.yaml`, `nuxt.config.ts`, `.nvmrc`, `.gitignore`, `tsconfig.json`, `vitest.config.ts`, `utils/http.ts`, `utils/http.test.ts`, `composables/useApi.ts`, los tres middleware y las dos páginas mínimas.
 
-Resuelve y escríbelas en el README antes de teclear nada, porque todas son caras de cambiar después:
-
-1. Valor de cada marcador de §1, en especial `<prefijo>` (prefijo de tokens CSS y componentes de marca).
-2. Nombres de los dos grupos de permisos, `<ROL_A>` y `<ROL_B>`.
-3. Sistema de iconos: librería o conjunto propio (18.5).
-4. Validación de formularios: Zod + `@primevue/forms`, o validadores propios (§14).
-5. ¿Hay mockups con medidas al píxel? Si no, descarta `useDesignGrid` y las clases de rejilla (§15.3).
-
-### Fase 1 — Esqueleto y herramientas
-
-**Entregable:** el proyecto arranca en blanco, con linting y comprobación de tipos.
-
-Ficheros: `package.json`, `.npmrc`, `pnpm-workspace.yaml`, `tsconfig.json`, `.gitignore`, `.env.example`, `.vscode/settings.json`, `.vscode/extensions.json`, `nuxt.config.ts` (sin los módulos de interfaz todavía), `app.vue` mínimo.
-
-```bash
-pnpm install && pnpm typecheck && pnpm lint && pnpm dev
-# Verifica: http://127.0.0.1:4200 responde con una página en blanco sin errores en consola.
 ```
-
-### Fase 2 — Sistema de diseño y temas
-
-**Entregable:** el conmutador de tema funciona y los tokens responden en las tres capas.
-
-Ficheros: `assets/css/main.css` completo, `tailwind.config.ts`, módulos `@nuxtjs/tailwindcss`, `@nuxtjs/color-mode`, `@nuxtjs/google-fonts`, `@primevue/nuxt-module` en `nuxt.config.ts`, `components/ThemeToggle.vue`.
-
-```bash
-pnpm dev
-# Verifica, con el conmutador, que cambian a la vez:
-#  1. un elemento con bg-[var(--<prefijo>-bg)]   (tokens CSS)
-#  2. un elemento con dark:text-white            (variante de Tailwind)
-#  3. un <Button> de PrimeVue                    (darkModeSelector)
-# Y en el inspector: <html class="dark"> aparece y desaparece.
-```
-
-Esta es la fase que más vale verificar a conciencia: si las tres capas no están sincronizadas aquí, lo descubrirás con cuarenta componentes escritos.
-
-### Fase 3 — Shell de la aplicación
-
-**Entregable:** navegación completa, responsive, con rutas vacías.
-
-Ficheros: `layouts/default.vue`, `layouts/auth.vue`, `error.vue` (versión corregida), `components/AppSidebar.vue`, `AppTopbar.vue`, `AppBottomNav.vue`, `<Prefijo>Mark.vue`, el sistema de iconos elegido, y una página vacía por cada entrada del menú.
-
-```bash
-pnpm dev
-# Verifica a 390px, 768px, 1024px y 1440px de ancho:
-#  - <1024px: hamburguesa + barra inferior, sin barra lateral fija
-#  - >=1024px: barra lateral fija y colapsable, sin barra inferior
-#  - el elemento activo del menú se resalta en TODAS las rutas, incluidas las anidadas
-# Recorre la navegación entera solo con Tab.
-```
-
-### Fase 4 — Autenticación de extremo a extremo
-
-**Entregable:** iniciar sesión, cerrar sesión, recarga con sesión viva, caducidad y refresco, restablecimiento de contraseña.
-
-Ficheros: `composables/useAuth.ts` (con 18.8, 18.12 y 18.13 aplicadas), `composables/useApi.ts`, `utils/formatAuthError.ts` + su test, `middleware/auth.ts`, `guest.ts`, `utils/roleGuard.ts` + los dos middleware de rol, `plugins/auth.ts`, `plugins/primevue-toast.ts`, `pages/login.vue`, `pages/signup.vue`.
-
-```bash
-pnpm test        # debe pasar el test de formatAuthError
+pnpm install
+pnpm test
 pnpm typecheck
-pnpm dev
-```
-
-Comprobaciones manuales obligatorias, en este orden:
-
-1. Entrar a una ruta privada sin sesión → redirige a `/login`.
-2. Iniciar sesión → entra y la barra superior muestra el nombre.
-3. **Recargar con F5** → sigue dentro (esta es la que descubre los fallos de rehidratación).
-4. Borrar la cookie `auth_token` a mano y navegar → refresca en silencio y sigue dentro.
-5. Borrar `auth_token` y `auth_refresh_token` → sale al login con un mensaje legible.
-6. Con sesión activa, ir a `/login` → el middleware `guest` redirige a la raíz.
-7. Entrar con un usuario sin el grupo `<ROL_A>` a una ruta de `<ROL_A>` → redirige, no muestra la página.
-8. Credenciales incorrectas → mensaje en español de `formatAuthError`, no el texto crudo de Cognito.
-
-### Fase 5 — Capa de datos y primera pantalla real
-
-**Entregable:** una pantalla que pinta datos reales del backend, con sus estados de carga, error y vacío.
-
-Ficheros: `types/api.ts`, `utils/format.ts`, el store de entidad si lo necesitas, la primera página de dominio, los componentes de `components/ui/` que esa página requiera (`PageHeader`, `StatusChip`, y los que surjan).
-
-```bash
-pnpm dev
-# Verifica, con el backend parado: la página muestra el estado de error, NO datos inventados.
-# Con el backend en marcha: muestra datos. Con una respuesta vacía: estado vacío explícito.
-# Con un campo null en la respuesta: aparece '—', nunca 0 ni NaN.
-```
-
-### Fase 6 — Gráficos
-
-**Entregable:** un gráfico que responde al tema y al redimensionado.
-
-Ficheros: `plugins/echarts.client.ts`, `composables/useChartTheme.ts` (leyendo los tokens con `getComputedStyle`, §13.3), el primer componente de gráfico.
-
-```bash
-pnpm dev
-# Verifica:
-#  - el gráfico aparece (si no: revisa ClientOnly y el registro de componentes de ECharts)
-#  - cambia de color al conmutar el tema, sin recargar
-#  - se redimensiona al cambiar el ancho de la ventana (autoresize)
-#  - en móvil tiene altura > 0 (min-h-[Npx] en el contenedor)
-pnpm generate && pnpm preview
-# Verifica que el gráfico también aparece en el build estático: es donde fallan
-# los componentes que no respetan ClientOnly.
-```
-
-### Fase 7 — Resto de pantallas
-
-Itera por pantalla, backend y frontend juntos. Por cada una: tipos, llamada, estados, componentes, accesibilidad. No abras la siguiente con la anterior a medias.
-
-```bash
-pnpm lint && pnpm typecheck && pnpm test
-```
-
-### Fase 8 — Build y despliegue
-
-**Entregable:** el sitio desplegado y navegable por URL directa.
-
-Ficheros: `.github/workflows/deploy.yml`, el job `verify`, y el PR **separado** de infraestructura (bucket, distribución, respuestas de error personalizadas, rol OIDC, parámetros SSM).
-
-```bash
 pnpm generate
-ls .output/public/index.html && ls .output/public/_nuxt/
-npx serve .output/public -s     # el -s activa el fallback SPA, igual que CloudFront
-# Verifica: entrar DIRECTAMENTE a http://localhost:3000/<ruta-profunda> carga la aplicación.
 ```
 
-Tras el primer despliegue, la prueba que descubre la configuración ausente de CloudFront (§16.6):
+Los tres terminan bien antes de seguir. `generate` produce `.output/public` y el `index.html` contiene `apiBase:"/api"`.
 
-```bash
-curl -I https://<DOMINIO_BASE>/<ruta-profunda>
-# Debe devolver 200 y el HTML de la aplicación. Un 403 o un 404 significa que
-# faltan las respuestas de error personalizadas en la distribución.
+### Fase 1 — Design system y shell
+
+Secciones 7 y 8. Sustituir el `main.css` mínimo por el de la sección 7. El shell (sidebar, topbar, layouts `default` y `auth`) se copia y se le quita cualquier lectura de cookies de token: el nombre del usuario sale de `me()`.
+
+```
+pnpm typecheck && pnpm generate
 ```
 
-### Fase 9 — Entorno Cursor y documentación
+### Fase 2 — Login real
 
-Ficheros: `.cursor/environment.json`, `.cursor/install.sh`, `.cursor/start.sh`, `README.md`, `AGENTS.md`.
+Pantalla de login sobre el layout `auth`, con los cuatro retos de la sección 10.2. Contra el backend local:
 
-```bash
-bash .cursor/install.sh && bash .cursor/start.sh
-# Ejecútalos DOS VECES seguidas: ambos deben terminar sin error las dos veces.
 ```
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:4200/api/health
+```
+
+Tiene que ser 200. Luego el login se prueba en el navegador: cookie `httpOnly` visible en el panel de aplicación y ausente de `document.cookie`.
+
+### Fase 3 — Primera pantalla de dominio
+
+Una lista paginada con `useApi().api`, ruta con `[id]`, middleware `auth`. Vacío, error 503 y 401 (se fuerza cerrando sesión en otra pestaña) tienen un estado visible.
+
+### Fase 4 — Documentos y gráficos
+
+Cuando el dominio los necesite. La subida sigue la sección 11.2. Los gráficos, la sección 13, dentro de `<ClientOnly>`.
+
+### Fase 5 — Pipeline
+
+Workflows de la sección 16. El primer deploy espera a que el stage `dev` del backend haya escrito los parámetros `web/bucket-name` y `web/distribution-id`. Environments `qa` y `prod` con revisores.
 
 ---
-
 ## 20. Checklist final de aceptación
 
-Marca cada punto solo después de comprobarlo en ejecución, no leyendo el código.
-
-**Configuración y arranque**
-
-- [ ] `pnpm install --frozen-lockfile` funciona en una máquina limpia
-- [ ] `packageManager` y `engines` declarados, y CI usa la misma versión de pnpm
-- [ ] `pnpm dev` levanta en `127.0.0.1:4200` sin avisos en consola
-- [ ] `pnpm lint`, `pnpm typecheck` y `pnpm test` existen y pasan
-- [ ] `.env.example` presente, `.env` en `.gitignore`
-- [ ] `pnpm-workspace.yaml` sin marcadores de plantilla sin resolver
-
-**Temas y diseño**
-
-- [ ] El conmutador cambia a la vez tokens CSS, variantes `dark:` de Tailwind, componentes de PrimeVue y colores de ECharts
-- [ ] La preferencia de tema sobrevive a una recarga
-- [ ] No queda ninguna clase de color literal (`bg-slate-*`, `text-slate-*`) fuera del propio `main.css`
-- [ ] Ningún token definido sin consumir, ni consumido sin definir
-- [ ] `error.vue` respeta el tema
-
-**Navegación y permisos**
-
-- [ ] Toda página tiene `definePageMeta`; ninguna es pública por omisión
-- [ ] Toda ruta privada lleva `['auth', …]` con `auth` en primera posición
-- [ ] Los middleware de rol rehidratan el perfil antes de comprobar el grupo
-- [ ] El resaltado del menú activo funciona en rutas anidadas
-- [ ] Recargar con F5 en una ruta privada mantiene la sesión
-
-**Autenticación**
-
-- [ ] Existe **una sola** implementación de sesión; no hay store de Pinia de autenticación
-- [ ] `loading` y `error` del composable usan `useState`, no `ref`
-- [ ] El refresco de token está deduplicado con una promesa en vuelo compartida
-- [ ] El 401 reintenta **una** vez y, si vuelve a fallar, cierra sesión limpiamente
-- [ ] Los errores de autenticación se muestran en español a través de `formatAuthError`
-- [ ] No queda ningún `alert()` en el código
-
-**Datos**
-
-- [ ] Un fallo de red produce un estado de error visible, nunca datos de demostración
-- [ ] Los valores ausentes se pintan como `'—'`, nunca como `0`
-- [ ] Toda pantalla tiene sus tres estados: cargando, error y vacío
-- [ ] Ninguna página usa `useFetch` ni `useAsyncData` para llamadas autenticadas
-
-**Gráficos**
-
-- [ ] Todo `VChart` está dentro de `<ClientOnly>`
-- [ ] Todo contenedor de gráfico tiene altura mínima explícita
-- [ ] Los colores del gráfico se leen de los tokens, no están duplicados en hexadecimal
-- [ ] Los gráficos aparecen también en `pnpm generate` + `pnpm preview`
-
-**Accesibilidad**
-
-- [ ] Hay estilo `:focus-visible` global
-- [ ] Hay enlace de salto al contenido
-- [ ] Todo botón solo-icono tiene `aria-label`
-- [ ] Todo SVG decorativo tiene `aria-hidden="true"`
-- [ ] Se respeta `prefers-reduced-motion`
-- [ ] El menú móvil atrapa el foco y cierra con Escape
-- [ ] Los gráficos tienen alternativa textual
-
-**Despliegue**
-
-- [ ] El comando de producción es `pnpm generate` y el artefacto es `.output/public/`
-- [ ] Los tres parámetros SSM existen para cada stage
-- [ ] El rol OIDC tiene permisos acotados, sin comodines de servicio
-- [ ] `index.html` se sirve con `no-store`; el resto, inmutable
-- [ ] La distribución mapea 403 y 404 a `/index.html` con código 200
-- [ ] Una URL profunda cargada directamente funciona
-- [ ] No hay `Dockerfile` roto en el repositorio
-
-**Higiene**
-
-- [ ] Cero componentes sin referencias
-- [ ] Cero dependencias declaradas y no importadas
-- [ ] Cero rutas absolutas de máquinas de desarrollo en scripts
-- [ ] Un único sistema de iconos
+- [ ] `pnpm test`, `pnpm typecheck` y `pnpm generate` pasan.
+- [ ] El `index.html` generado contiene `apiBase:"/api"` y no contiene un host de API ni un stage.
+- [ ] `rg -n "auth_token|Authorization|localStorage" --glob '!node_modules/**' --glob '!.nuxt/**'` no devuelve nada en el código propio.
+- [ ] `document.cookie` en la pantalla autenticada no muestra la sesión. La pestaña Application del navegador muestra la cookie de access con `HttpOnly`.
+- [ ] Login con MFA recorre el reto y acaba en `me()` con los grupos reales.
+- [ ] Una llamada que recibe 401 refresca una sola vez aunque haya varias en paralelo (se ve una sola línea `POST /api/auth/refresh` en la red).
+- [ ] Con el backend apagado, la pantalla dice que no hay servicio y no redirige al login en bucle.
+- [ ] Un usuario desactivado ve el 403 y no un formulario de contraseña.
+- [ ] `curl http://127.0.0.1:4200/api/health` devuelve el JSON del backend.
+- [ ] El deploy de `dev` sirve `https://<DOMINIO_APP>/` y `https://<DOMINIO_APP>/api/health` en el mismo host.
+- [ ] Recargar una ruta profunda (`/algo/123`) devuelve la app, no un 403/404 de S3. Eso lo hace la CloudFront Function del backend; si falla, el arreglo es de ese stack, no un `200.html` trampas en el cliente.
 
 ---
-
 ## 21. Errores conocidos y cómo evitarlos
 
-Catálogo de fallos que este stack produce en la práctica, con el síntoma primero —que es como los vas a encontrar— y la causa después.
+### 21.1 Llamar al puerto 3000 desde el navegador
 
-### 21.1 `EMFILE: too many open files` al arrancar
+Síntoma: el login "no guarda la sesión" o el navegador bloquea la respuesta por CORS. Causa: `apiBase` absoluto a `localhost:3000`. El navegador tiene que llamar a `/api` en el 4200. El proxy está en `vite.server.proxy`.
 
-**Síntoma.** `pnpm dev` arranca y muere, o el recargado en caliente deja de funcionar al cabo de unos minutos.
+### 21.2 `useFetch` para datos con sesión
 
-**Causa.** El observador de ficheros intenta vigilar `node_modules`, `.nuxt`, `.output` y `dist`. Son decenas de miles de ficheros y se agota el límite de descriptores del sistema.
+No pasa por `useApi`, así que un 401 no refresca y la pantalla trata la sesión como muerta. Sección 11.1.
 
-**Solución.** Dos mecanismos, porque actúan en capas distintas y **hacen falta los dos**: `ignore` en la raíz de `nuxt.config.ts` (afecta al escaneo de Nuxt) y `vite.server.watch.ignored` (afecta al observador de Vite). Están transcritos en §5. Si aun así ocurre, sube el límite del sistema con `ulimit -n 10240`.
+### 21.3 Refresh por componente
 
-### 21.2 Un gráfico no aparece, o lanza "Component is not exists"
+Si la promesa en vuelo se crea dentro de `useApi()`, cada componente tiene la suya y cinco 401 disparan cinco refresh. Cognito rota el token y los cuatro sobrantes fallan. La promesa es una variable de módulo (`refreshInflight` en `useApi.ts`). No se mueve dentro de la función.
 
-**Síntoma.** Hueco en blanco donde debería estar el gráfico, o un error en consola mencionando un componente de ECharts.
+### 21.4 `$fetch<T>`
 
-**Causa.** ECharts se importa de forma modular: solo existe lo que registras explícitamente en `plugins/echarts.client.ts`. Si tu `option` usa `type: 'pie'` y nunca hiciste `use([PieChart])`, ECharts no sabe dibujarlo.
+En Nuxt 4.6 el `$fetch` autoimportado no acepta argumento de tipo (`Expected 0 type arguments`). Se castea el resultado: `return (await $fetch(...)) as T`. Volver a poner el genérico rompe `pnpm typecheck`.
 
-**Solución.** Añade el módulo al `use([...])` del plugin. Lo mismo para componentes auxiliares: `LegendComponent`, `DataZoomComponent`, `MarkLineComponent`. Ver la tabla de §13.1.
+### 21.5 Directorio `app/`
 
-### 21.3 El gráfico se ve con 0 píxeles de alto
+Crearlo cambia el `srcDir` de Nuxt 4 y desaparecen las páginas. Sección 6.
 
-**Síntoma.** El componente existe en el DOM pero no se ve nada; el `<canvas>` mide 0.
+### 21.6 `tailwindcss` solo como transitiva
 
-**Causa.** ECharts mide su contenedor al montarse. En un contenedor flex o grid sin altura resuelta, mide cero y dibuja cero. No se recupera solo.
+pnpm no deja que el módulo resuelva `tailwindcss/nesting`. Va en `devDependencies` directas, fijado en 3.4.19 (el módulo 6.14 es de Tailwind 3, no de Tailwind 4). El aviso de nesting puede seguir saliendo; el generate termina bien.
 
-**Solución.** Altura mínima explícita siempre: `class="h-full w-full min-h-[240px]"`, y `autoresize` en el `<VChart>`.
+### 21.7 Aviso de vue-tsc y `sfc-route-blocks`
 
-### 21.4 El gráfico rompe el build estático
+Sale siempre, por stderr, y el comando sigue en 0. No se "arregla" pinchando la versión de vue-router a mano: Nuxt es quien la trae. Se ignora hasta un PR que suba el conjunto Nuxt/vue-tsc y demuestre que el aviso desaparece sin romper el typecheck.
 
-**Síntoma.** `pnpm dev` funciona; `pnpm generate` falla con `document is not defined` o `window is not defined`.
+### 21.8 HTML cacheado un año
 
-**Causa.** Aunque `ssr: false`, el prerenderizado de `nuxt generate` ejecuta los componentes en Node para producir el HTML inicial. ECharts necesita el DOM.
+Un `s3 sync` con un solo `cache-control` largo sirve el `index.html` viejo, que apunta a chunks que el `--delete` ya borró. La pantalla blanca con errores de chunk en consola es este fallo. El workflow separa HTML y assets (16.2).
 
-**Solución.** `<ClientOnly>` alrededor de todo `<VChart>`, y el plugin con sufijo `.client.ts`. Sin excepciones. Aprovecha el slot `#fallback` para pintar un esqueleto con la misma altura y evitar el salto de layout.
+### 21.9 Custom error responses de CloudFront hacia `index.html`
 
-### 21.5 Al recargar, el usuario aparece como no autenticado durante un instante
+Si alguien "arregla" el 404 de las rutas del SPA con una custom error response de CloudFront, también convierte los 404 de `/api/*` en HTML. El backend ya resuelve esto con una CloudFront Function. No se añade la custom error response.
 
-**Síntoma.** Parpadeo: se ve el layout sin nombre de usuario, o un redirect momentáneo al login.
+### 21.10 Decodificar el access token
 
-**Causa.** Las cookies existen, pero el estado en memoria (`useState('auth_user')`) está vacío tras una carga completa. La rehidratación es asíncrona.
+Además de que la cookie es `httpOnly` y no se puede, el perfil que saldría de los claims no es el de la tabla `users` (grupos y estado cambian sin reemitir el token). `me()` es la fuente.
 
-**Solución.** El plugin `plugins/auth.ts` inicializa la sesión en el arranque, y los middleware de rol rehidratan el perfil antes de decidir. Si persiste el parpadeo, muestra un estado de carga mientras `user` sea `null` y haya cookie de token, en lugar de asumir "sin sesión".
+### 21.11 Primer `nuxt dev` interactivo
 
-### 21.6 Fallo de CORS contra el backend local
-
-**Síntoma.** La petición se ve en la pestaña de red con estado `(failed)` o `CORS error`, y en consola aparece que falta `Access-Control-Allow-Origin`.
-
-**Causa habitual.** Abriste el front por `http://localhost:4200` pero el backend solo permite `http://127.0.0.1:4200`, o al revés. Para el navegador son **orígenes distintos**, aunque resuelvan a la misma máquina.
-
-**Solución.** Tres medidas, por orden de robustez: que `devServer.host` en `nuxt.config.ts` fije un host determinista; que `ALLOWED_ORIGINS` del backend incluya **las dos** formas; y, si controlas el backend, que expanda los alias `localhost` ↔ `127.0.0.1` automáticamente al construir su lista CORS. El backend del proyecto original hace lo tercero; no lo des por hecho en uno nuevo.
-
-**Segunda causa.** La petición de preflight `OPTIONS` falla. Compruébalo con `curl -i -X OPTIONS` antes de culpar al frontend.
-
-### 21.7 El puerto 4200 está ocupado
-
-**Síntoma.** Nuxt arranca en 4201 y entonces fallan todas las peticiones por CORS.
-
-**Causa.** Otro proceso ocupa el 4200; Nuxt busca el siguiente libre en silencio.
-
-**Solución.** Lee siempre la URL que imprime Nuxt al arrancar, no la que esperabas. Si vas a cambiar de puerto, actualiza también `ALLOWED_ORIGINS` del backend.
-
-### 21.8 `--frozen-lockfile` falla solo en CI
-
-**Síntoma.** `pnpm install` local funciona; el mismo comando en CI aborta diciendo que el lockfile no está actualizado.
-
-**Causa.** Versiones distintas de pnpm entre tu máquina y el runner (§18.7), o alguien editó `package.json` sin regenerar el lockfile.
-
-**Solución.** Declara `packageManager`. Y nunca edites `package.json` a mano para las dependencias: usa `pnpm add` / `pnpm remove`.
-
-### 21.9 La clase `dark` nunca aparece en `<html>`
-
-**Síntoma.** El conmutador no hace nada, o escribe `class="dark-mode"` en vez de `class="dark"`.
-
-**Causa.** Falta `classSuffix: ''` en la configuración de `@nuxtjs/color-mode`. Por defecto el módulo añade el sufijo `-mode`, y entonces ni Tailwind (`darkMode: 'class'`) ni PrimeVue (`darkModeSelector: '.dark'`) reconocen el selector.
-
-**Solución.** `colorMode: { classSuffix: '' }`. Es una línea y rompe las tres capas a la vez si falta. Ver §7.
-
-### 21.10 Tailwind no genera clases que sí están en el código
-
-**Síntoma.** Escribes `bg-<prefijo>-elevated` y no pasa nada; en el inspector la clase está en el elemento pero no existe en el CSS.
-
-**Causa A.** El fichero no está en el ámbito escaneado. `tailwind.config.ts` tiene `content: []` **a propósito**: el módulo `@nuxtjs/tailwindcss` rellena las rutas automáticamente con los directorios de Nuxt. Si colocas componentes fuera de esos directorios, no se escanean.
-
-**Causa B.** Construiste el nombre de clase por concatenación (`` `bg-${color}-500` ``). Tailwind escanea texto plano: no puede ver clases que solo existen en tiempo de ejecución.
-
-**Solución.** Para la B, usa un mapa explícito de valor a cadena de clases completas, nunca interpolación. Es el patrón que usan `StatusChip` y `SignalDot` en el original, y es la razón por la que lo usan.
-
-### 21.11 Dos componentes con el mismo nombre de fichero
-
-**Síntoma.** Se renderiza el componente equivocado, sin ningún error.
-
-**Causa.** `components: { dirs: [{ path: '~/components', pathPrefix: false }] }` registra los componentes con nombre **plano**, ignorando el directorio. `components/charts/Card.vue` y `components/ui/Card.vue` compiten por el mismo nombre global `<Card>`.
-
-**Solución.** Nombres de fichero **únicos en todo el árbol** de `components/`. Prefija por área cuando haga falta (`UiCard.vue`, `ChartCard.vue`). Ver §12.2.
-
-### 21.12 Una variable de entorno nueva no llega al navegador
-
-**Síntoma.** `useRuntimeConfig().public.loQueSea` es `undefined` en el cliente.
-
-**Causa.** Solo las variables declaradas en `runtimeConfig.public` del `nuxt.config.ts` **y** con el prefijo `NUXT_PUBLIC_` en el entorno llegan al cliente, y solo en tiempo de build (§16.5).
-
-**Solución.** Declara la clave en `runtimeConfig.public`, nómbrala `NUXT_PUBLIC_*` en el `.env`, y **vuelve a construir**. Si esperabas poder cambiarla sin redesplegar, releer §16.5.
-
-### 21.13 Tras desplegar, los usuarios siguen viendo la versión antigua
-
-**Síntoma.** Tú ves lo nuevo; otros no, durante horas.
-
-**Causa.** `index.html` se quedó con la cabecera de caché de un año que puso el `sync`, porque faltó el `cp` posterior o el `--metadata-directive REPLACE`.
-
-**Solución.** Los dos comandos de §16.4, en ese orden, y la invalidación de CloudFront sobre `/*`.
-
-### 21.14 Entrar por URL directa devuelve 403 o 404
-
-**Síntoma.** La navegación interna funciona; recargar en una ruta profunda rompe.
-
-**Causa.** CloudFront pide a S3 un objeto que no existe. Con Origin Access Control el error es **403**, no 404, que es por lo que mucha gente solo configura el 404 y sigue roto.
-
-**Solución.** Respuestas de error personalizadas para 403 **y** 404 → `/index.html` con código 200 (§16.6).
-
-### 21.15 `nuxt typecheck` falla con cientos de errores de tipos ausentes
-
-**Síntoma.** No encuentra `#imports`, `#app`, ni los tipos autogenerados.
-
-**Causa.** No se ejecutó `nuxt prepare`, que es quien genera `.nuxt/tsconfig.json` y las declaraciones de los auto-imports. Pasa con `--ignore-scripts` en CI (§18.9).
-
-**Solución.** `pnpm exec nuxt prepare` antes de comprobar tipos.
-
-### 21.16 Un auto-import no se resuelve en un fichero nuevo
-
-**Síntoma.** `useAuth is not defined`, o el editor lo marca en rojo aunque la aplicación funcione.
-
-**Causa.** El auto-import de Nuxt cubre `composables/`, `utils/` y `components/` solo en el **primer nivel** por defecto, y las declaraciones de tipos se regeneran al arrancar el servidor de desarrollo.
-
-**Solución.** Reinicia `pnpm dev` tras crear ficheros nuevos en esos directorios. Si el problema es solo del editor, ejecuta `pnpm exec nuxt prepare` y recarga la ventana.
+Pregunta por la telemetría y, si falta el plugin de nesting, ofrece instalarlo. En un script se exporta `CI=true` o se responde antes. No afecta a `nuxt generate`.
 
 ---
+## Anexo A — Puntos abiertos
 
-## 22. Lo que no se pudo determinar desde el repositorio
+Los de plataforma (dominio, cuentas, `<ROL_A>`, correo, países, Cognito Plus) están en el Anexo A del backend y se responden una vez para los dos repositorios.
 
-Esta sección es deliberada: **lo que no consta, no se inventa**. Si algo de aquí te hace falta, pregúntalo antes de decidir.
+Los que solo afectan al cliente:
 
-### 22.1 Ausente del repositorio del frontend
-
-| Elemento | Situación |
+| Punto | Opciones |
 |---|---|
-| `tsconfig.json` | **No existe** ni en disco ni en el historial de git. El proyecto depende enteramente del que Nuxt genera en `.nuxt/`. El `tsconfig.json` mínimo que propone §6 es una **recomendación**, no una transcripción |
-| Configuración de ESLint o Prettier | No hay ningún fichero de configuración, ni dependencias de linting. La propuesta de §18.9 es recomendación |
-| Configuración de CloudFront y del bucket S3 | **Nada** vive en el repositorio del frontend: ni plantilla de infraestructura, ni política de bucket, ni respuestas de error personalizadas. Lo descrito en §16.6 se deduce de lo que el workflow da por supuesto, no de un fichero |
-| Valores reales de los parámetros SSM | El workflow los lee en ejecución; sus valores no están en el repositorio |
-| Imágenes de referencia del diseño | `visual-diff.mjs` las espera en una ruta absoluta de una máquina de desarrollo. No están versionadas y no se pudieron inspeccionar |
-| Tests más allá de uno | El único test del repositorio es `utils/formatAuthError.test.ts`. No hay tests de componentes, ni de integración, ni configuración de Vitest o Playwright Test |
-| Los dominios `*.kipu.pe` que mencionaba el encargo | **No aparecen en ningún fichero del repositorio del frontend.** Se encontraron únicamente en documentación del repositorio del backend. Están parametrizados como `<DOMINIO_BASE>` por completitud, pero el frontend no los referencia |
-| Activos de marca | Los dos PNG que consume `<Prefijo>Mark` existen como binarios; no hay fuente vectorial ni guía de marca en el repositorio |
+| `<prefijo>` de los tokens CSS | El de la marca, corto. Propuesto: el mismo `<app-short>` |
+| `<descripción corta de la app>` | El título de la pestaña. Lo da producto |
+| Idioma | Español fijo, igual que los mensajes de la API (ADR-11 del backend). Un segundo idioma es un mapa de cadenas, no una librería metida por adelantado |
+| Pantallas del dominio | No están en este documento a propósito. Se construyen con las secciones 8, 12 y 14, contra el OpenAPI del backend, cuando el dominio exista |
+| Pruebas de navegador | No hay Playwright en el núcleo. Se añade cuando exista un flujo (login con MFA, un alta, una subida) que merezca un spec, contra el stage `dev`, no contra mocks del contrato |
 
-### 22.2 Discrepancias entre lo que se esperaba y lo que hay
+Verificado el 2026-10-08 sin cuenta AWS: install, 3 tests de Vitest, typecheck (exit 0, con el aviso de vue-router documentado en 21.7), `nuxt generate` produciendo `.output/public` con `apiBase:"/api"`, y el proxy de desarrollo devolviendo el health del backend. No verificado: el `s3 sync` contra un bucket real y el login en un navegador contra Cognito. El checklist de la sección 20 es esa verificación.
 
-| Esperado | Realidad verificada |
-|---|---|
-| `AnkaIcon.vue` con ~350 iconos SVG | El fichero tiene **348 líneas** y define **~46 nombres de icono**. La cifra de 350 corresponde a las líneas, no a los iconos |
-| pnpm consistente | CI instala pnpm **11**; el lockfile está en formato **9.0** y fue generado localmente con **10.33.3**. No hay `packageManager` que arbitre (§18.7) |
-| Dockerfile funcional | Usa `node:26-alpine` frente al Node 22 del resto, y arranca un fichero que esta configuración no genera (§18.4) |
-
-### 22.3 Decisiones del original cuya motivación no consta
-
-No hay comentario, commit ni documento que las explique. Se describen tal cual, sin atribuirles una razón inventada:
-
-1. **Por qué `stores/auth.ts` sigue en el repositorio.** Parece un primer intento anterior a `useAuth.ts` que nadie borró, pero no hay nada que lo confirme. Lo que sí es verificable es que no se usa y que es incompatible con el backend actual.
-2. **Por qué el middleware del segundo rol existe sin estar enganchado a ninguna página.** Puede ser preparación para pantallas futuras o un resto de una iteración previa. No consta.
-3. **Por qué `pnpm-workspace.yaml` quedó con los marcadores de plantilla sin rellenar.** Probablemente un `pnpm approve-builds` interrumpido, pero es conjetura.
-4. **Por qué conviven `primeicons` y el conjunto propio de iconos.** No hay nota de decisión. Se observa que ambos se usan.
-5. **Por qué `useAuth` mezcla `useState` para el usuario y `ref` para `loading`/`error`.** No hay indicio de que sea intencionado; el efecto práctico es un fallo latente (§18.8).
-6. **Por qué el job de despliegue usa `--ignore-scripts`.** Lo razonable es suponer que es una medida de seguridad frente a scripts de instalación de dependencias, pero no está documentado, y tiene el efecto colateral de saltarse el `postinstall` del propio proyecto.
-7. **Por qué `error.vue` fija colores oscuros literales** en lugar de usar los tokens, siendo la única pantalla que lo hace.
-8. **Si `ui/TableFooter.vue` iba a implementar paginación.** Los botones existen y no emiten eventos; no hay rastro de una implementación empezada.
-
-### 22.4 Dependencias externas que el frontend asume y no puede verificar
-
-- **Comportamiento exacto del proveedor de identidad** ante tokens caducados, revocados o emitidos para otro cliente. El frontend solo observa el código HTTP que le devuelve el backend.
-- **Vida real del token de refresco.** La cookie se fija a 30 días; si el proveedor lo invalida antes, el frontend se entera con un 401 y cierra sesión.
-- **Política del proveedor sobre refrescos concurrentes.** Es la razón por la que §18.12 recomienda deduplicar, pero no se pudo confirmar si el proveedor concreto invalida el token de refresco al usarlo.
-- **Contenido real de los claims del token.** El frontend decodifica `cognito:groups`, `given_name`, `family_name` y `email`. Que esos claims estén presentes depende de la configuración del grupo de usuarios, que no es visible desde el repositorio.
-
-
-
-
+---
