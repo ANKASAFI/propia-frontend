@@ -5,6 +5,8 @@
 > **Versión 2.0 — 2026-10-08.** Reemplaza a la v1. La v1 queda en el historial de git como referencia del sistema visual y **no se usa para implementar** autenticación, llamadas HTTP, configuración de entorno ni despliegue. Cuando las dos no coinciden, manda esta.
 >
 > El núcleo nuevo (configuración, cliente HTTP, middleware, tests y el build estático) se compiló y se ejecutó antes de transcribirlo: Node 24.21, pnpm 12.10.1, Nuxt 4.6.0, Vue 3.5, PrimeVue 4.5, Tailwind 3.4. `pnpm test` (3 tests), `pnpm typecheck` y `pnpm generate` terminaron bien, y el dev server en `127.0.0.1:4200` hizo de proxy de `GET /api/health` hacia el backend en el puerto 3000 (200, con `x-request-id`). El HTML generado lleva `apiBase: "/api"`, sin ningún host incrustado. Lo que no se pudo hacer sin la cuenta AWS (el primer `s3 sync` real) está en el checklist.
+>
+> **Versión 2.1 — 2026-10-08.** Añade los controles de prioridad 0, todos sin coste o dentro de una capa gratuita: CSP con `script-src` por hashes, escrita por el build (5.1), tipos generados desde el OpenAPI del backend (11.9), errores del navegador en Sentry con el `requestId` de cada llamada (11.10), `Idempotency-Key` en los `POST` (10.4), y Actions por SHA con auditoría de workflows, SBOM y procedencia firmada (16). Ese código **no se ejecutó** al escribirlo: va marcado 🆕 **V2.1** y su verificación está en el checklist (20).
 
 ---
 ## 0. Propósito y cómo usar este documento
@@ -25,6 +27,7 @@ Un agente que implementa el repositorio `<app-frontend>` y que no tiene el repos
 |---|---|
 | 🟩 **NÚCLEO** | Copiar, sustituyendo marcadores |
 | 🆕 **V2** | Copiar igual. La etiqueta solo dice que no estaba así en el original |
+| 🆕 **V2.1** | Copiar igual. Escrito contra el código verificado pero sin ejecutar: la primera implementación corre el checklist de la sección 20 |
 | 🟦 **EJEMPLO DE DOMINIO** | No copiar el contenido de negocio. Copiar la forma |
 | 🟥 **DEUDA — NO REPLICAR** | No copiar. La sección 18 dice qué hacer en su lugar |
 
@@ -127,7 +130,16 @@ No hay HTML por usuario. La sesión está en una cookie que el servidor de Nuxt 
 
 ### 2.2 Lo que el cliente no decide
 
-WAF, cabeceras de seguridad del documento (HSTS, `frame-ancestors`, `Permissions-Policy`), el certificado y el enrutado los pone el stack `web` del backend. El cliente no añade una meta CSP que contradiga esa policy. Si hace falta un `script-src` más laxo por un vendor, se cambia la response headers policy del stack, en un PR, no con una etiqueta en `nuxt.config`.
+WAF, cabeceras de seguridad del documento (HSTS, `frame-ancestors`, `Permissions-Policy`), el certificado y el enrutado los pone el stack `web` del backend.
+
+🆕 **V2.1.** La CSP va en dos mitades y el navegador aplica las dos:
+
+| Mitad | Quién la escribe | Qué lleva |
+|---|---|---|
+| Cabecera `Content-Security-Policy` | CloudFront (stack `web` del backend) | `frame-ancestors 'none'`, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `upgrade-insecure-requests`. Lo que una `<meta>` no puede expresar o no debe depender del build |
+| `<meta http-equiv="Content-Security-Policy">` | `scripts/csp.mjs`, al final de `pnpm generate` (5.1) | `default-src 'self'`, `script-src 'self'` con el sha256 de cada script en línea del HTML, `connect-src` con el host de Sentry, y el resto |
+
+La meta la escribe el cliente porque los hashes cambian en cada build (el script en línea de Nuxt lleva el `buildId`) y el stack del backend no se redespliega con cada release del frontend. Si un vendor necesita otro origen, se añade en `scripts/csp.mjs`, en un PR. Nunca se agrega `'unsafe-inline'` a `script-src`.
 
 ---
 ## 3. Prerrequisitos
@@ -144,6 +156,8 @@ WAF, cabeceras de seguridad del documento (HSTS, `frame-ancestors`, `Permissions
 | Vitest | 5.0.3 |
 | TypeScript | 6.0.3 |
 | vue-tsc | 3.3.12 |
+| `@sentry/vue` | 11.6.0, la misma major que `@sentry/node` del backend (🆕 V2.1) |
+| `openapi-typescript` | 7.13.0, por `pnpm dlx` y no como dependencia (🆕 V2.1, 11.9) |
 
 TypeScript queda en 6.0.3, el mismo que el backend. vue-tsc 3.3 lo acepta. El aviso de `vue-router/volar/sfc-route-blocks` sigue saliendo por stderr y el comando termina en 0. TypeScript 7 no entra en ninguno de los dos repos: `typescript-eslint` exige `< 6.1` y el CLI de Nest fija `~6.0`. Pinia 4 solo cambia el empaquetado (ESM) y los avisos de desarrollo; `defineStore` sigue igual y el `package.json` ya es `"type": "module"`.
 
@@ -170,17 +184,19 @@ Archivo: `package.json`
   },
   "scripts": {
     "dev": "nuxt dev",
-    "generate": "nuxt generate",
+    "generate": "nuxt generate && node scripts/csp.mjs",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "typecheck": "nuxt typecheck",
-    "test": "vitest run"
+    "test": "vitest run",
+    "api:types": "pnpm dlx openapi-typescript@7.13.0 \"${OPENAPI_URL:-https://raw.githubusercontent.com/<GITHUB_ORG>/<app>/main/openapi/openapi.json}\" -o types/api.gen.ts"
   },
   "dependencies": {
     "@nuxtjs/color-mode": "^4.0.1",
     "@nuxtjs/google-fonts": "^3.2.0",
     "@pinia/nuxt": "^1.0.2",
     "@primevue/nuxt-module": "^4.5.5",
+    "@sentry/vue": "^11.6.0",
     "echarts": "^6.1.0",
     "nuxt": "^4.4.8",
     "pinia": "^4.0.3",
@@ -215,11 +231,14 @@ pnpm 12 aborta el install si un paquete quiere ejecutar un script que no está e
 | Script | Qué hace |
 |---|---|
 | `dev` | Nuxt en `127.0.0.1:4200`, con el proxy de `/api` |
-| `generate` | El artefacto de release: `.output/public` |
+| `generate` | El artefacto de release: `.output/public`. 🆕 V2.1: termina con `scripts/csp.mjs`, que escribe la meta CSP en cada HTML (5.1). Un `nuxt generate` suelto produce un sitio sin `script-src` y el smoke del backend lo rechaza |
+| `api:types` | 🆕 V2.1. Regenera `types/api.gen.ts` desde el `openapi.json` de `main` del backend, o desde `OPENAPI_URL` (una ruta local vale) (11.9) |
 | `build` | No se usa para desplegar. Con `preset: 'static'` no produce el sitio que S3 sirve |
 | `typecheck` | `nuxt typecheck` |
 | `test` | Vitest, sobre `utils/**/*.test.ts` |
 | `postinstall` | `nuxt prepare`. Sin esto el editor no tiene tipos |
+
+`openapi-typescript` no entra en `devDependencies`: la 7.13 declara `typescript ^5` como peer y el proyecto está en 6.0. Con `pnpm dlx` y la versión exacta, el generador trae su propio TypeScript en un entorno aparte, y el del proyecto no se toca. Si una versión futura acepta TypeScript 6, pasa a `devDependencies` en un PR.
 
 No se copian `pixelmatch` ni `pngjs` (estaban declarados y nadie los importaba), ni los scripts de paridad visual contra mockups del dominio original. Playwright se añade el día que haya un flujo de punta a punta que merezca un navegador; no se deja instalado "por si acaso".
 
@@ -258,6 +277,9 @@ export default defineNuxtConfig({
     families: { 'Plus Jakarta Sans': [400, 500, 600, 700] },
     display: 'swap',
     preload: true,
+    // Las fuentes se copian al build: la CSP no abre fonts.googleapis.com ni fonts.gstatic.com,
+    // y el navegador del usuario no le cuenta a Google qué app abre.
+    download: true,
   },
   primevue: {
     options: {
@@ -278,7 +300,13 @@ export default defineNuxtConfig({
   // Relativo a propósito: el mismo build se promociona de dev a prod.
   // En local el proxy de Vite reenvía /api al backend. En AWS lo hace CloudFront.
   runtimeConfig: {
-    public: { apiBase: '/api' },
+    public: {
+      apiBase: '/api',
+      // Iguales en los tres stages: el DSN es del proyecto de Sentry, no del stage.
+      // Vacío en local, y entonces Sentry no se inicializa (11.10).
+      sentryDsn: process.env.SENTRY_DSN_WEB ?? '',
+      release: process.env.GITHUB_SHA ?? 'local',
+    },
   },
 })
 ```
@@ -289,11 +317,94 @@ Qué no se toca sin releer la sección 2:
 - `runtimeConfig.public.apiBase` es el string `'/api'`. No es `process.env.NUXT_PUBLIC_API_BASE_URL`. En un generate estático, `runtimeConfig` se congela en el HTML: se comprobó que el `index.html` generado contiene `apiBase:"/api"` y ningún host.
 - El proxy vive en `vite.server.proxy`, no en `nitro.devProxy` ni en `routeRules`. El dev server que recibe al navegador es Vite. `routeRules` con `proxy` se hornearía también en el generate y el sitio estático intentaría hacer de proxy, que no puede.
 - `devServer.host` es `127.0.0.1`, no `0.0.0.0`. Las cookies de local son de ese host.
-- No hay `app.head` con una CSP. La pone CloudFront.
+- No hay `app.head` con una CSP. La meta la escribe `scripts/csp.mjs` después del generate (5.1), porque necesita el HTML final para calcular los hashes.
+- `sentryDsn` y `release` se congelan en el HTML igual que `apiBase`. Ninguno de los dos depende del stage, así que el build sigue siendo uno solo.
 
 `assets/css/main.css` del esqueleto verificado solo tiene las tres directivas `@tailwind`. El archivo de verdad es el de la sección 7, que lo reemplaza entero y se deja en la misma ruta. El módulo avisa `Using default Tailwind CSS file` cuando no encuentra `assets/css/tailwind.css`; es informativo. Durante el generate apareció también el aviso `tailwindcss/nesting` could not be loaded, y el comando terminó bien (exit 0) generando `.output/public`. No se bloquea el release por ese aviso. El CSS del design system no depende de nesting.
 
 `pnpm typecheck` escribe por stderr que `vue-router/volar/sfc-route-blocks` no está exportado. Es un desajuste de vue-tsc 3.3 con vue-router 4.6. El exit code es 0 y los errores de verdad del proyecto sí fallan el comando (se comprobó al quitar un genérico de `$fetch`).
+
+### 5.1 `scripts/csp.mjs`
+
+🆕 **V2.1.** Corre después de `nuxt generate`, sobre `.output/public`. En cada HTML calcula el sha256 de los scripts en línea ejecutables y escribe la meta CSP como primer hijo de `<head>`, antes de cualquier script. Sin dependencias.
+
+```js
+// scripts/csp.mjs
+import { createHash } from 'node:crypto'
+import { readdir, readFile, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
+
+const OUT = '.output/public'
+const INLINE_SCRIPT = /<script\b(?![^>]*\bsrc\s*=)([^>]*)>([\s\S]*?)<\/script>/gi
+// Los bloques de datos (el payload de Nuxt, JSON-LD) no se ejecutan y la CSP no los mira.
+const DATA_BLOCK = /\btype\s*=\s*["']?application\/(?:ld\+)?json/i
+
+function sentryOrigin() {
+  const dsn = process.env.SENTRY_DSN_WEB
+  // https://<clave>@o123.ingest.us.sentry.io/456 → https://o123.ingest.us.sentry.io
+  return dsn ? new URL(dsn).origin : null
+}
+
+function policy(hashes) {
+  const scripts = ["'self'", ...hashes.map((h) => `'sha256-${h}'`)]
+  const connect = ["'self'", sentryOrigin()].filter(Boolean)
+  return [
+    "default-src 'self'",
+    `script-src ${scripts.join(' ')}`,
+    // PrimeVue (tema Aura) y ECharts escriben estilos en tiempo de ejecución.
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self'",
+    `connect-src ${connect.join(' ')}`,
+    "worker-src 'self' blob:",
+    "manifest-src 'self'",
+  ].join('; ')
+}
+
+async function htmlFiles(dir) {
+  const entries = await readdir(dir, { withFileTypes: true })
+  const nested = await Promise.all(
+    entries.map((e) => {
+      const path = join(dir, e.name)
+      if (e.isDirectory()) return htmlFiles(path)
+      return e.name.endsWith('.html') ? [path] : []
+    }),
+  )
+  return nested.flat()
+}
+
+const files = await htmlFiles(OUT)
+if (files.length === 0) throw new Error(`No hay HTML en ${OUT}: ¿corrió nuxt generate?`)
+
+for (const file of files) {
+  const html = await readFile(file, 'utf8')
+  if (/http-equiv\s*=\s*["']?content-security-policy/i.test(html)) {
+    throw new Error(`${file} ya tiene una meta CSP: csp.mjs corrió dos veces sobre el mismo build`)
+  }
+  const hashes = new Set()
+  for (const [, attrs, body] of html.matchAll(INLINE_SCRIPT)) {
+    if (DATA_BLOCK.test(attrs) || body.trim() === '') continue
+    hashes.add(createHash('sha256').update(body, 'utf8').digest('base64'))
+  }
+  const meta = `<meta http-equiv="Content-Security-Policy" content="${policy([...hashes])}">`
+  const out = html.replace(/<head(\s[^>]*)?>/i, (head) => `${head}${meta}`)
+  if (out === html) throw new Error(`${file} no tiene <head>`)
+  await writeFile(file, out)
+  console.log(`csp: ${file} (${hashes.size} script(s) en línea)`)
+}
+```
+
+Qué hay detrás de cada decisión:
+
+- **Hash, no nonce.** Un nonce exige un servidor que lo genere en cada respuesta, y aquí S3 sirve archivos estáticos. El hash es del contenido exacto del script, así que vale para todas las respuestas de ese build.
+- **Lo que se hashea.** El `window.__NUXT__` con la config pública, el script anti-parpadeo de `@nuxtjs/color-mode` y cualquier otro script en línea que añada un módulo. El script no tiene una lista de módulos: hashea lo que encuentra. Un módulo nuevo que mete un script en línea queda cubierto sin tocar este archivo.
+- **`style-src 'unsafe-inline'`.** PrimeVue inyecta `<style>` con los tokens del tema y ECharts pone `style=""` en los tooltips. Un estilo inyectado no ejecuta código. La protección que importa es `script-src`, y esa no lleva `'unsafe-inline'`.
+- **Sin `'unsafe-eval'`.** Vue va compilado (sin compilador de plantillas en el navegador), y ni PrimeVue, ni ECharts, ni Sentry usan `eval`. Si una librería nueva lo necesita, se discute en el PR que la añade, no se abre la directiva.
+- **`connect-src`** es el propio origen (`/api`) más el host de ingesta de Sentry, sacado del mismo `SENTRY_DSN_WEB` del build. Sin DSN, solo `'self'`. El `PUT` de documentos va a S3 (11.2): cuando el dominio lo use en AWS, se añade aquí el origen del bucket (`https://<bucket>.s3.<REGION>.amazonaws.com`). La URL prefirmada no sirve como fuente porque cambia en cada subida.
+- **Trusted Types** (`require-trusted-types-for 'script'`) no se activa. PrimeVue y `v-html` no están preparados, y una CSP que rompe la app en producción se desactiva el primer día.
+- **El orden importa.** La meta tiene que ir antes que cualquier `<script>`: el navegador no aplica una política a lo que ya ejecutó. Por eso se inserta como primer hijo de `<head>`.
+
+Para ver la política en local: `pnpm generate && pnpm preview`, y la consola del navegador no debe mostrar ningún `Refused to execute inline script`. Con `pnpm dev` no hay meta (Vite inyecta scripts propios para el HMR).
 
 ---
 ## 6. Estructura de carpetas
@@ -302,9 +413,11 @@ Qué no se toca sin releer la sección 2:
 
 ```
 <app-frontend>/
-├── .github/workflows/
-│   ├── ci.yml
-│   └── deploy.yml
+├── .github/
+│   ├── dependabot.yml           # npm y github-actions (16.4)
+│   └── workflows/
+│       ├── ci.yml
+│       └── deploy.yml
 ├── assets/css/main.css          # tokens, sección 7
 ├── components/                  # sección 12. Auto-import sin prefijo de ruta
 ├── composables/useApi.ts        # único cliente HTTP
@@ -314,6 +427,11 @@ Qué no se toca sin releer la sección 2:
 │   ├── guest.ts
 │   └── role.ts                  # plantilla; el dominio crea uno por rol
 ├── pages/
+├── plugins/sentry.client.ts     # errores del navegador (11.10)
+├── scripts/csp.mjs              # meta CSP con hashes, después del generate (5.1)
+├── types/
+│   ├── api.gen.ts               # generado desde el OpenAPI del backend. No se edita (11.9)
+│   └── api.ts                   # tipos que solo existen en la UI (11.6)
 ├── utils/
 │   ├── http.ts
 │   └── http.test.ts
@@ -1596,8 +1714,12 @@ Cinco llamadas que reciben 401 a la vez comparten una promesa. Si cada una refre
 
 ### 10.4 Código verificado
 
+🆕 **V2.1.** Cambiaron y no se volvieron a ejecutar: `Me` y `SessionBody` salen del contrato generado (11.9), `statusOf` se movió a `utils/http.ts`, y `useApi` manda `x-request-id` en toda llamada e `Idempotency-Key` en los `POST`. La lógica de refresh (un solo intento, una sola promesa por pestaña) es la verificada.
+
 ```ts
 // utils/http.ts
+import type { components } from '~/types/api.gen'
+
 /** Clasificación de status que el cliente debe tratar distinto. */
 export type HttpClass = 'ok' | 'refresh' | 'forbidden' | 'unavailable' | 'error'
 
@@ -1609,19 +1731,22 @@ export function classifyHttp(status: number): HttpClass {
   return 'error'
 }
 
-export interface Me {
-  sub: string
-  email: string
-  firstName: string
-  lastName: string
-  groups: string[]
-  userStatus: 'active' | 'blocked' | 'observed' | 'rejected' | 'unknown'
-  sessionExpiresAt: string
-}
+/** 🆕 V2.1. Perfil de `GET /api/auth/me` tal como lo publica el backend (11.9). */
+export type Me = components['schemas']['MeResponseDto']
 
+type SessionDto = components['schemas']['SessionResponseDto']
+
+/**
+ * El DTO del backend lleva `expiresAt` y `challenge` opcionales en un mismo objeto.
+ * La unión dice cuál viene según `status`, y obliga a mirar `status` antes de leerlos.
+ */
 export type SessionBody =
   | { status: 'authenticated'; expiresAt: string }
-  | { status: 'challenge'; challenge: string }
+  | { status: 'challenge'; challenge: NonNullable<SessionDto['challenge']> }
+
+export function statusOf(err: unknown): number {
+  return typeof err === 'object' && err && 'status' in err ? Number(err.status) : 0
+}
 
 export function isAuthenticated(body: SessionBody): body is { status: 'authenticated'; expiresAt: string } {
   return body.status === 'authenticated'
@@ -1681,7 +1806,8 @@ describe('singleFlight', () => {
 
 ```ts
 // composables/useApi.ts
-import { classifyHttp, type Me, type SessionBody } from '~/utils/http'
+import { addBreadcrumb } from '@sentry/vue'
+import { classifyHttp, statusOf, type Me, type SessionBody } from '~/utils/http'
 
 type FetchOptions = NonNullable<Parameters<typeof $fetch>[1]>
 
@@ -1711,16 +1837,37 @@ export function useApi() {
   const config = useRuntimeConfig()
   const baseURL = config.public.apiBase
 
-  async function api<T>(path: string, options: FetchOptions = {}, retry = true): Promise<T> {
+  async function api<T>(path: string, options: FetchOptions = {}): Promise<T> {
+    const method = String(options.method ?? 'GET').toUpperCase()
+    const headers = new Headers(options.headers as HeadersInit | undefined)
+    // El backend reutiliza este id en su log, su error y su auditoría (9.2 del backend).
+    const requestId = crypto.randomUUID()
+    headers.set('x-request-id', requestId)
+    // Una clave por operación, no por intento: el reintento tras el refresh lleva la misma
+    // y el backend no crea dos veces (9.6 del backend). /auth/* es público y no la usa.
+    if (method === 'POST' && !path.startsWith('/auth/') && !headers.has('idempotency-key')) {
+      headers.set('idempotency-key', crypto.randomUUID())
+    }
+    const send = async () =>
+      (await $fetch(path, { ...options, headers, baseURL, credentials: 'include' })) as T
+
     try {
-      return (await $fetch(path, { ...options, baseURL, credentials: 'include' })) as T
-    } catch (err: unknown) {
-      const status = typeof err === 'object' && err && 'status' in err ? Number(err.status) : 0
-      const kind = classifyHttp(status)
-      if (kind === 'refresh' && retry && !path.startsWith('/auth/')) {
+      try {
+        return await send()
+      } catch (err: unknown) {
+        if (classifyHttp(statusOf(err)) !== 'refresh' || path.startsWith('/auth/')) throw err
         await refreshOnce(baseURL)
-        return api<T>(path, options, false)
+        return await send()
       }
+    } catch (err: unknown) {
+      // Sin Sentry inicializado es un no-op. Con Sentry, el próximo error del navegador
+      // lleva los requestId de las llamadas que fallaron antes (11.10).
+      addBreadcrumb({
+        category: 'api',
+        level: 'warning',
+        message: `${method} ${path}`,
+        data: { status: statusOf(err), requestId },
+      })
       throw err
     }
   }
@@ -1797,6 +1944,8 @@ El middleware `role.ts` es la plantilla: el dominio crea `middleware/<rol>.ts` (
 
 ### 10.5 Contrato que el cliente usa
 
+La fuente de verdad de esta tabla es `types/api.gen.ts` (11.9). Si los dos discrepan, manda el archivo generado y esta tabla se corrige.
+
 Rutas bajo `/api`. Cuerpo de error siempre `{ statusCode, message, requestId, timestamp, path }`. El `requestId` se muestra en el mensaje de error inesperado para que soporte pueda buscar la línea de log.
 
 | Método y ruta | Body | Respuesta |
@@ -1827,18 +1976,30 @@ No se decodifica el JWT en el cliente. No hay librería `jwt-decode` en el `pack
 🆕 **V2.** `useApi().api(path, options)` es la única forma de hablar con el backend. `path` es relativo a `/api` (`'/projects'`, no `'/api/projects'` y no una URL absoluta). `credentials: 'include'` va dentro del composable; repetirlo en cada llamada es innecesario y olvidarlo en un `$fetch` suelto es el bug.
 
 ```ts
+import type { components, paths } from '~/types/api.gen'
+
+type ProjectPage = paths['/api/projects']['get']['responses'][200]['content']['application/json']
+type Project = components['schemas']['ProjectDto']
+
 const api = useApi()
-const page = await api.api<{ data: Project[]; meta: { page: number; limit: number; total: number; pageCount: number } }>(
-  '/projects',
-  { query: { page: 1, limit: 20, q: search } },
-)
+const page = await api.api<ProjectPage>('/projects', { query: { limit: 20, offset: 0, q: search } })
+// page.items: Project[], page.total, page.limit, page.offset
 ```
 
-La envoltura de listado es la de `PageDto` del backend: `{ data, meta }`. `limit` máximo 100.
+La envoltura de listado es la de `PageDto` del backend: `{ items, total, limit, offset }`. `limit` máximo 100, `offset` desde 0. El número de páginas lo calcula la UI (`Math.ceil(total / limit)`). La v2.0 de este documento decía `{ data, meta }`, que el backend nunca devolvió: es el error que el contrato generado convierte en un fallo de `pnpm typecheck` (11.9).
+
+La clave de `paths` es la ruta completa del OpenAPI, con el prefijo (`/api/projects`). El argumento de `api.api()` sigue siendo relativo a `apiBase` (`/projects`).
 
 No se usa `useFetch` ni `useAsyncData` para datos autenticados. Tienen su propio `$fetch` y no pasan por el refresh de `useApi`. En un SPA tampoco aportan la deduplicación de SSR que justifica su existencia.
 
 Un 401 lo resuelve `useApi`. La página solo distingue 403, 503 y 400 para pintar el mensaje, y enseña `requestId` cuando el status es 5xx.
+
+Un `POST` lleva su `Idempotency-Key` sin que la página haga nada. El botón de "Crear" se deshabilita mientras la promesa está en vuelo, pero el backend ya no depende de eso: un doble clic que se cuela produce un `201` con el mismo recurso, no un duplicado ni un 409. Si la página reintenta por su cuenta después de un error de red, pasa la misma clave en `headers` para que el backend la reconozca:
+
+```ts
+const key = crypto.randomUUID()
+const create = () => api.api<Project>('/projects', { method: 'POST', body, headers: { 'idempotency-key': key } })
+```
 
 ### 11.2 Subida de documentos
 
@@ -1905,8 +2066,8 @@ export const useEntityStore = defineStore('entity', () => {
     searchError.value = null
 
     try {
-      const { get } = useApi()
-      const results = await get<EntitySummary[]>('/entities/search', {
+      const { api } = useApi()
+      const results = await api<EntitySummary[]>('/entities/search', {
         query: { q: trimmed, limit: 10 }
       })
       searchResults.value = results
@@ -1977,6 +2138,8 @@ export const useEntityStore = defineStore('entity', () => {
 **Acción:** en el proyecto nuevo **no crees `stores/auth.ts`**. Hay exactamente un módulo de autenticación y es `composables/useAuth.ts`.
 
 ### 11.6 `types/api.ts`
+
+🆕 **V2.1.** Lo que devuelve o recibe el backend ya no se escribe a mano: sale de `types/api.gen.ts` (11.9). `types/api.ts` se queda con los tipos que solo existen en la UI (filas de tabla ya formateadas, opciones de un gráfico) y con alias cortos sobre los generados (`export type Project = components['schemas']['ProjectDto']`). La convención de `| null` de abajo sigue valiendo: el generador emite `| null` donde el backend declaró `nullable: true`.
 
 🟨 **EJEMPLO.** El original define aquí todos los contratos del backend como interfaces: resúmenes de entidad, filas de tabla, KPIs, series de gráfico, documentos, parámetros. Unas 25 interfaces en 204 líneas.
 
@@ -2109,6 +2272,62 @@ export const countries: Country[] = [
 ```
 
 **Dos detalles:** el país local va **primero**, fuera del orden alfabético, para que sea el valor por defecto del `<select>`; y la bandera es el emoji Unicode, no una imagen, así que no requiere assets.
+
+### 11.9 Tipos generados desde el OpenAPI
+
+🆕 **V2.1.** El backend commitea su contrato en `openapi/openapi.json` (17.4 del backend). `pnpm api:types` lo descarga de `main` y escribe `types/api.gen.ts` con [openapi-typescript](https://openapi-ts.dev). El archivo generado se commitea y no se edita a mano.
+
+```
+pnpm api:types                                                          # desde main del backend
+OPENAPI_URL=../<app>/openapi/openapi.json pnpm api:types                # desde una rama local del backend
+```
+
+Lo que exporta, y cómo se usa:
+
+| Export | Qué es | Ejemplo |
+|---|---|---|
+| `components['schemas']` | Cada DTO del backend, por el nombre de su clase | `components['schemas']['ProjectDto']` |
+| `paths` | Cada ruta con sus parámetros, cuerpos y respuestas por status | `paths['/api/projects']['get']['responses'][200]['content']['application/json']` |
+
+No se usa un cliente generado (`openapi-fetch`, `orval`). Toda llamada tiene que pasar por `useApi` (10.4), con su refresh, su `x-request-id` y su `Idempotency-Key`, y un segundo cliente HTTP es justo lo que la sección 18.1 prohíbe. Lo generado son solo tipos: no añade un byte al bundle.
+
+**CI lo exige.** El job `verify` corre `pnpm api:types` contra `main` del backend y falla si `types/api.gen.ts` cambió. Lo que eso significa:
+
+- Un cambio de contrato en el backend hace fallar el siguiente PR del frontend, aunque ese PR no toque la API. Es a propósito. El arreglo es `pnpm api:types`, commitear el archivo, y corregir lo que `pnpm typecheck` señale en el mismo PR.
+- El backend rompe el contrato solo con la etiqueta `contract-breaking` (17.4 del backend). Cuando esa etiqueta aparece, el frontend se adapta primero a las dos formas y se despliega antes.
+- El frontend no usa un campo que el backend todavía no publicó en `main`. Si hace falta trabajar en paralelo, se genera desde la rama del backend con `OPENAPI_URL` y no se fusiona hasta que el backend esté en `main`.
+
+### 11.10 Errores del navegador
+
+🆕 **V2.1.** Sentry recibe los errores no controlados del navegador (excepciones de Vue, promesas rechazadas sin `catch`, errores de carga de chunks). No recibe trazas de rendimiento ni grabaciones de sesión. Así se queda en el plan gratuito y no hay que pedir consentimiento por grabar la pantalla.
+
+```ts
+// plugins/sentry.client.ts
+import * as Sentry from '@sentry/vue'
+
+export default defineNuxtPlugin((nuxtApp) => {
+  const { sentryDsn, release } = useRuntimeConfig().public
+  if (!sentryDsn) return
+  Sentry.init({
+    app: nuxtApp.vueApp,
+    dsn: sentryDsn,
+    release,
+    // El build es el mismo en los tres stages: el host es lo que distingue dev, qa y prod.
+    environment: location.hostname,
+    // Sin browserTracingIntegration ni replayIntegration: solo errores, dentro del plan gratuito.
+  })
+})
+```
+
+Cómo se relaciona con el backend:
+
+- `useApi` genera el `x-request-id` de cada llamada. Si la llamada falla, lo deja como breadcrumb (10.4). El evento de Sentry de un error posterior trae la lista de llamadas fallidas con su status y su `requestId`, y ese id se busca tal cual en los logs del backend (24.4 del backend).
+- `release` es el SHA del commit de este repositorio (`GITHUB_SHA` en el generate). El backend tiene el suyo, en `/api/health` y en sus eventos. Con los dos se sabe qué build del navegador habló con qué versión de la API.
+- Un 4xx de la API no es un error del navegador y no se reporta. Lo trata la pantalla (10.3). Un 5xx ya lo reportó el backend con su stack.
+
+Qué no se manda: cookies (son `httpOnly` y el SDK no las ve), el body de las llamadas (los breadcrumbs llevan método, ruta y status) ni el contenido de los formularios. `sendDefaultPii` se queda en su valor por defecto, que es `false`: sin IP ni usuario en el evento.
+
+La cuota del plan Developer (5.000 errores al mes) se comparte con el proyecto del backend. Si se agota, Sentry descarta eventos hasta el mes siguiente y la app sigue funcionando igual. Un pico de errores del navegador suele ser un chunk viejo después de un deploy (21.8). La alerta de cuota de Sentry es la señal para mirarlo.
 
 ---
 
@@ -3227,27 +3446,81 @@ jobs:
     name: Verificar y construir
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      # Firma de la procedencia del build. El paso solo corre en push a main.
+      id-token: write
+      attestations: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Contrato con main del backend
+        run: |
+          pnpm api:types
+          # status y no diff: también falla si el archivo nunca se commiteó.
+          if [ -n "$(git status --porcelain -- types/api.gen.ts)" ]; then
+            git diff -- types/api.gen.ts | head -50
+            echo "::error file=types/api.gen.ts::El contrato del backend cambió. Corre pnpm api:types, commitea types/api.gen.ts y corrige lo que marque pnpm typecheck."
+            exit 1
+          fi
       - run: pnpm test
       - run: pnpm typecheck
-      - run: pnpm generate
-      - uses: actions/upload-artifact@v4
+      - name: Build, con la meta CSP
+        env:
+          # Variable del repositorio, no secreto: el DSN de Sentry es público por diseño.
+          SENTRY_DSN_WEB: ${{ vars.SENTRY_DSN_WEB }}
+        run: pnpm generate
+      - name: Manifiesto del build
+        run: find .output/public -type f -print0 | sort -z | xargs -0 sha256sum > web.sha256
+      - name: SBOM
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          path: .
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: false
+      - name: Procedencia firmada del manifiesto
+        if: github.event_name == 'push'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: web.sha256
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: web-${{ github.sha }}
-          path: .output/public
+          path: |
+            .output/public
+            web.sha256
+            sbom.spdx.json
+          # Desde la v4.4, todo lo que cuelga de una carpeta con punto (.output/) se excluye
+          # salvo que se pida. Sin esto el artefacto sale vacío.
+          include-hidden-files: true
           retention-days: 30
           if-no-files-found: error
 
+  workflows:
+    name: Auditar workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        with:
+          version: '1.30.1'
+          # Sin subir SARIF: un hallazgo falla el job en lugar de quedarse en la pestaña Security.
+          advanced-security: false
+
   deploy-dev:
     if: github.event_name == 'push'
-    needs: verify
+    needs: [verify, workflows]
     uses: ./.github/workflows/deploy.yml
     with:
       stage: dev
@@ -3255,6 +3528,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      attestations: read
 
   deploy-qa:
     needs: deploy-dev
@@ -3265,6 +3539,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      attestations: read
 
   deploy-prod:
     needs: deploy-qa
@@ -3275,9 +3550,19 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      attestations: read
 ```
 
 `pnpm typecheck` escribe un aviso de `vue-router/volar/sfc-route-blocks` por stderr y termina 0. Un error de tipos de verdad termina distinto de 0: el job falla.
+
+🆕 **V2.1.** Lo que añade este job respecto a la 2.0:
+
+- **Actions fijadas por SHA**, con la versión en un comentario. Un tag lo puede mover quien controle el repositorio de la acción, y este job tiene permiso de OIDC. Son los SHA de la última versión de cada major el 2026-10-08. Dependabot actualiza el SHA y el comentario juntos (16.4).
+- **El contrato antes que los tests.** Si el backend cambió, el fallo dice qué hacer, y no aparece como diez errores de tipos sueltos (11.9).
+- **`SENTRY_DSN_WEB`** es una variable del repositorio (Settings → Secrets and variables → Variables). Vacía, el build sale sin Sentry y la CSP sin su host.
+- **`web.sha256` firmado.** El manifiesto lista el sha256 de cada archivo del sitio, y la attestation de procedencia (Sigstore, OIDC del job) firma el manifiesto. El deploy verifica las dos cosas antes de subir nada (16.2). Es gratis porque el repositorio es público; en uno privado exige GitHub Enterprise Cloud.
+- **`include-hidden-files: true`**, que la 2.0 no llevaba. `upload-artifact` 4.4+ trata `.output/public/**` como oculto y lo habría dejado fuera.
+- **zizmor** audita `.github/` (inyección en `run:`, credenciales persistidas, permisos de más, acciones sin fijar). Si marca algo que es así a propósito, se justifica en `.github/zizmor.yml`. Los deploys esperan a este job.
 
 ### 16.2 Promoción
 
@@ -3300,6 +3585,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  attestations: read
 
 jobs:
   deploy:
@@ -3312,12 +3598,21 @@ jobs:
       group: deploy-${{ inputs.stage }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      # Sin `path`: el artefacto trae .output/public/, web.sha256 y el SBOM con sus rutas.
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: web-${{ github.sha }}
-          path: .output/public
-      - uses: aws-actions/configure-aws-credentials@v5
+      - name: El build es el que firmó CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh attestation verify web.sha256 --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/ci.yml"
+          sha256sum --check --quiet web.sha256
+      - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
           role-to-assume: arn:aws:iam::${{ inputs.account }}:role/<app-short>-github-frontend-deploy
           aws-region: <REGION>
@@ -3338,6 +3633,8 @@ jobs:
 
 El `s3 sync` parte en dos a propósito. Los archivos con hash en el nombre (`/_nuxt/*`) se cachean un año e `immutable`. Los HTML no se cachean: son los que apuntan a los hashes nuevos. Un único sync con `max-age` largo dejaría el `index.html` viejo en el edge y el usuario seguiría pidiendo chunks que ya no existen.
 
+🆕 **V2.1.** Antes de asumir el rol de la cuenta, el job verifica la attestation de `web.sha256` (firmada por `ci.yml` de este repositorio) y el hash de cada archivo. Si el artefacto no es el que construyó CI, o un archivo cambió después del build, no se sube nada. Ese mismo hash protege la meta CSP: un HTML retocado a mano después del generate tiene otro sha256.
+
 La invalidación es `/*`. El sitio es pequeño; una invalidación selectiva que se olvida de un HTML es un incidente más caro que la invalidación.
 
 El orden respecto al backend: el stage del backend (CloudFront, bucket, parámetros SSM) tiene que existir antes del primer deploy del frontend. No hace falta coordinar cada release: el frontend no migra datos. Sí hace falta que el contrato que el frontend llama exista ya en ese stage. Por eso el frontend se promueve después del backend cuando el cambio toca los dos.
@@ -3347,6 +3644,35 @@ El orden respecto al backend: el stage del backend (CloudFront, bucket, parámet
 - No se pasa `NUXT_PUBLIC_API_BASE_URL` en el generate.
 - No hay un bucket de deploy distinto del bucket del sitio: el origen de CloudFront es ese bucket, con OAC. El workflow no crea infraestructura.
 - No hay Dockerfile.
+
+### 16.4 Dependabot
+
+🆕 **V2.1.** La 2.0 no lo tenía en este repositorio. Con las Actions fijadas por SHA, sin Dependabot los SHA se quedan viejos para siempre.
+
+```yaml
+# .github/dependabot.yml
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 10
+    groups:
+      nuxt: { patterns: ['nuxt', '@nuxt/*', '@nuxtjs/*', 'vue', 'vue-router', 'vue-tsc'] }
+      primevue: { patterns: ['primevue', '@primevue/*', '@primeuix/*', 'primeicons', 'tailwindcss-primeui'] }
+      dev-tooling:
+        dependency-type: development
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    groups:
+      actions: { patterns: ['*'] }
+```
+
+`tailwindcss` está fijado en 3.4.19 a propósito (21.6) y PrimeVue 5 cambia el tema. Un PR de Dependabot que suba alguno de los dos de major se cierra con un comentario que apunte a la sección, no se fusiona porque CI pasó.
+
+`openapi-typescript` no aparece en Dependabot porque no es una dependencia (4). Su versión está en el script `api:types` y se sube a mano.
 
 ---
 ## 17. Entorno de desarrollo local y Cursor Cloud
@@ -3427,16 +3753,17 @@ La v1 lo deja escrito como deuda (sección 9.1): el original guardaba la selecci
 
 ### Fase 0 — Esqueleto
 
-Copiar `package.json`, `pnpm-workspace.yaml`, `nuxt.config.ts`, `.nvmrc`, `.gitignore`, `tsconfig.json`, `vitest.config.ts`, `utils/http.ts`, `utils/http.test.ts`, `composables/useApi.ts`, los tres middleware y las dos páginas mínimas.
+Copiar `package.json`, `pnpm-workspace.yaml`, `nuxt.config.ts`, `.nvmrc`, `.gitignore`, `tsconfig.json`, `vitest.config.ts`, `utils/http.ts`, `utils/http.test.ts`, `composables/useApi.ts`, los tres middleware y las dos páginas mínimas. 🆕 V2.1: también `scripts/csp.mjs` y `plugins/sentry.client.ts`.
 
 ```
 pnpm install
+pnpm api:types        # V2.1: necesita openapi/openapi.json en main del backend, o OPENAPI_URL
 pnpm test
 pnpm typecheck
 pnpm generate
 ```
 
-Los tres terminan bien antes de seguir. `generate` produce `.output/public` y el `index.html` contiene `apiBase:"/api"`.
+Todos terminan bien antes de seguir. `generate` produce `.output/public`, el `index.html` contiene `apiBase:"/api"` y, desde la 2.1, empieza su `<head>` con la meta CSP. `pnpm api:types` dos veces seguidas no deja diff en `types/api.gen.ts`.
 
 ### Fase 1 — Design system y shell
 
@@ -3466,7 +3793,7 @@ Cuando el dominio los necesite. La subida sigue la sección 11.2. Los gráficos,
 
 ### Fase 5 — Pipeline
 
-Workflows de la sección 16. El primer deploy espera a que el stage `dev` del backend haya escrito los parámetros `web/bucket-name` y `web/distribution-id`. Environments `qa` y `prod` con revisores.
+Workflows de la sección 16. El primer deploy espera a que el stage `dev` del backend haya escrito los parámetros `web/bucket-name` y `web/distribution-id`. Environments `qa` y `prod` con revisores. 🆕 V2.1: `.github/dependabot.yml`, la variable de repositorio `SENTRY_DSN_WEB` y la protección de `main` que exige `Verificar y construir` y `Auditar workflows`.
 
 ---
 ## 20. Checklist final de aceptación
@@ -3482,6 +3809,17 @@ Workflows de la sección 16. El primer deploy espera a que el stage `dev` del ba
 - [ ] `curl http://127.0.0.1:4200/api/health` devuelve el JSON del backend.
 - [ ] El deploy de `dev` sirve `https://<DOMINIO_APP>/` y `https://<DOMINIO_APP>/api/health` en el mismo host.
 - [ ] Recargar una ruta profunda (`/algo/123`) devuelve la app, no un 403/404 de S3. Eso lo hace la CloudFront Function del backend; si falla, el arreglo es de ese stack, no un `200.html` trampas en el cliente.
+
+🆕 **V2.1**
+
+- [ ] Cada HTML de `.output/public` empieza su `<head>` con `<meta http-equiv="Content-Security-Policy" ...script-src 'self' 'sha256-…'>`, y `script-src` no contiene `'unsafe-inline'` ni `'unsafe-eval'`.
+- [ ] `pnpm generate && pnpm preview`: login, shell y una pantalla con gráfico sin ningún `Refused to …` de CSP en la consola. Lo mismo en `dev` detrás de CloudFront, donde se suman las dos políticas.
+- [ ] En `dev`, en la consola del navegador, `document.head.appendChild(Object.assign(document.createElement('script'), { textContent: 'alert(1)' }))` no muestra el alert: la CSP lo bloquea.
+- [ ] `types/api.gen.ts` está commiteado, `pnpm api:types` no lo cambia, y `rg -n "interface Me\b" --glob '!node_modules/**'` no encuentra una copia a mano.
+- [ ] En la pestaña Network, cada llamada a `/api` lleva `x-request-id`. Cada `POST` fuera de `/api/auth/*` lleva `idempotency-key`, y el reintento después de un 401 lleva la misma.
+- [ ] Con `SENTRY_DSN_WEB` definido, un `throw new Error('prueba')` en un botón aparece en Sentry con `environment` igual al host, `release` igual al SHA y, si antes falló una llamada, un breadcrumb `api` con su `requestId`.
+- [ ] El job `Auditar workflows` pasa y `rg -n 'uses: [^ ]+@v[0-9]' .github/` no devuelve nada.
+- [ ] El primer push a `main` crea una attestation y el deploy de `dev` pasa "El build es el que firmó CI".
 
 ---
 ## 21. Errores conocidos y cómo evitarlos
@@ -3530,6 +3868,18 @@ Además de que la cookie es `httpOnly` y no se puede, el perfil que saldría de 
 
 Pregunta por la telemetría y, si falta el plugin de nesting, ofrece instalarlo. En un script se exporta `CI=true` o se responde antes. No afecta a `nuxt generate`.
 
+### 21.12 🆕 V2.1. Pantalla en blanco con `Refused to execute inline script`
+
+El HTML se tocó después de `scripts/csp.mjs` (un paso de CI que inyecta algo, un `sed` sobre `index.html`), o alguien corrió `nuxt generate` sin el script. El hash de la meta ya no coincide con el script, o no hay meta. El arreglo es que `pnpm generate` sea el último paso que escribe en `.output/public`. No se arregla con `'unsafe-inline'`.
+
+### 21.13 🆕 V2.1. `Refused to connect` hacia Sentry o S3
+
+`connect-src` solo lleva `'self'` y el host del DSN con el que se hizo el build. Si `SENTRY_DSN_WEB` cambió de proyecto, hay que regenerar. Si el dominio empieza a subir documentos directo a S3 desde el navegador (11.2), su origen se añade en `scripts/csp.mjs`.
+
+### 21.14 🆕 V2.1. Editar `types/api.gen.ts` a mano
+
+CI lo regenera y el cambio desaparece, o el job falla. Si el tipo está mal, el arreglo está en el DTO del backend (un `@ApiProperty` que falta o un `nullable` mal puesto), no en el archivo generado.
+
 ---
 ## Anexo A — Puntos abiertos
 
@@ -3543,6 +3893,7 @@ Los que solo afectan al cliente:
 | `<descripción corta de la app>` | El título de la pestaña. Lo da producto |
 | Idioma | Español fijo, igual que los mensajes de la API (ADR-11 del backend). Un segundo idioma es un mapa de cadenas, no una librería metida por adelantado |
 | Pantallas del dominio | No están en este documento a propósito. Se construyen con las secciones 8, 12 y 14, contra el OpenAPI del backend, cuando el dominio exista |
+| `SENTRY_DSN_WEB` | 🆕 V2.1. El DSN de un proyecto de Sentry de tipo Vue, distinto del del backend. Plan Developer gratuito: 1 usuario y 5.000 errores al mes compartidos entre los dos proyectos. Sin DSN, el build sale sin Sentry y todo lo demás funciona |
 | Pruebas de navegador | No hay Playwright en el núcleo. Se añade cuando exista un flujo (login con MFA, un alta, una subida) que merezca un spec, contra el stage `dev`, no contra mocks del contrato |
 
 Verificado el 2026-10-08 sin cuenta AWS: install, 3 tests de Vitest, typecheck (exit 0, con el aviso de vue-router documentado en 21.7), `nuxt generate` produciendo `.output/public` con `apiBase:"/api"`, y el proxy de desarrollo devolviendo el health del backend. No verificado: el `s3 sync` contra un bucket real y el login en un navegador contra Cognito. El checklist de la sección 20 es esa verificación.
