@@ -7,6 +7,8 @@
 > El núcleo nuevo (configuración, cliente HTTP, middleware, tests y el build estático) se compiló y se ejecutó antes de transcribirlo: Node 24.21, pnpm 12.10.1, Nuxt 4.6.0, Vue 3.5, PrimeVue 4.5, Tailwind 3.4. `pnpm test` (3 tests), `pnpm typecheck` y `pnpm generate` terminaron bien, y el dev server en `127.0.0.1:4200` hizo de proxy de `GET /api/health` hacia el backend en el puerto 3000 (200, con `x-request-id`). El HTML generado lleva `apiBase: "/api"`, sin ningún host incrustado. Lo que no se pudo hacer sin la cuenta AWS (el primer `s3 sync` real) está en el checklist.
 >
 > **Versión 2.1 — 2026-10-08.** Añade los controles de prioridad 0, todos sin coste o dentro de una capa gratuita: CSP con `script-src` por hashes, escrita por el build (5.1), tipos generados desde el OpenAPI del backend (11.9), errores del navegador en Sentry con el `requestId` de cada llamada (11.10), `Idempotency-Key` en los `POST` (10.4), y Actions por SHA con auditoría de workflows, SBOM y procedencia firmada (16). Ese código **no se ejecutó** al escribirlo: va marcado 🆕 **V2.1** y su verificación está en el checklist (20).
+>
+> **Versión 2.2 — 2026-10-08.** Aplica las decisiones de producto del ADR-13 del backend: dos audiencias, textos por clave, avisos dentro de la app y tableros. Va marcado 🆕 **V2.2** y no se ejecutó.
 
 ---
 ## 0. Propósito y cómo usar este documento
@@ -28,6 +30,7 @@ Un agente que implementa el repositorio `<app-frontend>` y que no tiene el repos
 | 🟩 **NÚCLEO** | Copiar, sustituyendo marcadores |
 | 🆕 **V2** | Copiar igual. La etiqueta solo dice que no estaba así en el original |
 | 🆕 **V2.1** | Copiar igual. Escrito contra el código verificado pero sin ejecutar: la primera implementación corre el checklist de la sección 20 |
+| 🆕 **V2.2** | Decisión de producto del 2026-10-08 | Copiar igual. Si choca con un bloque anterior, manda V2.2 |
 | 🟦 **EJEMPLO DE DOMINIO** | No copiar el contenido de negocio. Copiar la forma |
 | 🟥 **DEUDA — NO REPLICAR** | No copiar. La sección 18 dice qué hacer en su lugar |
 
@@ -1246,7 +1249,7 @@ Cuatro pasos, en este orden:
 2. **Añadir el nombre del icono** al tipo `<Prefijo>IconName` y su `<template v-else-if>` en `components/<Prefijo>Icon.vue`, si el icono no existe aún.
 3. **Añadir la entrada** al array `navItems` de `AppSidebar.vue`:
    ```ts
-   { to: '/mi-ruta', label: 'Mi ruta', icon: 'mi-icono', requiresAdvanced: true }
+   { to: '/mi-ruta', label: 'nav.miRuta', icon: 'mi-icono', kinds: ['interno'] }
    ```
 4. **Decidir si va en el bottom nav de móvil.** `AppBottomNav.vue` tiene su propio array `items`, limitado a **4** por el `grid-cols-4`. Si quieres 5, cambia también la clase de la rejilla.
 
@@ -1661,13 +1664,23 @@ Los middleware se ejecutan **en el orden del array**, de izquierda a derecha, y 
 |---|---|
 | Privada, cualquier usuario con sesión | `{ middleware: 'auth' }` |
 | Privada, solo un rol | `{ middleware: ['auth', 'role'] }` y el middleware de rol compara `me.groups` |
+| Privada, solo una audiencia | 🆕 V2.2. `{ middleware: ['auth', 'audience'] }` y compara `me.kind` (`interno` o `externo`) |
 | Login y signup | `{ layout: 'auth', middleware: 'guest' }` |
 
 `auth` siempre va primero. El de rol asume que ya hay sesión; si se declara solo, un 401 de `me()` se propaga como error de navegación en vez de ir al login.
 
 Toda página privada lo declara. El middleware es UX: quien llame a la API sin sesión recibe 401 del backend igual. Sirve para no pintar un shell roto.
 
-El código de los tres middleware está en la sección 10 y pasó `nuxt typecheck`.
+El código de los tres middleware está en la sección 10 y pasó `nuxt typecheck`. El de audiencia es 🆕 V2.2: misma forma que el de rol, leyendo `me.kind` en vez de `me.groups`. Un interno y un externo no comparten la lista del sidebar (8.6): cada ítem declara `kinds`.
+
+### 9.5 Textos, avisos y tableros
+
+🆕 **V2.2.** Decisiones del ADR-13 del backend, del lado del cliente.
+
+- **Textos.** Ninguna cadena visible va en el `.vue`. Van en `locales/es.json` y se leen con `$t('clave')` (`@nuxtjs/i18n`, un solo locale `es`, `strategy: 'no_prefix'`). Añadir inglés más adelante es otro JSON, no un repaso de las pantallas. Los mensajes de error de la API llegan ya en español y se muestran tal cual.
+- **Avisos.** La campana del topbar lee `GET /api/notifications`. Al entrar, y cada 60 segundos mientras la pestaña está visible. Marcar leído es `POST /api/notifications/{id}/read`. No hay WebSocket: el email lo manda el backend al crear el aviso.
+- **Tableros.** Los gráficos son los de la sección 13, contra endpoints de agregados. Exportar es un botón que baja el archivo que devuelve la API (CSV, xlsx o PDF). El cliente no arma el PDF.
+- **Responsive.** Escritorio primero, usable en el móvil (8.4). No hay modo offline.
 
 ---
 ## 10. Autenticación en el cliente, end to end
@@ -3891,7 +3904,7 @@ Los que solo afectan al cliente:
 |---|---|
 | `<prefijo>` de los tokens CSS | El de la marca, corto. Propuesto: el mismo `<app-short>` |
 | `<descripción corta de la app>` | El título de la pestaña. Lo da producto |
-| Idioma | Español fijo, igual que los mensajes de la API (ADR-11 del backend). Un segundo idioma es un mapa de cadenas, no una librería metida por adelantado |
+| Idioma | 🆕 V2.2. Cerrado: español, con las cadenas en `locales/es.json` desde el primer pantallazo (9.5). Un segundo idioma es otro archivo |
 | Pantallas del dominio | No están en este documento a propósito. Se construyen con las secciones 8, 12 y 14, contra el OpenAPI del backend, cuando el dominio exista |
 | `SENTRY_DSN_WEB` | 🆕 V2.1. El DSN de un proyecto de Sentry de tipo Vue, distinto del del backend. Plan Developer gratuito: 1 usuario y 5.000 errores al mes compartidos entre los dos proyectos. Sin DSN, el build sale sin Sentry y todo lo demás funciona |
 | Pruebas de navegador | No hay Playwright en el núcleo. Se añade cuando exista un flujo (login con MFA, un alta, una subida) que merezca un spec, contra el stage `dev`, no contra mocks del contrato |
