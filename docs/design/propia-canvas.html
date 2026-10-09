@@ -51,8 +51,8 @@
     --line-strong: #2C3A55;
     --text: #E5EAF3;
     --ink: #F2F5FA;
-    --muted: #97A3B9;
-    --subtle: #6B7891;
+    --muted: #A8B3C7;
+    --subtle: #93A0B8;
     --primary: #2F6BFF;
     --primary-hover: #4A7FFF;
     --on-primary: #FFFFFF;
@@ -66,7 +66,7 @@
     --red: #F97066;
     --red-soft: rgba(249, 112, 102, 0.12);
     --side-bg: #080D19;
-    --side-text: #8F9BB2;
+    --side-text: #A3AEC4;
     --side-strong: #F2F5FA;
     --side-hover: rgba(255, 255, 255, 0.04);
     --side-active: rgba(255, 255, 255, 0.07);
@@ -124,7 +124,7 @@
   .side .brand { height: 64px; display: flex; align-items: center; gap: 10px; padding: 0 20px; border-bottom: 1px solid var(--side-line); }
   .side .env { margin-left: auto; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--side-text); border: 1px solid var(--side-line); border-radius: 4px; padding: 2px 6px; }
   .side nav { padding: 14px 12px; display: flex; flex-direction: column; gap: 2px; flex: 1; }
-  .side .group { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--side-text); opacity: .7; padding: 14px 10px 6px; }
+  .side .group { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--side-text); padding: 14px 10px 6px; }
   .side .item { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 7px; color: var(--side-text); font-weight: 500; position: relative; }
   .side .item:hover { background: var(--side-hover); color: var(--side-strong); }
   .side .item.active { background: var(--side-active); color: var(--side-strong); }
@@ -138,7 +138,7 @@
   .side .foot .who span { font-size: 11.5px; }
   .avatar { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 600; background: #1E3A6E; color: #fff; flex: none; }
 
-  .main { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+  .main { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; position: relative; }
   .top { height: 64px; flex: none; display: flex; align-items: center; gap: 14px; padding: 0 32px; background: var(--surface); border-bottom: 1px solid var(--line); }
   .crumbs { display: flex; align-items: center; gap: 8px; color: var(--muted); }
   .crumbs b { color: var(--ink); font-weight: 600; }
@@ -146,7 +146,7 @@
   .search { display: flex; align-items: center; gap: 8px; width: 300px; white-space: nowrap; overflow: hidden; height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); color: var(--subtle); }
   .search kbd { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; color: var(--muted); }
   .icon-btn { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); position: relative; cursor: pointer; }
-  .icon-btn .dot { position: absolute; top: 7px; right: 8px; width: 7px; height: 7px; border-radius: 50%; background: var(--red); border: 2px solid var(--surface); }
+  .icon-btn .n { position: absolute; top: -5px; right: -5px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; display: grid; place-items: center; border: 2px solid var(--surface); }
   .content { flex: 1; overflow: hidden; padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; }
 
   /* ---------- Primitives ---------- */
@@ -165,6 +165,7 @@
   .btn.sm { height: 30px; padding: 0 10px; font-size: 12.5px; }
   .btn.block { width: 100%; }
   .btn[disabled] { opacity: .45; cursor: not-allowed; }
+  .btn.is-off { background: var(--surface-2); color: var(--subtle); border: 1px solid var(--line-strong); opacity: 1; }
 
   .seg { display: inline-flex; padding: 3px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); }
   .seg span { padding: 4px 12px; border-radius: 6px; color: var(--muted); font-weight: 500; font-size: 12.5px; }
@@ -180,13 +181,15 @@
   .kpis { display: grid; gap: 16px; }
   .kpi { padding: 16px 18px; }
   .kpi .label { color: var(--muted); font-size: 12.5px; display: flex; align-items: center; gap: 6px; }
-  .kpi .value { font-size: 24px; font-weight: 600; color: var(--ink); margin-top: 6px; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .kpi .value { font-size: 24px; font-weight: 600; color: var(--ink); margin-top: 6px; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .kpi .foot { margin-top: 6px; font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
   .up { color: var(--teal); font-weight: 600; }
   .down { color: var(--red); font-weight: 600; }
 
-  .badge { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
   .badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .badge.has-ico::before { display: none; }
+  .badge svg.i { width: 12px; height: 12px; stroke-width: 2.4; }
   .badge.plain::before { display: none; }
   .b-teal { color: var(--teal); background: var(--teal-soft); }
   .b-blue { color: var(--blue); background: var(--blue-soft); }
@@ -288,13 +291,52 @@
   .swatch i { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--line); }
   .swatch b { display: block; color: var(--ink); font-weight: 600; font-size: 12.5px; }
   .swatch span { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--muted); }
+
+  .btn:focus-visible, .icon-btn:focus-visible, .side .item:focus-visible, .seg span:focus-visible, .check:focus-visible {
+    outline: 2px solid var(--blue); outline-offset: 2px;
+  }
+  .demo-focus { outline: 2px solid var(--blue); outline-offset: 2px; box-shadow: var(--focus); }
+
+  .settled { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px dashed var(--line-strong); border-radius: 10px; background: var(--surface-2); color: var(--muted); font-size: 12.5px; }
+  .settled b { color: var(--ink); font-weight: 600; }
+
+  .overlay { position: absolute; inset: 0; z-index: 6; background: rgba(15, 27, 45, .48); display: flex; align-items: center; justify-content: center; padding: 24px; }
+  [data-theme="dark"] .overlay { background: rgba(0, 0, 0, .62); }
+  .modal { width: 440px; max-width: 100%; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 24px 60px rgba(10, 33, 72, .28); }
+  .modal h2 { margin: 0; font-size: 18px; font-weight: 600; color: var(--ink); }
+  .drawer { position: absolute; top: 72px; right: 24px; z-index: 6; width: 380px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 18px 48px rgba(10, 33, 72, .18); overflow: hidden; }
+  .note { display: flex; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .note.unread { background: var(--blue-soft); }
+  .note b { display: block; color: var(--ink); font-weight: 600; font-size: 13px; }
+  .note span { color: var(--muted); font-size: 12px; }
+
+  .otp { display: flex; gap: 8px; }
+  .otp i { width: 46px; height: 52px; border: 1px solid var(--line-strong); border-radius: 8px; display: grid; place-items: center; font-style: normal; font-size: 20px; font-weight: 600; color: var(--ink); background: var(--surface); font-variant-numeric: tabular-nums; }
+  .otp i.cur { border-color: var(--blue); box-shadow: var(--focus); }
+  .check { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
+  .check .box { width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--line-strong); background: var(--surface); flex: none; margin-top: 1px; }
+
+  .board.phone { width: 390px; height: 844px; }
+  .m-app { height: 100%; display: flex; flex-direction: column; background: var(--bg); position: relative; }
+  .m-top { height: 56px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .m-body { flex: 1; min-height: 0; overflow: hidden; padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 12px; }
+  .m-tab { height: 62px; flex: none; display: grid; grid-template-columns: repeat(5, 1fr); background: var(--surface); border-top: 1px solid var(--line); }
+  .m-tab a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--muted); font-size: 10px; font-weight: 600; text-decoration: none; }
+  .m-tab a.on { color: var(--blue); }
+  .m-tab svg.i { width: 20px; height: 20px; }
+  .m-kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .m-kpi .kpi { padding: 10px 12px; }
+  .m-kpi .value { font-size: 18px; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--surface); border-radius: 16px 16px 0 0; border-top: 1px solid var(--line); box-shadow: 0 -12px 40px rgba(10, 33, 72, .2); padding: 8px 16px 20px; }
+  .sheet .otp i { width: 42px; height: 48px; font-size: 18px; }
+  .grab { width: 36px; height: 4px; border-radius: 999px; background: var(--line-strong); margin: 6px auto 12px; }
 </style>
 </head>
 <body>
 <header class="canvas-bar">
   <span id="logo-bar"></span>
   <span class="title">Canvas de diseño</span>
-  <span class="meta">Versión 1 · 9 oct 2026 · Escritorio 1440 × 900 · Datos de ejemplo</span>
+  <span class="meta">Versión 2 · 9 oct 2026 · Escritorio 1440 × 900 · Móvil 390 × 844 · Datos de ejemplo</span>
   <span class="spacer"></span>
   <div class="seg" id="theme-seg">
     <span data-t="light">Claro</span>
@@ -362,12 +404,20 @@ const logo = (size = 28, onSide = false) => `
     <span style="font-weight:700;letter-spacing:.06em;font-size:${Math.round(size * 0.62)}px;color:${onSide ? 'var(--logo-ink-side)' : 'var(--logo-ink)'}">PROPIA</span>
   </span>`;
 
-const money = (n, cur = 'US$') => {
+const money = (n, cur = 'US$', cents = false) => {
   const neg = n < 0;
-  const s = Math.abs(n).toFixed(Number.isInteger(n) ? 0 : 2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const abs = Math.abs(Number(n));
+  const s = (cents ? abs.toFixed(2) : String(Math.round(abs))).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return `${neg ? '−' : ''}${cur} ${s}`;
 };
-const signed = (n) => `<span class="num ${n >= 0 ? 'up' : 'ink'}">${n >= 0 ? '+' : ''}${money(n)}</span>`;
+const signed = (n, cents = false) => `<span class="num ${n >= 0 ? 'up' : 'ink'}">${n >= 0 ? '+' : ''}${money(n, 'US$', cents)}</span>`;
+const STICO = {
+  'Borrador': 'pen', 'En fondeo': 'clock', 'Fondeada': 'check', 'En notaría': 'landmark', 'Inscrita': 'file',
+  'En operación': 'building', 'Cancelada': 'x', 'En votación': 'users', 'En venta': 'trend', 'Vendida': 'check',
+  'Vencida': 'clock', 'En evaluación': 'shield', 'Suspendido': 'lock', 'Por validar': 'clock', 'Aprobado': 'check',
+  'Rechazado': 'x', 'Ventana interna': 'clock', 'En retracto': 'history', 'Abierta': 'check', 'Tu oferta': 'user',
+};
+const badge = (label, cls, icon) => `<span class="badge ${cls} has-ico">${I(icon || STICO[label] || 'info')}${label}</span>`;
 const tiles = (total, on, cols, mine = 0) =>
   `<div class="tiles" style="grid-template-columns:repeat(${cols},1fr)">${Array.from({ length: total }, (_, k) =>
     `<i class="${k < mine ? 'me' : k < on ? 'on' : ''}"></i>`).join('')}</div>`;
@@ -386,7 +436,7 @@ const NAV = {
     { g: 'Tesorería', items: [['depositos', 'Depósitos', 'inbox', 4], ['retiros', 'Retiros', 'out', 2], ['pagos', 'Pagos y conciliación', 'receipt']] },
     { g: 'Operaciones', items: [['propiedades', 'Propiedades', 'building'], ['rentas', 'Rentas y gastos', 'chart'], ['ofertas', 'Ofertas secundarias', 'repeat', 1]] },
     { g: 'Cumplimiento', items: [['plaft', 'Evaluación PLAFT', 'shield', 3], ['alertas', 'Alertas', 'alert']] },
-    { g: 'Administración', items: [['usuarios', 'Inversionistas y equipo', 'users'], ['reclamaciones', 'Reclamaciones', 'file', 1], ['config', 'Configuración', 'sliders']] },
+    { g: 'Administración', items: [['tablero', 'Pendientes', 'inbox', 5], ['usuarios', 'Inversionistas y equipo', 'users'], ['reclamaciones', 'Reclamaciones', 'file', 1], ['config', 'Configuración', 'sliders']] },
   ],
 };
 
@@ -394,9 +444,11 @@ const USERS = {
   inv: { ini: 'JV', name: 'Joel Villanueva', role: 'Inversionista' },
   teso: { ini: 'LR', name: 'Lucía Ramos', role: 'Tesorería' },
   ops: { ini: 'DS', name: 'Diego Salas', role: 'Operaciones' },
+  admin: { ini: 'EV', name: 'Elena Vargas', role: 'Admin' },
+  cump: { ini: 'MQ', name: 'Marcos Quispe', role: 'Cumplimiento' },
 };
 
-function shell({ nav, user, active, crumbs, body, locked = false, currency = true }) {
+function shell({ nav, user, active, crumbs, body, locked = false, currency = true, panel = '' }) {
   const groups = NAV[nav].map((grp) => `
     ${grp.g ? `<div class="group">${grp.g}</div>` : ''}
     ${grp.items.map(([id, label, icon, count]) => {
@@ -408,7 +460,7 @@ function shell({ nav, user, active, crumbs, body, locked = false, currency = tru
   return `
   <div class="app">
     <aside class="side">
-      <div class="brand">${logo(26, true)}<span class="env">${nav === 'back' ? 'Backoffice' : 'Prod'}</span></div>
+      <div class="brand">${logo(26, true)}${nav === 'back' ? '<span class="env">Backoffice</span>' : ''}</div>
       <nav>${groups}</nav>
       <div class="foot">
         <span class="avatar">${u.ini}</span>
@@ -423,9 +475,10 @@ function shell({ nav, user, active, crumbs, body, locked = false, currency = tru
         <div class="search">${I('search')}<span>Buscar…</span><kbd>⌘K</kbd></div>
         ${currency ? `<div class="seg"><span class="on">USD</span><span>PEN</span></div>` : ''}
         <span class="icon-btn" data-toggle-theme title="Cambiar tema">${I('moon', 'moon')}${I('sun', 'sun')}</span>
-        <span class="icon-btn">${I('bell')}<span class="dot"></span></span>
+        <span class="icon-btn" title="Notificaciones">${I('bell')}<span class="n">3</span></span>
       </header>
       <div class="content">${body}</div>
+      ${panel}
     </section>
   </div>`;
 }
@@ -433,7 +486,7 @@ function shell({ nav, user, active, crumbs, body, locked = false, currency = tru
 const PROPS = [
   { id: 1, name: 'Edificio Alba', city: 'San Isidro, Lima', kind: 'Residencial', price: 480000, unit: 24000, total: 20, filled: 14, yield: 9.8, inv: 11, g: 'g1', icon: 'building', status: ['En fondeo', 'b-blue'], close: '31 oct 2026', left: '22 días' },
   { id: 2, name: 'Casa Terrazas del Sur', city: 'Barranco, Lima', kind: 'Renta mediana estadía', price: 320000, unit: 16000, total: 20, filled: 7, yield: 8.4, inv: 5, g: 'g2', icon: 'home', status: ['En fondeo', 'b-blue'], close: '15 nov 2026', left: '37 días' },
-  { id: 3, name: 'Oficina Vértice', city: 'Miraflores, Lima', kind: 'Oficinas corporativas', price: 600000, unit: 30000, total: 20, filled: 20, yield: 10.5, inv: 15, g: 'g3', icon: 'building', status: ['En operación', 'b-teal'], close: '15 mar 2024', left: '—' },
+  { id: 3, name: 'Oficina Vértice', city: 'Miraflores, Lima', kind: 'Oficinas corporativas', price: 600000, unit: 30000, total: 20, filled: 20, yield: 10.5, inv: 15, g: 'g3', icon: 'building', status: ['En operación', 'b-teal'], close: '15 mar 2024', rent: '1 oct', left: '—' },
   { id: 4, name: 'Torre Pardo 540', city: 'Miraflores, Lima', kind: 'Residencial', price: 720000, unit: 36000, total: 20, filled: 20, yield: 9.1, inv: 17, g: 'g4', icon: 'building', status: ['En notaría', 'b-amber'], close: '30 sep 2026', left: '—' },
   { id: 5, name: 'Lofts Surquillo', city: 'Surquillo, Lima', kind: 'Residencial', price: 260000, unit: 13000, total: 20, filled: 3, yield: 8.9, inv: 3, g: 'g5', icon: 'home', status: ['En fondeo', 'b-blue'], close: '20 dic 2026', left: '72 días' },
 ];
@@ -474,15 +527,14 @@ S.login = () => `
     </section>
   </div>`;
 
-S.explorar = () => shell({
-  nav: 'inv', user: 'inv', active: 'explorar', crumbs: ['Inversionista', 'Explorar'],
+S.explorar = (opts = {}) => shell({
+  nav: 'inv', user: 'inv', active: 'explorar', crumbs: ['Inversionista', 'Explorar'], panel: opts.panel || '',
   body: `
     <div class="page-head">
       <div><h1>Explorar propiedades</h1><p>Inmuebles abiertos a fondeo y en operación. Cada unidad es una cuota ideal inscrita en SUNARP.</p></div>
       <div class="actions">
         <div class="seg"><span class="on">Todas</span><span>En fondeo</span><span>En operación</span></div>
         <span class="btn secondary">${I('filter')}Filtros</span>
-        <div class="seg"><span class="on" style="padding:4px 8px">${I('grid')}</span><span style="padding:4px 8px">${I('list')}</span></div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
@@ -490,7 +542,7 @@ S.explorar = () => shell({
       <article class="card" style="overflow:hidden">
         <div class="thumb ${p.g}" style="height:120px;border-radius:0">${I(p.icon)}
           <span class="badge ${p.status[1]}" style="position:absolute;top:12px;left:12px;background:rgba(255,255,255,.92);color:#0A2148">${p.status[0]}</span>
-          <span class="mono" style="position:absolute;bottom:10px;right:12px;font-size:11px;color:rgba(255,255,255,.85)">Cierra ${p.close}</span>
+          <span class="mono" style="position:absolute;bottom:10px;right:12px;font-size:11px;color:rgba(255,255,255,.85)">${p.status[0] === 'En operación' ? `Última renta ${p.rent}` : `Cierra ${p.close}`}</span>
         </div>
         <div class="card-b">
           <div class="row"><b class="ink" style="font-size:15px">${p.name}</b><span class="spacer grow"></span><span class="up num">${p.yield}%</span></div>
@@ -512,12 +564,12 @@ S.explorar = () => shell({
         <tbody>${PROPS.map((p) => `
           <tr>
             <td><div class="row"><span class="thumb ${p.g}" style="width:34px;height:34px">${I(p.icon)}</span><div><div class="strong">${p.name}</div><div class="muted" style="font-size:12px">${p.city}</div></div></div></td>
-            <td><span class="badge ${p.status[1]}">${p.status[0]}</span></td>
+            <td>${badge(p.status[0], p.status[1])}</td>
             <td class="r num strong">${money(p.price)}</td>
             <td class="r num">${money(p.unit)}</td>
             <td style="width:180px"><div class="row"><div class="progress grow"><i style="width:${p.filled / p.total * 100}%"></i></div><span class="num muted" style="font-size:12px;width:40px;text-align:right">${p.filled}/${p.total}</span></div></td>
             <td class="r num up">${p.yield}%</td>
-            <td class="muted">${p.close}</td>
+            <td class="muted">${p.status[0] === 'En operación' ? `Última renta ${p.rent}` : p.close}</td>
             <td class="r"><span class="btn secondary sm">Ver</span></td>
           </tr>`).join('')}
         </tbody>
@@ -525,10 +577,10 @@ S.explorar = () => shell({
     </section>`,
 });
 
-S.propiedad = () => {
+S.propiedad = (opts = {}) => {
   const p = PROPS[0];
   return shell({
-    nav: 'inv', user: 'inv', active: 'explorar', crumbs: ['Explorar', p.name],
+    nav: 'inv', user: 'inv', active: 'explorar', crumbs: ['Explorar', p.name], panel: opts.panel || '',
     body: `
     <div class="page-head">
       <div>
@@ -540,8 +592,8 @@ S.propiedad = () => {
     <div style="display:grid;grid-template-columns:1fr 380px;gap:20px;min-height:0">
       <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
         <div class="kpis card" style="grid-template-columns:repeat(5,1fr);gap:0">
-          ${[['Valor total', money(p.price)], ['Precio por unidad', money(p.unit)], ['Renta anual est.', '9.8%'], ['Gastos mensuales', 'US$ 1,200'], ['Valorización zona', '+4.2% / año']].map(([a, b], k) => `
-            <div class="kpi" style="${k ? 'border-left:1px solid var(--line)' : ''}"><div class="label">${a}</div><div class="value" style="font-size:19px">${b}</div></div>`).join('')}
+          ${[['Valor total', money(p.price)], ['Precio por unidad', money(p.unit)], ['Renta anual est.', '9.8%'], ['Gastos mensuales', 'US$ 1,200'], ['Valorización', '+4.2% / año']].map(([a, b], k) => `
+            <div class="kpi" style="${k ? 'border-left:1px solid var(--line)' : ''};padding:14px 12px"><div class="label">${a}</div><div class="value" style="font-size:16px">${b}</div></div>`).join('')}
         </div>
         <section class="card">
           <div class="card-h"><h3>Unidades</h3><span class="sub">Cada cuadro es una cuota ideal de 5%</span>
@@ -598,24 +650,25 @@ S.propiedad = () => {
           <div class="row" style="justify-content:space-between"><span class="muted">Saldo disponible</span><span class="num ink" style="font-weight:600">US$ 28,500</span></div>
           <div class="row" style="justify-content:space-between;margin-top:6px"><span class="muted">Después del compromiso</span><span class="num muted">US$ 4,500</span></div>
           <button class="btn primary block" style="height:42px;margin-top:18px">Comprometer US$ 24,000</button>
-          <div class="alert info" style="margin-top:14px;padding:10px 12px">${I('info')}<span class="txt" style="font-size:12px">El compromiso es irrevocable. Si al ${p.close} quedan unidades, PROPIA compra el resto y el cierre notarial sigue en la fecha prevista.</span></div>
+          <div class="alert info" style="margin-top:14px;padding:10px 12px">${I('info')}<span class="txt" style="font-size:12px">El compromiso es irrevocable. Si al ${p.close} quedan unidades, PROPIA decide: amplía el plazo una vez o compra el resto. Te avisamos qué eligió.</span></div>
         </div>
       </aside>
     </div>`,
   });
 };
 
-S.wallet = () => shell({
-  nav: 'inv', user: 'inv', active: 'wallet', crumbs: ['Inversionista', 'Wallet'],
+S.wallet = (opts = {}) => shell({
+  nav: 'inv', user: 'inv', active: 'wallet', crumbs: ['Inversionista', 'Wallet'], panel: opts.panel || '',
   body: `
     <div class="page-head">
       <div><h1>Wallet</h1><p>Saldos en dólares. Los soles se manejan en una wallet separada, sin conversión.</p></div>
-      <div class="actions"><span class="btn secondary">${I('out')}Retirar</span><span class="btn primary">${I('plus')}Cargar saldo</span></div>
+      <div class="actions"><span class="btn secondary">${I('download')}Estado de cuenta</span><span class="btn secondary">${I('out')}Retirar</span><span class="btn primary">${I('plus')}Cargar saldo</span></div>
     </div>
     <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
       ${[['Saldo total', 'US$ 73,500', 'Disponible + comprometido + en retiro'], ['Disponible', 'US$ 28,500', 'Listo para invertir o retirar'], ['Comprometido', 'US$ 40,000', '2 propiedades en fondeo'], ['En retiro', 'US$ 5,000', '1 retiro por pagar']].map(([a, b, c], k) => `
         <div class="card kpi"><div class="label">${a}</div><div class="value" style="${k === 0 ? 'font-size:28px' : ''}">${b}</div><div class="foot">${c}</div></div>`).join('')}
     </div>
+    <div class="settled">${I('receipt')}<span>Liquidado</span><b class="num">US$ 30,555</b><span class="grow">Lo cobrado por ventas. No suma al saldo.</span><span class="mono" style="font-size:11.5px">USD</span></div>
     <div class="alert warn">${I('clock')}<span class="txt"><b>Depósito de US$ 10,000 en revisión.</b> Tesorería valida tu constancia (BCP · operación 004512398) en horario hábil. Enviado hoy 10:42.</span><span class="act btn secondary sm">Ver constancia</span></div>
     <div style="display:grid;grid-template-columns:1fr 400px;gap:20px;min-height:0">
       <section class="card" style="overflow:hidden">
@@ -631,7 +684,7 @@ S.wallet = () => shell({
               ['08 sep 2026', 'Depósito validado', 'DEP-000731 · BBVA', 40000, 72975],
               ['01 sep 2026', 'Renta · Oficina Vértice', 'REN-2026-08', 525, 32975],
               ['01 ago 2026', 'Renta · Oficina Vértice', 'REN-2026-07', 525, 32450],
-            ].map(([d, c, r, v, b]) => `<tr><td class="muted">${d}</td><td class="strong">${c}</td><td class="mono muted" style="font-size:12px">${r}</td><td class="r">${signed(v)}</td></tr>`).join('')}
+            ].map(([d, c, r, v]) => `<tr><td class="muted">${d}</td><td class="strong">${c}</td><td class="mono muted" style="font-size:12px">${r}</td><td class="r">${signed(v, true)}</td></tr>`).join('')}
           </tbody>
         </table>
       </section>
@@ -658,8 +711,13 @@ S.cartera = () => {
     nav: 'inv', user: 'inv', active: 'cartera', crumbs: ['Inversionista', 'Mi cartera'],
     body: `
     <div class="page-head">
-      <div><h1>Mi cartera</h1><p>Tus cuotas ideales, la renta recibida y los documentos de cada inmueble.</p></div>
-      <div class="actions"><span class="btn secondary">${I('download')}Constancia de retención 2025</span><span class="btn primary">${I('repeat')}Vender mi cuota</span></div>
+      <div><h1>Mi cartera</h1><p>Vender se activa cuando la cuota está inscrita y no hay una votación en curso.</p></div>
+      <div class="actions"><span class="btn secondary">${I('download')}Estado de cuenta anual 2025</span></div>
+    </div>
+    <div class="alert warn" style="align-items:center">
+      ${I('users')}
+      <span class="txt"><b>Votación abierta · Oficina Vértice.</b> Oferta US$ 680,000 · recibirías cerca de US$ 64,600 · cierran en 6 días. Puedes cambiar el voto.</span>
+      <span class="act row"><span class="btn secondary sm">${I('x')}No</span><span class="btn primary sm">${I('check')}Sí, vender</span></span>
     </div>
     <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
       <div class="card kpi"><div class="label">Invertido</div><div class="value">US$ 100,000</div><div class="foot">3 inmuebles · 4 unidades</div></div>
@@ -670,11 +728,11 @@ S.cartera = () => {
     <section class="card" style="overflow:hidden">
       <div class="card-h"><h3>Posiciones</h3></div>
       <table class="t">
-        <thead><tr><th>Inmueble</th><th>Estado</th><th class="r">Unidades</th><th class="r">Cuota ideal</th><th class="r">Invertido</th><th class="r">Valorización</th><th class="r">Renta / mes</th><th class="r">Rentabilidad</th></tr></thead>
+        <thead><tr><th>Inmueble</th><th>Estado</th><th class="r">Unidades</th><th class="r">Invertido</th><th class="r">Valorización</th><th class="r">Renta / mes</th><th class="r">Rentab.</th><th></th></tr></thead>
         <tbody>
-          <tr><td><div class="row"><span class="thumb g3" style="width:34px;height:34px">${I('building')}</span><div><div class="strong">Oficina Vértice</div><div class="muted" style="font-size:12px">Miraflores · desde 15 mar 2024</div></div></div></td><td><span class="badge b-teal">En operación</span></td><td class="r num">2</td><td class="r num">10.00%</td><td class="r num strong">US$ 60,000</td><td class="r num">US$ 62,700</td><td class="r num up">US$ 525</td><td class="r num up">10.5%</td></tr>
-          <tr><td><div class="row"><span class="thumb g1" style="width:34px;height:34px">${I('building')}</span><div><div class="strong">Edificio Alba</div><div class="muted" style="font-size:12px">San Isidro · cierra 31 oct 2026</div></div></div></td><td><span class="badge b-blue">En fondeo</span></td><td class="r num">1</td><td class="r num">5.00%</td><td class="r num strong">US$ 24,000</td><td class="r num muted">—</td><td class="r num muted">—</td><td class="r num muted">9.8% est.</td></tr>
-          <tr><td><div class="row"><span class="thumb g2" style="width:34px;height:34px">${I('home')}</span><div><div class="strong">Casa Terrazas del Sur</div><div class="muted" style="font-size:12px">Barranco · cierra 15 nov 2026</div></div></div></td><td><span class="badge b-blue">En fondeo</span></td><td class="r num">1</td><td class="r num">5.00%</td><td class="r num strong">US$ 16,000</td><td class="r num muted">—</td><td class="r num muted">—</td><td class="r num muted">8.4% est.</td></tr>
+          <tr><td><div class="row"><span class="thumb g3" style="width:34px;height:34px">${I('building')}</span><div><div class="strong">Oficina Vértice</div><div class="muted" style="font-size:12px">Miraflores · desde 15 mar 2024</div></div></div></td><td>${badge('En votación', 'b-amber')}</td><td class="r num">2</td><td class="r num strong">US$ 60,000</td><td class="r num">US$ 62,700</td><td class="r num up">US$ 525</td><td class="r num up">10.5%</td><td class="r"><span class="btn secondary sm" disabled style="opacity:.45">Vender</span></td></tr>
+          <tr><td><div class="row"><span class="thumb g1" style="width:34px;height:34px">${I('building')}</span><div><div class="strong">Edificio Alba</div><div class="muted" style="font-size:12px">San Isidro · cierra 31 oct 2026</div></div></div></td><td>${badge('En fondeo', 'b-blue')}</td><td class="r num">1</td><td class="r num strong">US$ 24,000</td><td class="r num muted">—</td><td class="r num muted">—</td><td class="r num muted">9.8%</td><td class="r"><span class="btn secondary sm" disabled style="opacity:.45">Vender</span></td></tr>
+          <tr><td><div class="row"><span class="thumb g2" style="width:34px;height:34px">${I('home')}</span><div><div class="strong">Casa Terrazas del Sur</div><div class="muted" style="font-size:12px">Barranco · cierra 15 nov 2026</div></div></div></td><td>${badge('En fondeo', 'b-blue')}</td><td class="r num">1</td><td class="r num strong">US$ 16,000</td><td class="r num muted">—</td><td class="r num muted">—</td><td class="r num muted">8.4%</td><td class="r"><span class="btn secondary sm" disabled style="opacity:.45">Vender</span></td></tr>
         </tbody>
       </table>
     </section>
@@ -682,18 +740,18 @@ S.cartera = () => {
       <section class="card">
         <div class="card-h"><h3>Renta recibida</h3><span class="sub">Últimos 12 meses · neto de gastos</span><div class="right"><div class="seg"><span class="on">12 m</span><span>24 m</span><span>Todo</span></div></div></div>
         <div class="card-b">
-          <svg viewBox="0 0 640 170" width="100%" height="170" role="img" aria-label="Renta mensual">
-            ${[0, 1, 2, 3].map((k) => `<line x1="36" x2="640" y1="${20 + k * 45}" y2="${20 + k * 45}" stroke="var(--line)" />`).join('')}
-            ${['600', '400', '200', '0'].map((t, k) => `<text x="0" y="${24 + k * 45}" fill="var(--subtle)" font-size="11" font-family="Inter">${t}</text>`).join('')}
-            ${bars.map((v, k) => `<rect x="${48 + k * 49}" y="${155 - v / 600 * 135}" width="30" height="${v / 600 * 135}" rx="4" fill="${k === 11 ? 'var(--teal-solid)' : 'color-mix(in srgb, var(--teal-solid) 45%, transparent)'}"/><text x="${63 + k * 49}" y="170" text-anchor="middle" fill="var(--subtle)" font-size="11" font-family="Inter">${months[k]}</text>`).join('')}
+          <svg viewBox="0 0 640 148" width="100%" height="148" role="img" aria-label="Renta mensual">
+            ${[0, 1, 2, 3].map((k) => `<line x1="36" x2="640" y1="${8 + k * 36}" y2="${8 + k * 36}" stroke="var(--line)" />`).join('')}
+            ${['600', '400', '200', '0'].map((t, k) => `<text x="0" y="${12 + k * 36}" fill="var(--subtle)" font-size="11" font-family="Inter">${t}</text>`).join('')}
+            ${bars.map((v, k) => `<rect x="${48 + k * 49}" y="${128 - v / 600 * 112}" width="30" height="${v / 600 * 112}" rx="4" fill="${k === 11 ? 'var(--teal-solid)' : 'color-mix(in srgb, var(--teal-solid) 45%, transparent)'}"/><text x="${63 + k * 49}" y="144" text-anchor="middle" fill="var(--subtle)" font-size="11" font-family="Inter">${months[k]}</text>`).join('')}
           </svg>
         </div>
       </section>
       <section class="card">
         <div class="card-h"><h3>Documentos</h3><span class="sub">Oficina Vértice</span></div>
         <div>
-          ${[['Escritura pública de compraventa', '20 mar 2024'], ['Partida registral SUNARP', '2 abr 2024'], ['Poder especial marco firmado', '15 mar 2024'], ['Constancia de retención · Renta 2025', '31 ene 2026']].map(([n, d]) => `
-            <div class="row" style="padding:11px 18px;border-bottom:1px solid var(--line)"><span class="muted">${I('file')}</span><span class="grow ink" style="font-weight:500">${n}</span><span class="muted" style="font-size:12px">${d}</span><span class="muted">${I('download')}</span></div>`).join('')}
+          ${[['Escritura pública de compraventa', '20 mar 2024'], ['Partida registral SUNARP', '2 abr 2024'], ['Poder especial marco firmado', '15 mar 2024'], ['Estado de cuenta · 2025', '31 ene 2026']].map(([n, d]) => `
+            <div class="row" style="padding:8px 18px;border-bottom:1px solid var(--line)"><span class="muted">${I('file')}</span><span class="grow ink" style="font-weight:500">${n}</span><span class="muted" style="font-size:12px">${d}</span><span class="muted">${I('download')}</span></div>`).join('')}
         </div>
       </section>
     </div>`,
@@ -767,7 +825,7 @@ S.onboarding = () => shell({
         <div class="card-b">
           <p class="muted" style="margin:0 0 16px;max-width:620px">Autoriza a PROPIA SAC a comprar, administrar y vender tus cuotas ideales según tus instrucciones en la plataforma. Se firma una sola vez y cubre todas tus inversiones.</p>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
-            ${[['Facultades de compra', 'Suscribir compromisos y escrituras de adquisición'], ['Facultades de administración', 'Arrendar, cobrar rentas y pagar gastos'], ['Facultades de venta', 'Transferir cuotas cuando publiques una oferta']].map(([a, b]) => `
+            ${[['Facultades de compra', 'Suscribir compromisos y escrituras de adquisición'], ['Facultades de administración', 'Arrendar, cobrar rentas y pagar gastos'], ['Facultades de venta', 'Transferir cuotas y, si la mayoría vota a favor, el inmueble completo']].map(([a, b]) => `
               <div style="border:1px solid var(--line);border-radius:8px;padding:12px"><div class="row" style="gap:8px;color:var(--teal)">${I('shield')}<b class="ink" style="font-size:13px">${a}</b></div><div class="muted" style="font-size:12px;margin-top:6px">${b}</div></div>`).join('')}
           </div>
           <table class="t" style="border:1px solid var(--line);border-radius:8px;overflow:hidden;border-collapse:separate;border-spacing:0">
@@ -800,7 +858,7 @@ S.depositos = () => shell({
   body: `
     <div class="page-head">
       <div><h1>Depósitos por validar</h1><p>Compara la constancia con el extracto bancario antes de acreditar la wallet.</p></div>
-      <div class="actions"><div class="seg"><span class="on">Pendientes</span><span>Aprobados</span><span>Rechazados</span></div><span class="btn secondary">${I('download')}Exportar</span></div>
+      <div class="actions"><div class="seg"><span class="on">Pendientes</span><span>Aprobados</span><span>Rechazados</span></div><span class="btn secondary">${I('upload')}Subir extracto CSV</span><span class="btn secondary">${I('download')}Exportar</span></div>
     </div>
     <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
       <div class="card kpi"><div class="label">Pendientes</div><div class="value">4</div><div class="foot">El más antiguo hace 3 h 12 min</div></div>
@@ -817,15 +875,15 @@ S.depositos = () => shell({
               ['Joel Villanueva Torres', 'DNI 45****21', 'BCP · Dólares', 'US$ 10,000', '004512398', 'Hoy 10:42', true],
               ['Ana Lucía Paredes', 'DNI 70****88', 'BBVA · Dólares', 'US$ 16,000', '88120455', 'Hoy 09:15', false],
               ['Ricardo Mendoza', 'CE 00****19', 'BCP · Soles', 'S/ 18,500', '004498712', 'Hoy 08:03', false],
-              ['Carla Vásquez Ríos', 'DNI 41****07', 'BBVA · Dólares', 'US$ 12,200', '88117302', 'Ayer 18:47', false],
-            ].map(([n, d, b, m, o, t, s]) => `<tr class="${s ? 'sel' : ''}"><td><div class="strong">${n}</div><div class="muted mono" style="font-size:11.5px">${d}</div></td><td>${b}</td><td class="r num strong">${m}</td><td class="mono muted">${o}</td><td class="muted">${t}</td></tr>`).join('')}
+              ['Carla Vásquez Ríos', 'DNI 41****07', 'BBVA · Dólares', 'US$ 12,200', '88117302', 'Ayer 18:47', false, true],
+            ].map(([n, d, b, m, o, t, s, dup]) => `<tr class="${s ? 'sel' : ''}"><td><div class="strong">${n}</div><div class="muted mono" style="font-size:11.5px">${d}</div></td><td>${b}</td><td class="r num strong">${m}</td><td><div class="mono muted">${o}</div>${dup ? `<div style="margin-top:4px">${badge('N.º repetido', 'b-amber', 'alert')}</div>` : ''}</td><td class="muted">${t}</td></tr>`).join('')}
           </tbody>
         </table>
       </section>
       <aside class="card" style="display:flex;flex-direction:column">
         <div class="card-h"><h3>DEP-000742</h3><span class="sub">Joel Villanueva Torres</span><div class="right"><span class="btn ghost sm">${I('eye')}Abrir</span></div></div>
-        <div class="card-b" style="display:flex;flex-direction:column;gap:14px">
-          <div class="voucher">
+        <div class="card-b" style="display:flex;flex-direction:column;gap:8px">
+          <div class="voucher" style="padding:8px 12px">
             <div class="vh"><b>BCP</b><span>Constancia de transferencia</span></div>
             <div class="vr"><span>Fecha</span><span>09/10/2026 10:38</span></div>
             <div class="vr"><span>N.º de operación</span><span>004512398</span></div>
@@ -835,11 +893,14 @@ S.depositos = () => shell({
           </div>
           <dl class="dl" style="font-size:13px">
             <dt>Monto declarado</dt><dd>US$ 10,000.00</dd>
+            <dt>Cuenta de origen</dt><dd>BCP Ahorros ****8812</dd>
+            <dt>Titular de origen</dt><dd>Joel Villanueva Torres</dd>
+            <dt>N.º de operación</dt><dd class="up">Sin coincidencias</dd>
             <dt>Cuenta PROPIA</dt><dd>BCP corriente dólares</dd>
           </dl>
           <div class="field"><label>Motivo (solo si rechazas)</label><div class="input"><span class="ph">Selecciona un motivo</span><span style="margin-left:auto" class="muted">${I('chev')}</span></div></div>
+          <div class="hint">Aprobación simple: el umbral de doble aprobación no está definido. Queda en auditoría.</div>
           <div class="row" style="gap:10px"><span class="btn danger grow">${I('x')}Rechazar</span><span class="btn success grow">${I('check')}Aprobar y acreditar</span></div>
-          <div class="muted" style="font-size:12px;display:flex;gap:8px">${I('history')}<span>La aprobación genera el asiento en el libro mayor y queda en auditoría con tu usuario.</span></div>
         </div>
       </aside>
     </div>`,
@@ -860,6 +921,14 @@ S.propiedades = () => {
     <div class="page-head">
       <div><h1>Propiedades</h1><p>Del alta al reparto de renta. Notaría y SUNARP se avanzan aquí, con el documento que lo respalda.</p></div>
       <div class="actions"><div class="seg"><span class="on" style="padding:4px 8px">${I('grid')}</span><span style="padding:4px 8px">${I('list')}</span></div><span class="btn primary">${I('plus')}Nueva propiedad</span></div>
+    </div>
+    <div class="card" style="padding:12px 16px;display:flex;align-items:center;gap:16px">
+      ${badge('En votación', 'b-amber')}
+      <div class="grow">
+        <div class="row" style="justify-content:space-between"><b class="ink">Oficina Vértice · venta total</b><span class="muted num" style="font-size:12px">12 de 20 a favor · umbral 50% · 6 días</span></div>
+        <div class="progress" style="margin-top:8px"><i style="width:60%"></i></div>
+      </div>
+      <span class="num ink" style="font-weight:600">US$ 680,000</span>
     </div>
     <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
       <div class="card kpi"><div class="label">Valor bajo administración</div><div class="value">US$ 4,000,000</div><div class="foot">10 inmuebles</div></div>
@@ -902,16 +971,16 @@ S.sistema = () => {
       </div></section>
     <section class="card"><div class="card-h"><h3>Estados</h3></div>
       <div class="card-b" style="display:flex;flex-wrap:wrap;gap:8px">
-        <span class="badge b-gray">Borrador</span><span class="badge b-blue">En fondeo</span><span class="badge b-teal">Fondeada</span><span class="badge b-amber">En notaría</span><span class="badge b-teal">Inscrita</span><span class="badge b-teal">En operación</span>
-        <span class="badge b-amber">Por validar</span><span class="badge b-teal">Aprobado</span><span class="badge b-red">Rechazado</span><span class="badge b-amber">Ventana interna</span><span class="badge b-blue">En retracto</span>
+        ${[['Borrador', 'b-gray'], ['En fondeo', 'b-blue'], ['Fondeada', 'b-teal'], ['En notaría', 'b-amber'], ['Inscrita', 'b-teal'], ['En operación', 'b-teal'], ['Cancelada', 'b-red'], ['En votación', 'b-amber'], ['En venta', 'b-blue'], ['Vendida', 'b-teal'], ['Vencida', 'b-red'], ['En evaluación', 'b-amber'], ['Suspendido', 'b-gray'], ['Por validar', 'b-amber'], ['Aprobado', 'b-teal'], ['Rechazado', 'b-red'], ['Ventana interna', 'b-amber'], ['En retracto', 'b-blue']].map(([n, c]) => badge(n, c)).join('')}
       </div></section>
     <section class="card"><div class="card-h"><h3>Botones</h3></div>
       <div class="card-b" style="display:flex;flex-wrap:wrap;gap:10px">
-        <span class="btn primary">Comprometer</span><span class="btn secondary">Secundario</span><span class="btn ghost">Terciario</span><span class="btn success">${I('check')}Aprobar</span><span class="btn danger">${I('x')}Rechazar</span><span class="btn primary" disabled style="opacity:.45">Deshabilitado</span>
+        <span class="btn primary demo-focus">Comprometer</span><span class="btn secondary">Secundario</span><span class="btn ghost">Terciario</span><span class="btn success">${I('check')}Aprobar</span><span class="btn danger">${I('x')}Rechazar</span><span class="btn primary" disabled style="opacity:.45">Deshabilitado</span>
+        <span class="muted" style="font-size:12px;width:100%">El borde azul es el foco de teclado.</span>
       </div></section>
     <section class="card"><div class="card-h"><h3>Campos</h3></div>
       <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
-        <div class="field"><label>Monto a retirar</label><div class="input focus"><span class="muted">S/</span><span class="num">5,000.00</span></div><span class="hint">Disponible: US$ 28,500</span></div>
+        <div class="field"><label>Monto a retirar</label><div class="input focus"><span class="muted">US$</span><span class="num">5,000.00</span></div><span class="hint">Disponible: US$ 28,500</span></div>
         <div class="field"><label>Cuenta destino</label><div class="input"><span>BCP · Ahorros ****8812</span><span style="margin-left:auto" class="muted">${I('chev')}</span></div></div>
       </div></section>
     <section class="card"><div class="card-h"><h3>Avisos</h3></div>
@@ -924,17 +993,265 @@ S.sistema = () => {
   </div>`;
 };
 
+const confirmModal = `
+  <div class="modal">
+    <div class="card-h"><h3>Confirmar compromiso</h3><span class="right muted">${I('x')}</span></div>
+    <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+      <div class="row"><span class="thumb g1" style="width:36px;height:36px">${I('building')}</span><div class="grow"><b class="ink">Edificio Alba</b><div class="muted" style="font-size:12px">San Isidro · 1 unidad · 5% de cuota ideal</div></div></div>
+      <dl class="dl">
+        <dt>Monto a comprometer</dt><dd>US$ 24,000.00</dd>
+        <dt>Saldo disponible</dt><dd>US$ 28,500.00</dd>
+        <dt>Después del compromiso</dt><dd>US$ 4,500.00</dd>
+      </dl>
+      <div class="check"><span class="box"></span><span>Entiendo que el compromiso es irrevocable y que, si quedan unidades al cierre, PROPIA amplía el plazo una vez o compra el resto.</span></div>
+      <span class="btn is-off block">Comprometer US$ 24,000.00</span>
+      <span class="hint" style="text-align:center">Marca la casilla para continuar.</span>
+    </div>
+  </div>`;
+
+const codeModal = `
+  <div class="modal">
+    <div class="card-h"><h3>Confirma con el código</h3><span class="right muted">${I('x')}</span></div>
+    <div class="card-b" style="display:flex;flex-direction:column;gap:14px">
+      <p class="muted" style="margin:0">Enviamos un código de 6 dígitos a <b class="ink">joel.villanueva@email.com</b>. Vence en 9:42.</p>
+      <dl class="dl">
+        <dt>Retiro</dt><dd>US$ 5,000.00</dd>
+        <dt>Cuenta destino</dt><dd>BCP Ahorros ****8812</dd>
+      </dl>
+      <div class="otp" aria-label="Código de 6 dígitos"><i>4</i><i>8</i><i>2</i><i>9</i><i>1</i><i class="cur">7</i></div>
+      <span class="btn primary block">Confirmar retiro</span>
+      <span class="hint" style="text-align:center">¿No llegó? Reenviar código</span>
+    </div>
+  </div>`;
+
+S.confirmar = () => S.propiedad({ panel: `<div class="overlay">${confirmModal}</div>` });
+S.codigo = () => S.wallet({ panel: `<div class="overlay">${codeModal}</div>` });
+
+S.notificaciones = () => S.explorar({
+  panel: `<aside class="drawer">
+    <div class="card-h"><h3>Notificaciones</h3><span class="sub">3 sin leer</span><div class="right"><span class="btn ghost sm">Marcar leídas</span></div></div>
+    ${[
+      ['Depósito en revisión', 'US$ 10,000.00 · BCP · hoy 10:42', true],
+      ['Renta acreditada', 'Oficina Vértice · US$ 525.00 · 1 oct', true],
+      ['Votación abierta', 'Venta de Oficina Vértice · cierran en 6 días', true],
+      ['Nuevo inicio de sesión', 'Chrome · Lima · hoy 08:14. Si no fuiste tú, cierra todas las sesiones.', false],
+      ['Compromiso registrado', 'Edificio Alba · US$ 24,000.00 · 14 sep', false],
+    ].map(([t, d, u]) => `<div class="note ${u ? 'unread' : ''}"><span class="muted">${I(u ? 'bell' : 'check')}</span><div><b>${t}</b><span>${d}</span></div></div>`).join('')}
+  </aside>`,
+});
+
+S.tablero = () => shell({
+  nav: 'back', user: 'admin', active: 'tablero', crumbs: ['Administración', 'Pendientes'], currency: false,
+  body: `
+    <div class="page-head">
+      <div><h1>Pendientes</h1><p>Lo que espera una decisión tuya, con el tiempo que lleva abierto.</p></div>
+      <div class="actions"><div class="seg"><span class="on">Míos</span><span>Todos los roles</span></div></div>
+    </div>
+    <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+      <div class="card kpi"><div class="label">Abiertos</div><div class="value">5</div><div class="foot">2 llevan más de 24 h</div></div>
+      <div class="card kpi"><div class="label">El más antiguo</div><div class="value">3 días</div><div class="foot">Evaluación PLAFT sin atender</div></div>
+      <div class="card kpi"><div class="label">Piden dos personas</div><div class="value">2</div><div class="foot">Cancelación y retiro institucional</div></div>
+      <div class="card kpi"><div class="label">Resueltos hoy</div><div class="value">4</div><div class="foot">Por Elena Vargas</div></div>
+    </div>
+    <section class="card" style="overflow:hidden">
+      <table class="t">
+        <thead><tr><th>Tarea</th><th>Origen</th><th>Antigüedad</th><th></th></tr></thead>
+        <tbody>
+          ${[
+            ['Plazo de fondeo vencido', 'Casa Los Cedros · quedan 4 unidades', 'Sistema', 'hace 2 días', `<span class="btn secondary sm">Ampliar plazo</span><span class="btn primary sm">Comprar el resto</span>`],
+            ['Cancelar propiedad', 'Lofts Surquillo · la compra se cayó', 'Operaciones', 'hace 5 h · 1.ª de 2', `<span class="btn danger sm">Rechazar</span><span class="btn primary sm">Confirmar</span>`],
+            ['Retiro institucional', 'US$ 12,000.00 desde comisiones', 'Tesorería', 'hace 1 h · 1.ª de 2', `<span class="btn primary sm">Dar la segunda</span>`],
+            ['Reclamación R-2026-000014', 'Queja por demora en un retiro', 'Libro', 'quedan 12 días', `<span class="btn secondary sm">Responder</span>`],
+            ['Evaluación PLAFT', 'Rosa Meléndez · riesgo alto', 'Cumplimiento', 'hace 3 días', `<span class="btn secondary sm">Ver ficha</span>`],
+          ].map(([t, s, o, age, act]) => `<tr><td><div class="strong">${t}</div><div class="muted" style="font-size:12px">${s}</div></td><td class="muted">${o}</td><td class="num">${age}</td><td class="r"><span class="row" style="justify-content:flex-end">${act}</span></td></tr>`).join('')}
+        </tbody>
+      </table>
+    </section>`,
+});
+
+S.plaft = () => shell({
+  nav: 'back', user: 'cump', active: 'plaft', crumbs: ['Cumplimiento', 'Evaluación PLAFT'], currency: false,
+  body: `
+    <div class="page-head">
+      <div><h1>Evaluación PLAFT</h1><p>Revisas listas y origen de fondos antes de habilitar la cuenta para invertir.</p></div>
+      <div class="actions"><div class="seg"><span class="on">En evaluación</span><span>Observados</span><span>Resueltos</span></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 460px;gap:20px;min-height:0;align-items:start">
+      <section class="card" style="overflow:hidden">
+        <table class="t">
+          <thead><tr><th>Persona</th><th>Riesgo</th><th>Motivo</th><th>Espera</th></tr></thead>
+          <tbody>
+            <tr class="sel"><td><div class="strong">Rosa Meléndez</div><div class="muted mono" style="font-size:11.5px">CE 00****44</div></td><td>${badge('Alto', 'b-red', 'alert')}</td><td class="muted">CE y origen “Otro”</td><td class="num muted">hace 3 días</td></tr>
+            <tr><td><div class="strong">Hugo Salazar</div><div class="muted mono" style="font-size:11.5px">DNI 10****82</div></td><td>${badge('Medio', 'b-amber', 'clock')}</td><td class="muted">Herencia</td><td class="num muted">hace 6 h</td></tr>
+            <tr><td><div class="strong">Luis Paredes</div><div class="muted mono" style="font-size:11.5px">DNI 44****19</div></td><td>${badge('Bajo', 'b-teal', 'check')}</td><td class="muted">Sueldo dependiente</td><td class="num muted">hace 1 h</td></tr>
+          </tbody>
+        </table>
+      </section>
+      <aside class="card">
+        <div class="card-h"><h3>Rosa Meléndez</h3><span class="right">${badge('Alto', 'b-red', 'alert')}</span></div>
+        <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+          <dl class="dl">
+            <dt>Documento</dt><dd>CE 00112244</dd>
+            <dt>Domiciliada</dt><dd>No</dd>
+            <dt>Origen de fondos</dt><dd>Otro · venta de vehículo</dd>
+            <dt>PEP</dt><dd>No declara</dd>
+          </dl>
+          <div class="divider" style="margin:0"></div>
+          <div class="row" style="justify-content:space-between"><span class="muted">Lista ONU</span>${badge('Revisada', 'b-teal', 'check')}</div>
+          <div class="row" style="justify-content:space-between"><span class="muted">Lista OFAC</span>${badge('Pendiente', 'b-amber', 'clock')}</div>
+          <div class="field"><label>Comentario</label><div class="input"><span class="ph">Qué revisaste y por qué</span></div></div>
+          <div class="row" style="gap:8px"><span class="btn danger sm grow">${I('x')}Rechazar</span><span class="btn secondary sm grow">Observar</span><span class="btn success sm grow">${I('check')}Aprobar</span></div>
+          <div class="muted" style="font-size:12px">Alto: PEP, origen “Otro”, CE o pasaporte. Medio: herencia o negocio propio. El resto es bajo.</div>
+        </div>
+      </aside>
+    </div>`,
+});
+
+function phone({ active, body, sheet = '' }) {
+  const tabs = [['explorar', 'Explorar', 'compass'], ['secundario', 'Secundario', 'repeat'], ['wallet', 'Wallet', 'wallet'], ['cartera', 'Cartera', 'briefcase'], ['perfil', 'Perfil', 'user']];
+  return `<div class="m-app">
+    <header class="m-top">${logo(22)}<span class="grow"></span><div class="seg"><span class="on">USD</span><span>PEN</span></div><span class="icon-btn" title="Notificaciones" style="width:32px;height:32px">${I('bell')}<span class="n">3</span></span></header>
+    <div class="m-body">${body}</div>
+    <nav class="m-tab">${tabs.map(([id, label, icon]) => `<a class="${id === active ? 'on' : ''}">${I(icon)}${label}</a>`).join('')}</nav>
+    ${sheet ? `<div class="overlay" style="align-items:flex-end;padding:0">${sheet}</div>` : ''}
+  </div>`;
+}
+
+const mCard = (p) => `
+  <article class="card" style="display:grid;grid-template-columns:72px 1fr;overflow:hidden;min-height:96px">
+    <div class="thumb ${p.g}" style="border-radius:0">${I(p.icon)}</div>
+    <div style="padding:8px 10px 10px;min-width:0">
+      <div class="row"><b class="ink" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</b><span class="grow"></span><span class="up num" style="font-size:12px">${p.yield}%</span></div>
+      <div class="muted" style="font-size:11.5px;margin:1px 0 6px">${p.city.split(',')[0]}</div>
+      <div class="row" style="justify-content:space-between;gap:6px"><span class="num ink" style="font-weight:600;font-size:12px">${money(p.unit)}</span>${badge(p.status[0], p.status[1])}</div>
+      <div class="progress" style="margin-top:6px"><i style="width:${p.filled / p.total * 100}%"></i></div>
+      <div class="muted num" style="font-size:11px;margin-top:3px">${p.filled}/${p.total} · ${p.status[0] === 'En operación' ? `última renta ${p.rent}` : `cierra ${p.close}`}</div>
+    </div>
+  </article>`;
+
+S['m-explorar'] = () => phone({
+  active: 'explorar',
+  body: `
+    <div><h1 style="margin:0;font-size:20px;color:var(--ink);font-weight:600">Explorar</h1><p class="muted" style="margin:2px 0 0;font-size:12px">Cuotas ideales inscritas en SUNARP.</p></div>
+    <div class="seg" style="align-self:flex-start"><span class="on">Todas</span><span>En fondeo</span><span>En operación</span></div>
+    ${[PROPS[0], PROPS[1], PROPS[2], PROPS[4]].map(mCard).join('')}`,
+});
+
+S['m-propiedad'] = (sheet = '') => phone({
+  active: 'explorar', sheet,
+  body: `
+    <div>
+      <div class="muted" style="font-size:12px">Explorar</div>
+      <div class="row" style="gap:8px;margin-top:2px"><h1 style="margin:0;font-size:20px;color:var(--ink);font-weight:600">Edificio Alba</h1>${badge('En fondeo', 'b-blue')}</div>
+      <div class="muted" style="font-size:12px">San Isidro · Residencial · cierra 31 oct</div>
+    </div>
+    <div class="m-kpi">
+      ${[['Valor total', 'US$ 480,000'], ['Por unidad', 'US$ 24,000'], ['Renta anual', '9.8%'], ['Gastos / mes', 'US$ 1,200']].map(([a, b]) => `<div class="card kpi"><div class="label">${a}</div><div class="value">${b}</div></div>`).join('')}
+    </div>
+    <section class="card">
+      <div class="card-h" style="padding:10px 12px"><h3>Unidades</h3><span class="sub">14 de 20</span></div>
+      <div class="card-b" style="padding:10px 12px">${tiles(20, 14, 10, 1)}</div>
+    </section>
+    <section class="card">
+      <div class="card-b" style="padding:12px;display:flex;flex-direction:column;gap:8px">
+        <div class="row" style="justify-content:space-between"><span class="muted">1 unidad · 5%</span><b class="ink num">US$ 24,000</b></div>
+        <div class="row" style="justify-content:space-between;font-size:12.5px"><span class="muted">Te quedarían</span><span class="num">US$ 4,500</span></div>
+        <span class="btn primary block">Comprometer</span>
+        <div class="muted" style="font-size:11.5px;line-height:1.4">Es irrevocable. Si quedan unidades, PROPIA amplía el plazo una vez o compra el resto.</div>
+      </div>
+    </section>`,
+});
+
+S['m-wallet'] = (sheet = '') => phone({
+  active: 'wallet', sheet,
+  body: `
+    <div class="row"><div class="grow"><h1 style="margin:0;font-size:20px;color:var(--ink);font-weight:600">Wallet</h1><div class="muted" style="font-size:12px">Dólares, sin conversión</div></div><span class="btn secondary sm">${I('download')}PDF</span></div>
+    <div class="row" style="gap:8px"><span class="btn secondary sm grow">${I('out')}Retirar</span><span class="btn primary sm grow">${I('plus')}Cargar</span></div>
+    <div class="m-kpi">
+      ${[['Saldo total', 'US$ 73,500'], ['Disponible', 'US$ 28,500'], ['Comprometido', 'US$ 40,000'], ['En retiro', 'US$ 5,000']].map(([a, b]) => `<div class="card kpi"><div class="label">${a}</div><div class="value">${b}</div></div>`).join('')}
+    </div>
+    <div class="settled">${I('receipt')}<span>Liquidado</span><b class="num">US$ 30,555</b><span class="grow">No suma al saldo</span></div>
+    <section class="card" style="overflow:hidden">
+      <div class="card-h" style="padding:10px 12px"><h3>Movimientos</h3></div>
+      ${[['09 oct', 'Retiro solicitado', -5000], ['01 oct', 'Renta · Vértice', 525], ['14 sep', 'Compromiso · Alba', -24000], ['08 sep', 'Depósito validado', 40000]].map(([d, c, v]) => `
+        <div class="row" style="padding:8px 12px;border-top:1px solid var(--line)"><span class="muted" style="width:52px;font-size:12px">${d}</span><span class="grow ink" style="font-weight:500;font-size:12.5px">${c}</span>${signed(v, true)}</div>`).join('')}
+    </section>`,
+});
+
+S['m-cartera'] = () => phone({
+  active: 'cartera',
+  body: `
+    <div><h1 style="margin:0;font-size:20px;color:var(--ink);font-weight:600">Mi cartera</h1><p class="muted" style="margin:2px 0 0;font-size:12px">3 inmuebles · renta desde mar 2024</p></div>
+    <section class="card" style="padding:12px;display:flex;flex-direction:column;gap:8px">
+      <div class="row" style="justify-content:space-between">${badge('En votación', 'b-amber')}<span class="muted num" style="font-size:12px">6 días</span></div>
+      <b class="ink">Venta de Oficina Vértice</b>
+      <div class="muted" style="font-size:12px">Por tus 2 unidades recibirías cerca de US$ 64,600.</div>
+      <div class="row" style="gap:8px"><span class="btn secondary sm grow">No</span><span class="btn primary sm grow">Sí, vender</span></div>
+    </section>
+    <div class="m-kpi">
+      ${[['Invertido', 'US$ 100,000'], ['Valorización', 'US$ 102,700'], ['Renta acumulada', 'US$ 9,975'], ['Próximo pago', 'US$ 525']].map(([a, b]) => `<div class="card kpi"><div class="label">${a}</div><div class="value">${b}</div></div>`).join('')}
+    </div>
+    <section class="card" style="overflow:hidden">
+      ${[['Oficina Vértice', 'En votación', 'b-amber', 'US$ 60,000', false], ['Edificio Alba', 'En fondeo', 'b-blue', 'US$ 24,000', false], ['Casa Terrazas', 'En fondeo', 'b-blue', 'US$ 16,000', false]].map(([n, st, cls, v]) => `
+        <div class="row" style="padding:10px 12px;border-bottom:1px solid var(--line);gap:8px">
+          <div class="grow" style="min-width:0"><div class="strong" style="font-size:13px">${n}</div><div style="margin-top:4px">${badge(st, cls)}</div></div>
+          <div style="text-align:right"><div class="num ink" style="font-weight:600;font-size:12.5px">${v}</div><span class="btn secondary sm" disabled style="opacity:.45;margin-top:4px">Vender</span></div>
+        </div>`).join('')}
+    </section>`,
+});
+
+S['m-login'] = () => `
+  <div class="m-app" style="background:var(--surface)">
+    <header class="m-top" style="border:0">${logo(22)}<span class="grow"></span><span class="icon-btn" data-toggle-theme style="width:32px;height:32px">${I('moon', 'moon')}${I('sun', 'sun')}</span></header>
+    <div class="m-body" style="padding-top:8px">
+      <span class="badge plain" style="align-self:flex-start;background:var(--teal-soft);color:var(--teal)">Copropiedad inscrita en SUNARP</span>
+      <h1 style="margin:0;font-size:26px;line-height:1.2;color:var(--ink);font-weight:600">Inversión inmobiliaria, con respaldo registral.</h1>
+      <div class="field"><label>Correo electrónico</label><div class="input focus">${I('mail')}<span>joel.villanueva@email.com</span></div></div>
+      <div class="field"><div class="row" style="justify-content:space-between"><label>Contraseña</label><a style="color:var(--blue);font-size:12px;font-weight:500">¿La olvidaste?</a></div><div class="input">${I('lock')}<span class="num">••••••••••••</span><span style="margin-left:auto" class="muted">${I('eye')}</span></div></div>
+      <span class="btn primary block" style="height:44px">Continuar</span>
+      <div class="row" style="justify-content:center;gap:6px"><span class="muted">¿No tienes cuenta?</span><b class="ink">Crear cuenta</b></div>
+      <div class="muted" style="font-size:12px;display:flex;gap:8px">${I('shield')}<span>Sesión cifrada. Nunca te pediremos tu contraseña por correo.</span></div>
+    </div>
+    <div class="row muted" style="justify-content:center;gap:14px;font-size:12px;padding:0 16px 18px;flex:none">${I('file')}<span>Libro de reclamaciones</span><span>Términos</span><span>Privacidad</span></div>
+  </div>`;
+
+const mSheet = (inner) => `<div class="sheet"><div class="grab"></div>${inner}</div>`;
+S['m-confirmar'] = () => S['m-propiedad'](mSheet(`
+  <h2 style="margin:0 0 10px;font-size:17px;color:var(--ink)">Confirmar compromiso</h2>
+  <dl class="dl" style="margin-bottom:12px"><dt>Edificio Alba · 1 unidad</dt><dd>US$ 24,000.00</dd><dt>Te quedarían</dt><dd>US$ 4,500.00</dd></dl>
+  <div class="check" style="margin-bottom:12px"><span class="box"></span><span style="font-size:12.5px">Entiendo que es irrevocable.</span></div>
+  <span class="btn is-off block">Comprometer US$ 24,000.00</span>
+`));
+S['m-codigo'] = () => S['m-wallet'](mSheet(`
+  <h2 style="margin:0 0 8px;font-size:17px;color:var(--ink)">Código por email</h2>
+  <p class="muted" style="margin:0 0 12px;font-size:12.5px">A joel.villanueva@email.com · retiro de US$ 5,000.00 · vence en 9:42.</p>
+  <div class="otp" style="margin-bottom:12px"><i>4</i><i>8</i><i>2</i><i>9</i><i>1</i><i class="cur">7</i></div>
+  <span class="btn primary block">Confirmar retiro</span>
+`));
+
 const SCREENS = [
   ['login', 'Login', 'Acceso. Sin cuenta solo existen landing, login, alta y recuperación'],
-  ['explorar', 'Explorar', 'Inversionista · catálogo de propiedades'],
+  ['explorar', 'Explorar', 'Inversionista · destacadas y tabla, sin cambiar de vista'],
   ['propiedad', 'Detalle de propiedad', 'Inversionista · unidades y simulador de compromiso'],
-  ['wallet', 'Wallet', 'Inversionista · saldos, movimientos y carga de saldo'],
-  ['cartera', 'Mi cartera', 'Inversionista · posiciones, renta y documentos'],
+  ['confirmar', 'Confirmar compromiso', 'Inversionista · la casilla bloquea el botón'],
+  ['wallet', 'Wallet', 'Inversionista · saldos, liquidado y movimientos con centavos'],
+  ['codigo', 'Código por email', 'Inversionista · retiro y otras acciones sensibles'],
+  ['cartera', 'Mi cartera', 'Inversionista · votación de venta total y vender por fila'],
+  ['notificaciones', 'Notificaciones', 'Inversionista · campana con las no leídas'],
   ['secundario', 'Mercado secundario', 'Inversionista · ofertas y estado de mi venta'],
   ['onboarding', 'Habilitación', 'Inversionista · poder especial marco con firma doble'],
-  ['depositos', 'Depósitos por validar', 'Backoffice · Tesorería'],
-  ['propiedades', 'Propiedades', 'Backoffice · Operaciones'],
-  ['sistema', 'Sistema visual', 'Tokens, tipografía y componentes'],
+  ['depositos', 'Depósitos por validar', 'Backoffice · Tesorería, origen, duplicados y extracto'],
+  ['propiedades', 'Propiedades', 'Backoffice · Operaciones y seguimiento de la votación'],
+  ['tablero', 'Pendientes', 'Backoffice · Admin, con la antigüedad de cada tarea'],
+  ['plaft', 'Evaluación PLAFT', 'Backoffice · Cumplimiento'],
+  ['sistema', 'Sistema visual', 'Tokens, estados con ícono y foco de teclado'],
+  ['m-login', 'Login · móvil', '390 × 844', 'phone'],
+  ['m-explorar', 'Explorar · móvil', '390 × 844', 'phone'],
+  ['m-propiedad', 'Propiedad · móvil', '390 × 844', 'phone'],
+  ['m-confirmar', 'Confirmar · móvil', '390 × 844', 'phone'],
+  ['m-wallet', 'Wallet · móvil', '390 × 844', 'phone'],
+  ['m-codigo', 'Código · móvil', '390 × 844', 'phone'],
+  ['m-cartera', 'Cartera · móvil', '390 × 844', 'phone'],
 ];
 
 const params = new URLSearchParams(location.search);
@@ -951,10 +1268,10 @@ if (only) document.body.classList.add('single');
 
 document.getElementById('logo-bar').innerHTML = logo(24);
 document.getElementById('index').innerHTML = SCREENS.map(([id, t]) => `<a href="#${id}">${t}</a>`).join('');
-document.getElementById('canvas').innerHTML = list.map(([id, t, d]) => `
+document.getElementById('canvas').innerHTML = list.map(([id, t, d, kind]) => `
   <section id="${id}">
     <div class="artboard-label"><h2>${t}</h2><span>${d}</span></div>
-    <div class="board">${S[id]()}</div>
+    <div class="board${kind === 'phone' ? ' phone' : ''}">${S[id]()}</div>
   </section>`).join('');
 
 document.querySelectorAll('#theme-seg span').forEach((s) => s.addEventListener('click', () => setTheme(s.dataset.t)));
