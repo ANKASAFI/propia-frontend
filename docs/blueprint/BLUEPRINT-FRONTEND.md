@@ -1722,11 +1722,11 @@ El teal de texto es más oscuro que el de relleno en claro para pasar AA sobre b
 | Ruta | Pantalla | Pide `investorStatus = 'enabled'` |
 |---|---|---|
 | `/onboarding` | Los 4 pasos (perfil, estado civil, origen de fondos con declaración PEP, poder). El último sale a DocuSign y vuelve a `/onboarding/poder`. 🆕 V2.4: con `investorStatus = 'review'` muestra "Evaluación en curso" y, si Operaciones la observó, el pedido y el botón para subir el sustento | — |
-| `/explorar`, `/explorar/[id]` | Propiedades y detalle con el simulador (monto por unidades, cuota ideal, renta mensual estimada) | Solo para "Comprometer" |
+| `/explorar`, `/explorar/[id]` | Propiedades y detalle con el simulador (monto por unidades, cuota ideal, renta mensual estimada). 🆕 V2.4: pestaña Documentos con partida, tasación, contrato de arriendo y estudio de títulos | Solo para "Comprometer" y para ver los documentos |
 | `/secundario`, `/secundario/[id]` | Ofertas y detalle | Solo para "Comprar" |
-| `/wallet` | Saldos por moneda (disponible, comprometido y en retiro; "Liquidado" del prototipo sigue abierto, Anexo A.2 del backend), movimientos, cargar saldo (cuentas de PROPIA, subir constancia), retirar | Para cargar y retirar |
+| `/wallet` | Saldos por moneda (disponible, comprometido y en retiro; "Liquidado" del prototipo sigue abierto, Anexo A.2 del backend), movimientos, 🆕 V2.4 estado de cuenta en PDF (mes o año), cargar saldo (cuentas de PROPIA, subir constancia), retirar | Para cargar y retirar |
 | `/cartera`, `/cartera/[propertyId]` | Inversiones, renta, gastos, pagos, documentos, vender mi cuota, mi oferta | Para vender |
-| `/perfil` | Datos personales, seguridad (contraseña; 🆕 V2.4: sin MFA por ahora), cuentas para recibir retiros, cerrar la cuenta, solicitudes sobre sus datos personales | — |
+| `/perfil` | Datos personales, seguridad (contraseña; 🆕 V2.4: sin MFA por ahora), cuentas para recibir retiros, cerrar la cuenta, solicitudes sobre sus datos personales. 🆕 V2.4: `/perfil/sesiones` con los dispositivos conocidos y "Cerrar todas las sesiones"; el perfil pide fecha de nacimiento (mayor de 18) y si es domiciliado en Perú | — |
 
 🆕 V2.4. **Código por email.** Añadir una cuenta de retiro, pedir un retiro, cambiar el email y cerrar la cuenta abren un diálogo que pide `POST /api/security/email-code` y un campo de 6 dígitos; la acción se reenvía con `emailCode`. Un 403 `EMAIL_CODE_REQUIRED` abre el mismo diálogo. Una cuenta de retiro nueva muestra "Disponible para retiros desde …" hasta que pasen 24 h.
 
@@ -1742,7 +1742,7 @@ Si una acción responde 403 `INVESTOR_NOT_ENABLED`, el cliente lleva al paso del
 | `/admin/pagos` | `<ROL_C>` | 🆕 V2.4. Pagos del cierre de cada propiedad (vendedor, notaría, registro, alcabala) y retiros de ingresos de PROPIA, con constancia |
 | `/admin/retiros` | `<ROL_C>` | Cola de retiros `requested`: cuenta destino. Marcar pagado con constancia, o rechazar |
 | `/admin/propiedades`, `/admin/propiedades/[id]` | `<ROL_D>` | Alta y edición, publicar, avanzar el cierre, subir escritura, partida y tasación, valorizaciones |
-| `/admin/rentas` | `<ROL_D>` | Período por propiedad: renta bruta, gastos, vista previa del reparto, distribuir |
+| `/admin/rentas` | `<ROL_D>` | Período por propiedad: renta bruta, gastos, vista previa del reparto, distribuir. 🆕 V2.4: comisión de administración, fondo de reserva y gastos pagados con la reserva |
 | `/admin/secundario` | `<ROL_D>` | Ofertas con comprador: verificar, retracto, notaría, completar |
 | `/admin/inversionistas` | `<ROL_D>`, `<ROL_B>` | Estado del onboarding, poderes, rechazos, subir constancias de retención. 🆕 V2.4: el Admin suspende, reactiva o marca fallecido, con motivo |
 | `/admin/cumplimiento` | `<ROL_E>` | 🆕 V2.4. Cola de evaluación PLAFT (riesgo sugerido, listas consultadas, sustento; aprobar, observar o rechazar) y alertas de operaciones inusuales |
