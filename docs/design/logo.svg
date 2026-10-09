@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 48">
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@800");
+    text { fill: #0A2148; font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-weight: 800; font-size: 30px; letter-spacing: -0.045em; }
+    .mark { fill: none; stroke: #015FFB; stroke-linecap: square; stroke-linejoin: miter; }
+    @media (prefers-color-scheme: dark) {
+      text { fill: #F2F5FA; }
+      .mark { stroke: #6AA4FF; }
+    }
+  </style>
+  <path class="mark" d="M36 20 V13 L22 2 L8 15 V46 H26" stroke-width="7"/>
+  <text x="34" y="40">PROPIA</text>
+  <path class="mark" d="M164 31 V45 H150" stroke-width="5"/>
+</svg>

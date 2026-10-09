@@ -2897,6 +2897,8 @@ Dos PNG en `public/images/`, uno por tema. El factor `0.42` es la relación de a
 
 **Mejora recomendada:** usa un SVG con `fill="currentColor"` en lugar de dos PNG. Elimina los assets duplicados, escala sin pérdida y hereda el color.
 
+🆕 **V2.4.** El logotipo de PROPIA es la opción 5: la palabra PROPIA en Inter 800, el corchete azul en forma de casa a la izquierda y la escuadra azul al final. En claro el texto usa `--propia-ink` y la marca es `#015FFB`. En oscuro, y también sobre el sidebar y el panel de login, el texto es claro y la marca es `#6AA4FF`. El lockup está en `docs/design/logo.svg` (sigue `prefers-color-scheme`). El favicon es solo el símbolo de la casa: `docs/design/favicon.svg`, con fondo claro u oscuro según el sistema, más `public/favicon.svg`, `public/favicon.ico` y `public/apple-touch-icon.png`. `<Prefijo>Mark` apunta a ese SVG. La relación de aspecto del lockup es cerca de 5.2.
+
 ### 12.6 Cómo crear un componente nuevo
 
 1. **Elige la carpeta.** `components/ui/` si es transversal y agnóstico del dominio; `components/<area>/` si pertenece a una pantalla concreta.
