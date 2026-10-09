@@ -13,6 +13,8 @@
 > **Versión 2.3 — 2026-10-09.** Pantallas de PROPIA a partir del prototipo `propia_desktop` (9.6): identidad visual, rutas del inversionista y del backoffice por rol. Diseño, marcado 🆕 **V2.3**, sin ejecutar.
 >
 > **Versión 2.4 — 2026-10-09.** Canvas de diseño final en `docs/design/propia-canvas.html`, con estilo empresarial y modo oscuro desde el inicio (9.6). Marcado 🆕 **V2.4**.
+>
+> **Versión 2.5 — 2026-10-09.** El paso 4 de la habilitación firma el poder y la declaración jurada en un solo documento de DocuSign. El compromiso es una solicitud: un Admin la aprueba en `/admin` y recién entonces se bloquea el saldo (9.6, backend 28.14). Marcado 🆕 **V2.5**.
 
 ---
 ## 0. Propósito y cómo usar este documento
@@ -1721,8 +1723,8 @@ El teal de texto es más oscuro que el de relleno en claro para pasar AA sobre b
 
 | Ruta | Pantalla | Pide `investorStatus = 'enabled'` |
 |---|---|---|
-| `/onboarding` | Los 4 pasos (perfil, estado civil, origen de fondos con declaración PEP, poder). El último sale a DocuSign y vuelve a `/onboarding/poder`. 🆕 V2.4: con `investorStatus = 'review'` muestra "Evaluación en curso" y, si Operaciones la observó, el pedido y el botón para subir el sustento | — |
-| `/explorar`, `/explorar/[id]` | Propiedades y detalle con el simulador (monto por unidades, cuota ideal, renta mensual estimada). 🆕 V2.4: pestaña Documentos con partida, tasación, contrato de arriendo y estudio de títulos | Solo para "Comprometer" y para ver los documentos |
+| `/onboarding` | Los 4 pasos (perfil, estado civil, origen de fondos con declaración PEP, poder y declaración jurada). 🆕 V2.5: el último sale a DocuSign con un solo documento y dos firmas del titular, y vuelve a `/onboarding/poder`. Con `investorStatus = 'review'` muestra "Evaluación en curso" y, si Cumplimiento la observó, el pedido y el botón para subir el sustento | — |
+| `/explorar`, `/explorar/[id]` | Propiedades y detalle con el simulador (monto por unidades, cuota ideal, renta mensual estimada). 🆕 V2.4: pestaña Documentos con partida, tasación, contrato de arriendo y estudio de títulos. 🆕 V2.5: "Solicitar compromiso" no bloquea el saldo; la pantalla dice cuánto quedaría si un Admin aprueba. Con una solicitud pendiente, muestra ese estado y permite cancelarla | Solo para solicitar el compromiso y para ver los documentos |
 | `/secundario`, `/secundario/[id]` | Ofertas y detalle | Solo para "Comprar" |
 | `/wallet` | Saldos por moneda (disponible, comprometido y en retiro; 🆕 V2.4 debajo y separado, "Liquidado": acumulado informativo de lo cobrado por ventas, que no suma al total, backend 28.13 H40), movimientos, 🆕 V2.4 estado de cuenta en PDF (mes o año), cargar saldo (cuentas de PROPIA, subir constancia), retirar | Para cargar y retirar |
 | `/cartera`, `/cartera/[propertyId]` | Inversiones, renta, gastos, pagos, documentos, vender mi cuota, mi oferta. 🆕 V2.4: si la propiedad está en `sale_vote`, un banner arriba con la oferta, la tasación, lo que recibiría (estimado), la cuenta regresiva y los botones Sí / No (se puede cambiar hasta el cierre); con `sold`, el monto recibido (backend 28.13, H28) | Para vender |
@@ -1732,7 +1734,7 @@ El teal de texto es más oscuro que el de relleno en claro para pasar AA sobre b
 
 🆕 V2.4. La moneda que viene seleccionada en la wallet, los filtros y el simulador es la de `settings.default_currency` (USD). El selector USD / PEN del topbar la cambia y se recuerda en `localStorage`. Los importes se formatean con `Intl.NumberFormat('es-PE', { style: 'currency', currency })`: `US$ 24,000.00` y `S/ 24,000.00`.
 
-Si una acción responde 403 `INVESTOR_NOT_ENABLED`, el cliente lleva al paso del onboarding que falta. Con `investorStatus = 'signing'`, una franja arriba dice qué firma falta (la suya o la del cónyuge). Mientras vuelve de DocuSign, `/onboarding/poder` pide `me()` cada 3 segundos, hasta 2 minutos.
+Si una acción responde 403 `INVESTOR_NOT_ENABLED`, el cliente lleva al paso del onboarding que falta. Con `investorStatus = 'signing'`, una franja arriba dice qué firma falta (la del titular o la del cónyuge). Las dos firmas del titular ocurren en la misma ceremonia, así que no hay un estado entre el poder y la declaración jurada. Mientras vuelve de DocuSign, `/onboarding/poder` pide `me()` cada 3 segundos, hasta 2 minutos. Un 409 `COMMITMENT_PENDING` deja visible la solicitud ya enviada. Un 409 al aprobar (`INSUFFICIENT_FUNDS` o `UNITS_UNAVAILABLE`) lo ve el Admin en el tablero, y la solicitud sigue pendiente.
 
 **Backoffice** (`/admin`, layout propio, con el mismo sidebar):
 
@@ -1747,7 +1749,7 @@ Si una acción responde 403 `INVESTOR_NOT_ENABLED`, el cliente lleva al paso del
 | `/admin/inversionistas` | `<ROL_D>`, `<ROL_B>` | Estado del onboarding, poderes, rechazos, subir constancias de retención. 🆕 V2.4: el Admin suspende, reactiva o marca fallecido, con motivo |
 | `/admin/cumplimiento` | `<ROL_E>` | 🆕 V2.4. Cola de evaluación PLAFT (riesgo sugerido, listas consultadas, sustento; aprobar, observar o rechazar) y alertas de operaciones inusuales |
 | `/admin/reclamaciones` | `<ROL_B>` | 🆕 V2.4. Hojas del libro de reclamaciones y solicitudes sobre datos personales, con los días que quedan para responder |
-| `/admin` | `<ROL_B>` | 🆕 V2.4. Tablero de tareas del Admin: plazos vencidos (ampliar o confirmar la compra de PROPIA), cancelaciones propuestas y segundas aprobaciones |
+| `/admin` | `<ROL_B>` | 🆕 V2.5. Tablero de tareas del Admin: solicitudes de compromiso (aprobar o rechazar con motivo), plazos vencidos (ampliar o confirmar la compra de PROPIA), cancelaciones propuestas y segundas aprobaciones |
 | `/admin/usuarios`, `/admin/configuracion` | `<ROL_B>` | Internos (🆕 V2.4: se invitan por email con su grupo; la pantalla no deja combinar grupos incompatibles), cuentas bancarias de PROPIA, comisión, ventana interna, retracto, umbrales de doble aprobación |
 
 El middleware `role` (10.4) lee `to.meta.roles`. Un interno que entra a `/` va a la primera pantalla de su rol. 🆕 V2.4: sin MFA por ahora, ni para internos.

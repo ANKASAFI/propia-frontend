@@ -351,7 +351,7 @@
 <header class="canvas-bar">
   <span id="logo-bar"></span>
   <span class="title">Canvas de diseño</span>
-  <span class="meta">Versión 2 · 9 oct 2026 · Escritorio 1440 × 900 · Móvil 390 × 844 · Datos de ejemplo</span>
+  <span class="meta">Versión 2.5 · 9 oct 2026 · Escritorio 1440 × 900 · Móvil 390 × 844 · Datos de ejemplo</span>
   <span class="spacer"></span>
   <div class="seg" id="theme-seg">
     <span data-t="light">Claro</span>
@@ -668,9 +668,9 @@ S.propiedad = (opts = {}) => {
           </dl>
           <div class="divider"></div>
           <div class="row" style="justify-content:space-between"><span class="muted">Saldo disponible</span><span class="num ink" style="font-weight:600">US$ 28,500</span></div>
-          <div class="row" style="justify-content:space-between;margin-top:6px"><span class="muted">Después del compromiso</span><span class="num muted">US$ 4,500</span></div>
-          <button class="btn primary block" style="height:42px;margin-top:18px">Comprometer US$ 24,000</button>
-          <div class="alert info" style="margin-top:14px;padding:10px 12px">${I('info')}<span class="txt" style="font-size:12px">El compromiso es irrevocable. Si al ${p.close} quedan unidades, PROPIA decide: amplía el plazo una vez o compra el resto. Te avisamos qué eligió.</span></div>
+          <div class="row" style="justify-content:space-between;margin-top:6px"><span class="muted">Si un admin aprueba</span><span class="num muted">US$ 4,500</span></div>
+          <button class="btn primary block" style="height:42px;margin-top:18px">Solicitar compromiso</button>
+          <div class="alert info" style="margin-top:14px;padding:10px 12px">${I('info')}<span class="txt" style="font-size:12px">Un admin aprueba la solicitud. Hasta entonces tu saldo sigue disponible y las unidades no se reservan. Aprobada, el compromiso es irrevocable. Si al ${p.close} quedan unidades, PROPIA amplía el plazo una vez o compra el resto.</span></div>
         </div>
       </aside>
     </div>`,
@@ -830,20 +830,21 @@ S.secundario = () => shell({
 S.onboarding = () => shell({
   nav: 'inv', user: 'inv', active: 'perfil', locked: true, crumbs: ['Inversionista', 'Habilitación de cuenta'], currency: false,
   body: `
-    <div class="alert warn">${I('pen')}<span class="txt"><b>Falta la firma de tu cónyuge.</b> Le enviamos el poder a <span class="mono">m.ruiz@email.com</span>. Cuando firme, pasamos tu perfil a evaluación y te avisamos al quedar habilitado.</span><span class="act btn secondary sm">Reenviar correo</span></div>
+    <div class="alert warn">${I('pen')}<span class="txt"><b>Falta la firma de tu cónyuge.</b> Le enviamos el mismo documento a <span class="mono">m.ruiz@email.com</span>. Cuando firme, pasamos tu perfil a evaluación y te avisamos al quedar habilitado.</span><span class="act btn secondary sm">Reenviar correo</span></div>
     <div class="card card-b">
       <div class="steps">
         <div class="step done"><span class="n">${I('check')}</span><div><div class="lbl">Perfil</div><div class="s">Datos y documento</div></div><span class="bar"></span></div>
         <div class="step done"><span class="n">${I('check')}</span><div><div class="lbl">Estado civil</div><div class="s">Sociedad de gananciales</div></div><span class="bar"></span></div>
         <div class="step done"><span class="n">${I('check')}</span><div><div class="lbl">Origen de fondos</div><div class="s">Sueldo dependiente</div></div><span class="bar"></span></div>
-        <div class="step cur" style="flex:none"><span class="n">4</span><div><div class="lbl">Poder especial marco</div><div class="s">Firma en DocuSign</div></div></div>
+        <div class="step cur" style="flex:none"><span class="n">4</span><div><div class="lbl">Poder y declaración</div><div class="s">Dos firmas, un documento</div></div></div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 380px;gap:20px">
       <section class="card">
-        <div class="card-h"><h3>Poder especial marco</h3><span class="sub">Sobre DocuSign 7F3A-21C9</span><div class="right"><span class="btn ghost sm">${I('eye')}Ver documento</span></div></div>
+        <div class="card-h"><h3>Poder y declaración jurada</h3><span class="sub">Un documento · DocuSign 7F3A-21C9</span><div class="right"><span class="btn ghost sm">${I('eye')}Ver documento</span></div></div>
         <div class="card-b">
-          <p class="muted" style="margin:0 0 16px;max-width:620px">Autoriza a PROPIA SAC a comprar, administrar y vender tus cuotas ideales según tus instrucciones en la plataforma. Se firma una sola vez y cubre todas tus inversiones.</p>
+          <p class="muted" style="margin:0 0 16px;max-width:620px">Un solo PDF. Tú firmas el poder especial marco y la declaración jurada en la misma ceremonia. El poder autoriza a PROPIA SAC a comprar, administrar y vender tus cuotas. Si hay gananciales, tu cónyuge firma ese mismo documento por correo y no crea cuenta.</p>
+          <div class="row" style="gap:8px;margin-bottom:16px">${badge('Poder · firmado', 'b-teal', 'check')}${badge('Declaración jurada · firmada', 'b-teal', 'check')}</div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
             ${[['Facultades de compra', 'Suscribir compromisos y escrituras de adquisición'], ['Facultades de administración', 'Arrendar, cobrar rentas y pagar gastos'], ['Facultades de venta', 'Transferir cuotas y, si la mayoría vota a favor, el inmueble completo']].map(([a, b]) => `
               <div style="border:1px solid var(--line);border-radius:8px;padding:12px"><div class="row" style="gap:8px;color:var(--teal)">${I('shield')}<b class="ink" style="font-size:13px">${a}</b></div><div class="muted" style="font-size:12px;margin-top:6px">${b}</div></div>`).join('')}
@@ -861,7 +862,7 @@ S.onboarding = () => shell({
         <div class="card-h"><h3>Lo que sigue</h3></div>
         <div class="card-b">
           <div class="timeline">
-            <div class="tl done"><span class="d">${I('check')}</span><div><b>Firmaste el poder</b><span>Con verificación de identidad</span></div></div>
+            <div class="tl done"><span class="d">${I('check')}</span><div><b>Firmaste las dos partes</b><span>Poder y declaración jurada, en el mismo documento</span></div></div>
             <div class="tl cur"><span class="d"></span><div><b>Firma del cónyuge</b><span>Por correo, sin crear cuenta</span></div></div>
             <div class="tl"><span class="d"></span><div><b>Evaluación PLAFT</b><span>Revisión del equipo de PROPIA</span></div></div>
             <div class="tl"><span class="d"></span><div><b>Cuenta habilitada</b><span>Te avisamos por correo</span></div></div>
@@ -1015,16 +1016,16 @@ S.sistema = () => {
 
 const confirmModal = `
   <div class="modal">
-    <div class="card-h"><h3>Confirmar compromiso</h3><span class="right muted">${I('x')}</span></div>
+    <div class="card-h"><h3>Solicitar compromiso</h3><span class="right muted">${I('x')}</span></div>
     <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
       <div class="row"><span class="thumb g1" style="width:36px;height:36px">${I('building')}</span><div class="grow"><b class="ink">Edificio Alba</b><div class="muted" style="font-size:12px">San Isidro · 1 unidad · 5% de cuota ideal</div></div></div>
       <dl class="dl">
-        <dt>Monto a comprometer</dt><dd>US$ 24,000.00</dd>
+        <dt>Monto solicitado</dt><dd>US$ 24,000.00</dd>
         <dt>Saldo disponible</dt><dd>US$ 28,500.00</dd>
-        <dt>Después del compromiso</dt><dd>US$ 4,500.00</dd>
+        <dt>Si un admin aprueba</dt><dd>US$ 4,500.00</dd>
       </dl>
-      <div class="check"><span class="box"></span><span>Entiendo que el compromiso es irrevocable y que, si quedan unidades al cierre, PROPIA amplía el plazo una vez o compra el resto.</span></div>
-      <span class="btn is-off block">Comprometer US$ 24,000.00</span>
+      <div class="check"><span class="box"></span><span>Entiendo que un administrador aprueba esta solicitud. Hasta entonces mi saldo sigue disponible y las unidades no se reservan. Aprobada, el compromiso es irrevocable.</span></div>
+      <span class="btn is-off block">Enviar solicitud</span>
       <span class="hint" style="text-align:center">Marca la casilla para continuar.</span>
     </div>
   </div>`;
@@ -1068,7 +1069,7 @@ S.tablero = () => shell({
       <div class="actions"><div class="seg"><span class="on">Míos</span><span>Todos los roles</span></div></div>
     </div>
     <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
-      <div class="card kpi"><div class="label">Abiertos</div><div class="value">5</div><div class="foot">2 llevan más de 24 h</div></div>
+      <div class="card kpi"><div class="label">Abiertos</div><div class="value">6</div><div class="foot">2 llevan más de 24 h</div></div>
       <div class="card kpi"><div class="label">El más antiguo</div><div class="value">3 días</div><div class="foot">Evaluación PLAFT sin atender</div></div>
       <div class="card kpi"><div class="label">Piden dos personas</div><div class="value">2</div><div class="foot">Cancelación y retiro institucional</div></div>
       <div class="card kpi"><div class="label">Resueltos hoy</div><div class="value">4</div><div class="foot">Por Elena Vargas</div></div>
@@ -1078,6 +1079,7 @@ S.tablero = () => shell({
         <thead><tr><th>Tarea</th><th>Origen</th><th>Antigüedad</th><th></th></tr></thead>
         <tbody>
           ${[
+            ['Aprobar compromiso', 'Joel Villanueva · Edificio Alba · US$ 24,000.00', 'Inversionista', 'hace 18 min', `<span class="btn danger sm">Rechazar</span><span class="btn success sm">${I('check')}Aprobar</span>`],
             ['Plazo de fondeo vencido', 'Casa Los Cedros · quedan 4 unidades', 'Sistema', 'hace 2 días', `<span class="btn secondary sm">Ampliar plazo</span><span class="btn primary sm">Comprar el resto</span>`],
             ['Cancelar propiedad', 'Lofts Surquillo · la compra se cayó', 'Operaciones', 'hace 5 h · 1.ª de 2', `<span class="btn danger sm">Rechazar</span><span class="btn primary sm">Confirmar</span>`],
             ['Retiro institucional', 'US$ 12,000.00 desde comisiones', 'Tesorería', 'hace 1 h · 1.ª de 2', `<span class="btn primary sm">Dar la segunda</span>`],
@@ -1185,9 +1187,9 @@ S['m-propiedad'] = (sheet = '') => phone({
     <section class="card">
       <div class="card-b" style="padding:12px;display:flex;flex-direction:column;gap:8px">
         <div class="row" style="justify-content:space-between"><span class="muted">1 unidad · 5%</span><b class="ink num">US$ 24,000</b></div>
-        <div class="row" style="justify-content:space-between;font-size:12.5px"><span class="muted">Te quedarían</span><span class="num">US$ 4,500</span></div>
-        <span class="btn primary block">Comprometer</span>
-        <div class="muted" style="font-size:11.5px;line-height:1.4">Es irrevocable. Si quedan unidades, PROPIA amplía el plazo una vez o compra el resto.</div>
+        <div class="row" style="justify-content:space-between;font-size:12.5px"><span class="muted">Si un admin aprueba</span><span class="num">US$ 4,500</span></div>
+        <span class="btn primary block">Solicitar</span>
+        <div class="muted" style="font-size:11.5px;line-height:1.4">Un admin aprueba antes de bloquear el saldo. Aprobada, es irrevocable.</div>
       </div>
     </section>`,
 });
@@ -1327,9 +1329,9 @@ S['m-secundario'] = () => phone({
 S['m-onboarding'] = () => phone({
   active: 'perfil', locked: ['wallet', 'cartera'],
   body: `
-    <div class="alert warn" style="padding:10px 12px">${I('pen')}<span class="txt" style="font-size:12.5px"><b>Falta la firma de tu cónyuge.</b> Enviamos el poder a m.ruiz@email.com.</span></div>
+    <div class="alert warn" style="padding:10px 12px">${I('pen')}<span class="txt" style="font-size:12.5px"><b>Falta la firma de tu cónyuge.</b> Enviamos el mismo documento a m.ruiz@email.com.</span></div>
     <section class="card" style="padding:8px 12px">
-      ${[['Perfil', 'Datos y documento', true], ['Estado civil', 'Gananciales', true], ['Origen de fondos', 'Sueldo dependiente', true], ['Poder especial', 'Esperando al cónyuge', false]].map(([a, b, done], i) => `
+      ${[['Perfil', 'Datos y documento', true], ['Estado civil', 'Gananciales', true], ['Origen de fondos', 'Sueldo dependiente', true], ['Poder y declaración', 'Dos firmas, un documento', false]].map(([a, b, done], i) => `
         <div class="row" style="padding:7px 0;${i ? 'border-top:1px solid var(--line)' : ''}"><span class="muted">${I(done ? 'check' : 'clock')}</span><div class="grow"><b class="ink" style="font-size:13px">${a}</b><div class="muted" style="font-size:11.5px">${b}</div></div>${done ? badge('Listo', 'b-teal', 'check') : badge('En curso', 'b-blue', 'clock')}</div>`).join('')}
     </section>
     <section class="card">
@@ -1337,8 +1339,8 @@ S['m-onboarding'] = () => phone({
       <div class="row" style="padding:8px 12px;border-top:1px solid var(--line)"><span class="avatar" style="width:28px;height:28px">JV</span><div class="grow"><b class="ink" style="font-size:13px">Joel Villanueva</b><div class="muted" style="font-size:11.5px">Titular</div></div>${badge('Firmado', 'b-teal', 'check')}</div>
       <div class="row" style="padding:8px 12px;border-top:1px solid var(--line)"><span class="avatar" style="width:28px;height:28px">MR</span><div class="grow"><b class="ink" style="font-size:13px">María Fernanda Ruiz</b><div class="muted" style="font-size:11.5px">Cónyuge · por correo</div></div>${badge('Pendiente', 'b-amber', 'clock')}</div>
     </section>
-    <div class="row" style="gap:8px"><span class="btn secondary sm grow">Reenviar correo</span><span class="btn primary sm grow">Ver poder</span></div>
-    <p class="muted" style="margin:0;font-size:12px">Puedes explorar. Wallet y cartera se abren cuando quedes habilitado.</p>`,
+    <div class="row" style="gap:8px"><span class="btn secondary sm grow">Reenviar correo</span><span class="btn primary sm grow">Ver documento</span></div>
+    <p class="muted" style="margin:0;font-size:12px">Joel ya firmó el poder y la declaración jurada en el mismo documento. Falta el cónyuge. Puedes explorar; wallet y cartera se abren al quedar habilitado.</p>`,
 });
 
 S['m-perfil'] = () => phone({
@@ -1431,8 +1433,9 @@ S['m-tablero'] = () => boffice({
   role: 'Admin', active: 'pen',
   tabs: [['pen', 'Pendientes', 'inbox'], ['rec', 'Reclamos', 'file'], ['eq', 'Equipo', 'users']],
   body: `
-    <div><h1 style="margin:0;font-size:20px;color:var(--ink);font-weight:600">Pendientes</h1><p class="muted" style="margin:2px 0 0;font-size:12px">5 abiertos · 2 piden una segunda persona</p></div>
+    <div><h1 style="margin:0;font-size:20px;color:var(--ink);font-weight:600">Pendientes</h1><p class="muted" style="margin:2px 0 0;font-size:12px">6 abiertos · 2 piden una segunda persona</p></div>
     ${[
+      ['Aprobar compromiso', 'Joel · Alba · US$ 24,000 · hace 18 min', 'Revisar'],
       ['Plazo de fondeo vencido', 'Casa Los Cedros · hace 2 días', 'Decidir'],
       ['Cancelar propiedad', 'Lofts Surquillo · 1.ª de 2', 'Confirmar'],
       ['Retiro institucional', 'US$ 12,000.00 · 1.ª de 2', 'Aprobar'],
@@ -1443,10 +1446,10 @@ S['m-tablero'] = () => boffice({
 
 const mSheet = (inner) => `<div class="sheet"><div class="grab"></div>${inner}</div>`;
 S['m-confirmar'] = () => S['m-propiedad'](mSheet(`
-  <h2 style="margin:0 0 10px;font-size:17px;color:var(--ink)">Confirmar compromiso</h2>
-  <dl class="dl" style="margin-bottom:12px"><dt>Edificio Alba · 1 unidad</dt><dd>US$ 24,000.00</dd><dt>Te quedarían</dt><dd>US$ 4,500.00</dd></dl>
-  <div class="check" style="margin-bottom:12px"><span class="box"></span><span style="font-size:12.5px">Entiendo que es irrevocable.</span></div>
-  <span class="btn is-off block">Comprometer US$ 24,000.00</span>
+  <h2 style="margin:0 0 10px;font-size:17px;color:var(--ink)">Solicitar compromiso</h2>
+  <dl class="dl" style="margin-bottom:12px"><dt>Edificio Alba · 1 unidad</dt><dd>US$ 24,000.00</dd><dt>Si un admin aprueba</dt><dd>US$ 4,500.00</dd></dl>
+  <div class="check" style="margin-bottom:12px"><span class="box"></span><span style="font-size:12.5px">Un admin aprueba antes de bloquear el saldo. Aprobada, es irrevocable.</span></div>
+  <span class="btn is-off block">Enviar solicitud</span>
 `));
 S['m-codigo'] = () => S['m-wallet'](mSheet(`
   <h2 style="margin:0 0 8px;font-size:17px;color:var(--ink)">Código por email</h2>
@@ -1459,13 +1462,13 @@ const SCREENS = [
   ['login', 'Login', 'Acceso. Sin cuenta solo existen landing, login, alta y recuperación'],
   ['explorar', 'Explorar', 'Inversionista · destacadas y tabla, sin cambiar de vista'],
   ['propiedad', 'Detalle de propiedad', 'Inversionista · unidades y simulador de compromiso'],
-  ['confirmar', 'Confirmar compromiso', 'Inversionista · la casilla bloquea el botón'],
+  ['confirmar', 'Solicitar compromiso', 'Inversionista · un admin aprueba antes de bloquear el saldo'],
   ['wallet', 'Wallet', 'Inversionista · saldos, liquidado y movimientos con centavos'],
   ['codigo', 'Código por email', 'Inversionista · retiro y otras acciones sensibles'],
   ['cartera', 'Mi cartera', 'Inversionista · votación de venta total y vender por fila'],
   ['notificaciones', 'Notificaciones', 'Inversionista · campana con las no leídas'],
   ['secundario', 'Mercado secundario', 'Inversionista · ofertas y estado de mi venta'],
-  ['onboarding', 'Habilitación', 'Inversionista · poder especial marco con firma doble'],
+  ['onboarding', 'Habilitación', 'Inversionista · poder y declaración jurada, dos firmas en el mismo documento'],
   ['libro', 'Libro de reclamaciones', 'Público, sin cuenta. Copia en PDF con número de hoja'],
   ['estados', 'Vacío, carga y error', 'Cartera sin inversiones, explorar cargando y wallet con error'],
   ['depositos', 'Depósitos por validar', 'Backoffice · Tesorería, origen, duplicados y extracto'],
@@ -1476,7 +1479,7 @@ const SCREENS = [
   ['m-login', 'Login · móvil', '390 × 844', 'phone'],
   ['m-explorar', 'Explorar · móvil', '390 × 844', 'phone'],
   ['m-propiedad', 'Propiedad · móvil', '390 × 844', 'phone'],
-  ['m-confirmar', 'Confirmar · móvil', '390 × 844', 'phone'],
+  ['m-confirmar', 'Solicitar · móvil', '390 × 844', 'phone'],
   ['m-wallet', 'Wallet · móvil', '390 × 844', 'phone'],
   ['m-codigo', 'Código · móvil', '390 × 844', 'phone'],
   ['m-cartera', 'Cartera · móvil', '390 × 844', 'phone'],
