@@ -225,6 +225,7 @@
   .alert b { color: var(--ink); }
   .alert.info { background: var(--blue-soft); border-color: color-mix(in srgb, var(--blue) 30%, transparent); color: var(--blue); }
   .alert.warn { background: var(--amber-soft); border-color: color-mix(in srgb, var(--amber) 35%, transparent); color: var(--amber); }
+  .alert.bad { background: var(--red-soft); border-color: color-mix(in srgb, var(--red) 35%, transparent); color: var(--red); }
   .alert .txt { color: var(--text); }
   .alert .act { margin-left: auto; }
 
@@ -323,6 +324,7 @@
   .m-tab { height: 62px; flex: none; display: grid; grid-template-columns: repeat(5, 1fr); background: var(--surface); border-top: 1px solid var(--line); }
   .m-tab a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--muted); font-size: 10px; font-weight: 600; text-decoration: none; }
   .m-tab a.on { color: var(--blue); }
+  .m-tab a.locked { opacity: .38; }
   .m-tab svg.i { width: 20px; height: 20px; }
   .m-kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .m-kpi .kpi { padding: 10px 12px; }
@@ -330,6 +332,8 @@
   .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--surface); border-radius: 16px 16px 0 0; border-top: 1px solid var(--line); box-shadow: 0 -12px 40px rgba(10, 33, 72, .2); padding: 8px 16px 20px; }
   .sheet .otp i { width: 42px; height: 48px; font-size: 18px; }
   .grab { width: 36px; height: 4px; border-radius: 999px; background: var(--line-strong); margin: 6px auto 12px; }
+  .sk { height: 12px; border-radius: 6px; background: var(--line); display: block; }
+  .area { height: auto; min-height: 58px; align-items: flex-start; padding-top: 8px; padding-bottom: 8px; }
 </style>
 </head>
 <body>
@@ -1107,15 +1111,25 @@ S.plaft = () => shell({
     </div>`,
 });
 
-function phone({ active, body, sheet = '' }) {
+function phone({ active, body, sheet = '', locked = [] }) {
   const tabs = [['explorar', 'Explorar', 'compass'], ['secundario', 'Secundario', 'repeat'], ['wallet', 'Wallet', 'wallet'], ['cartera', 'Cartera', 'briefcase'], ['perfil', 'Perfil', 'user']];
   return `<div class="m-app">
     <header class="m-top">${logo(22)}<span class="grow"></span><div class="seg"><span class="on">USD</span><span>PEN</span></div><span class="icon-btn" title="Notificaciones" style="width:32px;height:32px">${I('bell')}<span class="n">3</span></span></header>
     <div class="m-body">${body}</div>
-    <nav class="m-tab">${tabs.map(([id, label, icon]) => `<a class="${id === active ? 'on' : ''}">${I(icon)}${label}</a>`).join('')}</nav>
+    <nav class="m-tab">${tabs.map(([id, label, icon]) => `<a class="${id === active ? 'on' : ''} ${locked.includes(id) ? 'locked' : ''}">${I(locked.includes(id) ? 'lock' : icon)}${label}</a>`).join('')}</nav>
     ${sheet ? `<div class="overlay" style="align-items:flex-end;padding:0">${sheet}</div>` : ''}
   </div>`;
 }
+
+function boffice({ role, active, tabs, body }) {
+  return `<div class="m-app">
+    <header class="m-top">${logo(22)}<span class="badge b-gray plain">${role}</span><span class="grow"></span><span class="icon-btn" title="Notificaciones" style="width:32px;height:32px">${I('bell')}<span class="n">2</span></span></header>
+    <div class="m-body">${body}</div>
+    <nav class="m-tab" style="grid-template-columns:repeat(${tabs.length},1fr)">${tabs.map(([id, label, icon]) => `<a class="${id === active ? 'on' : ''}">${I(icon)}${label}</a>`).join('')}</nav>
+  </div>`;
+}
+
+const fld = (label, value) => `<div class="field"><label>${label}</label><div class="input"><span${value ? '' : ' class="ph"'}>${value || ' '}</span></div></div>`;
 
 const mCard = (p) => `
   <article class="card" style="display:grid;grid-template-columns:72px 1fr;overflow:hidden;min-height:96px">
@@ -1215,6 +1229,202 @@ S['m-login'] = () => `
     <div class="row muted" style="justify-content:center;gap:14px;font-size:12px;padding:0 16px 18px;flex:none">${I('file')}<span>Libro de reclamaciones</span><span>Términos</span><span>Privacidad</span></div>
   </div>`;
 
+S.libro = () => `
+  <div style="height:100%;display:flex;flex-direction:column;background:var(--bg)">
+    <header class="top">${logo(24)}<span class="muted" style="font-weight:600">Libro de reclamaciones</span><span class="spacer"></span><span class="btn secondary sm">Iniciar sesión</span></header>
+    <div class="content" style="display:grid;grid-template-columns:380px 1fr;gap:28px;overflow:hidden">
+      <div>
+        <h1 style="margin:0 0 8px;font-size:26px;color:var(--ink);font-weight:600;letter-spacing:-.02em">Hoja de reclamación</h1>
+        <p class="muted" style="margin:0 0 18px">Puedes presentarla sin tener cuenta. Te llega una copia en PDF con el número de hoja.</p>
+        <section class="card"><div class="card-b" style="display:flex;flex-direction:column;gap:8px">
+          <b class="ink">PROPIA SAC</b>
+          <div class="row" style="justify-content:space-between"><span class="muted">RUC</span><span class="mono">20601234567</span></div>
+          <div class="row" style="justify-content:space-between"><span class="muted">Dirección</span><span>San Isidro, Lima</span></div>
+          <div class="divider" style="margin:6px 0"></div>
+          <div><b class="ink">Reclamo</b><div class="muted" style="font-size:12.5px">Disconformidad con el servicio.</div></div>
+          <div><b class="ink">Queja</b><div class="muted" style="font-size:12.5px">Malestar con la atención, sin reclamar el servicio.</div></div>
+        </div></section>
+      </div>
+      <section class="card" style="align-self:start">
+        <div class="card-h"><h3>Tus datos</h3><span class="sub">La hoja queda registrada al enviarla</span></div>
+        <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${fld('Nombre completo', 'Ana Lucía Paredes')}${fld('Documento', 'DNI 70123488')}</div>
+          ${fld('Domicilio', 'Calle Los Pinos 440, Miraflores')}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${fld('Teléfono', '987 654 321')}${fld('Email', 'ana.paredes@email.com')}</div>
+          <div class="check"><span class="box"></span><span>El consumidor es menor de edad. Si lo marcas, pedimos los datos de su padre, madre o apoderado.</span></div>
+          <div style="display:grid;grid-template-columns:1fr 180px;gap:12px">${fld('Servicio', 'Validación de depósito')}${fld('Monto', 'US$ 16,000.00')}</div>
+          <div class="field"><label>Tipo</label><div class="seg" style="align-self:flex-start"><span class="on">Reclamo</span><span>Queja</span></div></div>
+          <div class="field"><label>Detalle</label><div class="input area">Transferí el 8 oct y la constancia sigue en revisión. Necesito una respuesta.</div></div>
+          <div class="field"><label>Pedido</label><div class="input">Que acrediten el depósito o expliquen el rechazo.</div></div>
+          <span class="btn primary" style="align-self:flex-start;height:42px;padding:0 18px">Enviar hoja</span>
+          <span class="hint">Recibirás en tu correo el PDF con un número como R-2026-000015.</span>
+        </div>
+      </section>
+    </div>
+  </div>`;
+
+S.estados = () => {
+  const col = (title, cls, inner) => `<section style="padding:22px;display:flex;flex-direction:column;gap:14px;min-width:0;border-right:1px solid var(--line)"><span class="badge ${cls} has-ico" style="align-self:flex-start">${title}</span>${inner}</section>`;
+  return `<div style="height:100%;display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--bg)">
+    ${col('Vacío', 'b-gray', `
+      <h2 style="margin:0;font-size:20px;color:var(--ink)">Mi cartera</h2>
+      <div class="card" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:28px">
+        <span class="muted" style="width:44px;height:44px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center">${I('briefcase')}</span>
+        <b class="ink" style="font-size:16px">Aún no tienes inversiones</b>
+        <p class="muted" style="margin:0;max-width:280px">Cuando comprometas una cuota, aparece aquí con su renta y sus documentos.</p>
+        <span class="btn primary">Explorar propiedades</span>
+      </div>`)}
+    ${col('Cargando', 'b-blue', `
+      <h2 style="margin:0;font-size:20px;color:var(--ink)">Explorar</h2>
+      ${[0, 1, 2].map(() => `<article class="card" style="display:grid;grid-template-columns:92px 1fr;overflow:hidden;height:96px"><span class="sk" style="height:100%;border-radius:0"></span><div style="padding:14px;display:flex;flex-direction:column;gap:8px"><span class="sk" style="width:70%"></span><span class="sk" style="width:40%"></span><span class="sk lg" style="width:50%;height:16px"></span></div></article>`).join('')}`)}
+    ${col('Error', 'b-red', `
+      <h2 style="margin:0;font-size:20px;color:var(--ink)">Wallet</h2>
+      <div class="card" style="padding:22px;display:flex;flex-direction:column;gap:12px">
+        <div class="alert bad">${I('alert')}<span class="txt"><b>No pudimos cargar tus saldos.</b> Revisa tu conexión. Tus movimientos no se perdieron.</span></div>
+        <span class="btn primary" style="align-self:flex-start">Reintentar</span>
+      </div>
+      <div class="field"><label>Monto a retirar</label><div class="input" style="border-color:var(--red)"><span class="num">0.00</span></div><span class="hint" style="color:var(--red)">Ingresa un monto mayor a cero.</span></div>`)}
+  </div>`;
+};
+
+S['m-secundario'] = () => phone({
+  active: 'secundario',
+  body: `
+    <div><h1 style="margin:0;font-size:20px;color:var(--ink);font-weight:600">Secundario</h1><p class="muted" style="margin:2px 0 0;font-size:12px">7 días solo para copropietarios. Luego, 30 de retracto.</p></div>
+    ${[
+      ['Edificio Alba', '2 unidades · 10%', 'US$ 50,000', 'Ventana interna', 'b-amber', 'Comprar'],
+      ['Casa Terrazas', '1 unidad · 5%', 'US$ 15,500', 'Abierta', 'b-teal', 'Comprar'],
+      ['Edificio Alba', '1 unidad · 5%', 'US$ 24,800', 'Abierta', 'b-teal', 'Comprar'],
+    ].map(([n, s, v, st, cls, act]) => `
+      <article class="card" style="padding:10px 12px;display:flex;flex-direction:column;gap:6px">
+        <div class="row"><b class="ink">${n}</b><span class="grow"></span><span class="num ink" style="font-weight:600">${v}</span></div>
+        <div class="row"><span class="muted" style="font-size:12px">${s}</span><span class="grow"></span>${badge(st, cls)}</div>
+        <span class="btn primary sm" style="align-self:flex-start">${act}</span>
+      </article>`).join('')}
+    <section class="card" style="padding:10px 12px">
+      <div class="row" style="justify-content:space-between"><b class="ink">Mi oferta · Vértice</b>${badge('En retracto', 'b-blue')}</div>
+      <div class="muted" style="font-size:12px;margin:4px 0 8px">Recibirías US$ 30,555.00 · hasta el 1 nov</div>
+      <span class="btn danger sm">Cancelar oferta</span>
+    </section>`,
+});
+
+S['m-onboarding'] = () => phone({
+  active: 'perfil', locked: ['wallet', 'cartera'],
+  body: `
+    <div class="alert warn" style="padding:10px 12px">${I('pen')}<span class="txt" style="font-size:12.5px"><b>Falta la firma de tu cónyuge.</b> Enviamos el poder a m.ruiz@email.com.</span></div>
+    <section class="card" style="padding:8px 12px">
+      ${[['Perfil', 'Datos y documento', true], ['Estado civil', 'Gananciales', true], ['Origen de fondos', 'Sueldo dependiente', true], ['Poder especial', 'Esperando al cónyuge', false]].map(([a, b, done], i) => `
+        <div class="row" style="padding:7px 0;${i ? 'border-top:1px solid var(--line)' : ''}"><span class="muted">${I(done ? 'check' : 'clock')}</span><div class="grow"><b class="ink" style="font-size:13px">${a}</b><div class="muted" style="font-size:11.5px">${b}</div></div>${done ? badge('Listo', 'b-teal', 'check') : badge('En curso', 'b-blue', 'clock')}</div>`).join('')}
+    </section>
+    <section class="card">
+      <div class="card-h" style="padding:10px 12px"><h3>Firmantes</h3></div>
+      <div class="row" style="padding:8px 12px;border-top:1px solid var(--line)"><span class="avatar" style="width:28px;height:28px">JV</span><div class="grow"><b class="ink" style="font-size:13px">Joel Villanueva</b><div class="muted" style="font-size:11.5px">Titular</div></div>${badge('Firmado', 'b-teal', 'check')}</div>
+      <div class="row" style="padding:8px 12px;border-top:1px solid var(--line)"><span class="avatar" style="width:28px;height:28px">MR</span><div class="grow"><b class="ink" style="font-size:13px">María Fernanda Ruiz</b><div class="muted" style="font-size:11.5px">Cónyuge · por correo</div></div>${badge('Pendiente', 'b-amber', 'clock')}</div>
+    </section>
+    <div class="row" style="gap:8px"><span class="btn secondary sm grow">Reenviar correo</span><span class="btn primary sm grow">Ver poder</span></div>
+    <p class="muted" style="margin:0;font-size:12px">Puedes explorar. Wallet y cartera se abren cuando quedes habilitado.</p>`,
+});
+
+S['m-perfil'] = () => phone({
+  active: 'perfil',
+  body: `
+    <div class="row"><span class="avatar" style="width:40px;height:40px">JV</span><div class="grow"><b class="ink" style="font-size:16px">Joel Villanueva</b><div class="muted" style="font-size:12px">DNI 45****21 · habilitado</div></div>${badge('Habilitado', 'b-teal', 'check')}</div>
+    <section class="card">
+      <div class="card-h" style="padding:10px 12px"><h3>Datos</h3></div>
+      ${[['Email', 'joel.villanueva@email.com'], ['Nacimiento', '14 ago 1988'], ['Domiciliado en Perú', 'Sí'], ['Cuenta de retiro', 'BCP ****8812']].map(([a, b]) => `<div class="row" style="padding:7px 12px;border-top:1px solid var(--line);justify-content:space-between;gap:8px"><span class="muted" style="font-size:12px">${a}</span><span class="ink" style="font-size:12.5px;font-weight:500;text-align:right">${b}</span></div>`).join('')}
+    </section>
+    <section class="card">
+      <div class="card-h" style="padding:10px 12px"><h3>Sesiones</h3><span class="right btn ghost sm">Cerrar todas</span></div>
+      ${[['Chrome · Lima', 'Hoy 08:14 · este dispositivo'], ['Safari · Lima', 'Hace 14 días']].map(([a, b]) => `<div style="padding:8px 12px;border-top:1px solid var(--line)"><b class="ink" style="font-size:13px">${a}</b><div class="muted" style="font-size:11.5px">${b}</div></div>`).join('')}
+    </section>
+    <section class="card" style="padding:10px 12px;display:flex;flex-direction:column;gap:6px">
+      <b class="ink">Tus datos personales</b>
+      <span class="muted" style="font-size:12px">Puedes pedir acceso, una corrección, el cierre o una oposición.</span>
+      <span class="btn secondary sm" style="align-self:flex-start">Hacer una solicitud</span>
+    </section>
+    <span class="btn danger sm" style="align-self:flex-start">Cerrar mi cuenta</span>`,
+});
+
+S['m-libro'] = () => `
+  <div class="m-app" style="background:var(--bg)">
+    <header class="m-top">${logo(22)}<span class="grow"></span><span class="btn secondary sm">Entrar</span></header>
+    <div class="m-body" style="gap:8px">
+      <div><h1 style="margin:0;font-size:20px;color:var(--ink);font-weight:600">Libro de reclamaciones</h1><p class="muted" style="margin:2px 0 0;font-size:12px">PROPIA SAC · RUC 20601234567 · San Isidro, Lima</p></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${fld('Nombre', 'Ana Lucía Paredes')}${fld('Documento', 'DNI 70123488')}</div>
+      ${fld('Domicilio', 'Miraflores, Lima')}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${fld('Teléfono', '987 654 321')}${fld('Email', 'ana@email.com')}</div>
+      <div class="check" style="padding:8px 10px"><span class="box"></span><span style="font-size:12px">El consumidor es menor de edad.</span></div>
+      <div class="seg" style="align-self:flex-start"><span class="on">Reclamo</span><span>Queja</span></div>
+      <div class="field"><label>Detalle</label><div class="input area">Mi depósito sigue en revisión desde el 8 oct.</div></div>
+      ${fld('Pedido', 'Que acrediten el depósito.')}
+      <span class="btn primary block">Enviar hoja</span>
+      <p class="muted" style="margin:0;font-size:11.5px">Te enviamos el PDF con un número como R-2026-000015.</p>
+    </div>
+  </div>`;
+
+S['m-depositos'] = () => boffice({
+  role: 'Tesorería', active: 'dep',
+  tabs: [['dep', 'Depósitos', 'inbox'], ['ret', 'Retiros', 'out'], ['pag', 'Pagos', 'receipt']],
+  body: `
+    <div class="row"><div class="grow"><h1 style="margin:0;font-size:20px;color:var(--ink);font-weight:600">Depósitos</h1><div class="muted" style="font-size:12px">4 por validar · US$ 38,200</div></div><span class="btn secondary sm">${I('upload')}CSV</span></div>
+    <article class="card" style="padding:10px 12px;display:flex;flex-direction:column;gap:6px;outline:1px solid var(--blue)">
+      <div class="row"><b class="ink">Joel Villanueva</b><span class="grow"></span><span class="num ink" style="font-weight:600">US$ 10,000.00</span></div>
+      <div class="muted" style="font-size:12px">Origen BCP ****8812 · operación 004512398 · hoy 10:42</div>
+      <div class="row" style="gap:8px"><span class="btn danger sm grow">Rechazar</span><span class="btn success sm grow">${I('check')}Aprobar</span></div>
+    </article>
+    ${[
+      ['Ana Lucía Paredes', 'US$ 16,000.00', 'BBVA · hoy 09:15', ''],
+      ['Ricardo Mendoza', 'S/ 18,500.00', 'BCP · hoy 08:03', ''],
+      ['Carla Vásquez', 'US$ 12,200.00', 'N.º repetido · ayer', 'dup'],
+    ].map(([n, v, s, dup]) => `<article class="card" style="padding:10px 12px"><div class="row"><b class="ink">${n}</b><span class="grow"></span><span class="num" style="font-weight:600">${v}</span></div><div class="row" style="margin-top:4px"><span class="muted" style="font-size:12px">${dup ? '' : s}</span>${dup ? badge('N.º repetido', 'b-amber', 'alert') : ''}</div></article>`).join('')}`,
+});
+
+S['m-propiedades'] = () => boffice({
+  role: 'Operaciones', active: 'pro',
+  tabs: [['pro', 'Propiedades', 'building'], ['ren', 'Rentas', 'chart'], ['ofi', 'Ofertas', 'repeat']],
+  body: `
+    <div class="row"><div class="grow"><h1 style="margin:0;font-size:20px;color:var(--ink);font-weight:600">Propiedades</h1></div><span class="btn primary sm">${I('plus')}Nueva</span></div>
+    <section class="card" style="padding:10px 12px;display:flex;flex-direction:column;gap:6px">
+      <div class="row" style="justify-content:space-between">${badge('En votación', 'b-amber')}<span class="num ink" style="font-weight:600">US$ 680,000</span></div>
+      <b class="ink">Oficina Vértice · venta total</b>
+      <div class="progress"><i style="width:60%"></i></div>
+      <span class="muted" style="font-size:12px">12 de 20 a favor · umbral 50% · 6 días</span>
+    </section>
+    <div class="seg" style="align-self:flex-start"><span class="on">En fondeo</span><span>Notaría</span><span>Operación</span></div>
+    ${[['Edificio Alba', '14/20 · cierra 31 oct', 'US$ 480,000'], ['Casa Terrazas', '7/20 · cierra 15 nov', 'US$ 320,000'], ['Lofts Surquillo', '3/20 · cierra 20 dic', 'US$ 260,000']].map(([n, s, v]) => `
+      <article class="card" style="padding:10px 12px"><div class="row"><b class="ink">${n}</b><span class="grow"></span><span class="num ink" style="font-weight:600;font-size:12.5px">${v}</span></div><div class="muted" style="font-size:12px;margin-top:2px">${s}</div></article>`).join('')}`,
+});
+
+S['m-plaft'] = () => boffice({
+  role: 'Cumplimiento', active: 'eva',
+  tabs: [['eva', 'Evaluación', 'shield'], ['ale', 'Alertas', 'alert']],
+  body: `
+    <div><h1 style="margin:0;font-size:20px;color:var(--ink);font-weight:600">Evaluación PLAFT</h1><p class="muted" style="margin:2px 0 0;font-size:12px">3 personas en revisión</p></div>
+    <article class="card" style="padding:10px 12px;display:flex;flex-direction:column;gap:8px">
+      <div class="row"><b class="ink">Rosa Meléndez</b><span class="grow"></span>${badge('Alto', 'b-red', 'alert')}</div>
+      <div class="muted" style="font-size:12px">CE · origen “Otro” · no domiciliada · hace 3 días</div>
+      <div class="row" style="justify-content:space-between"><span class="muted" style="font-size:12px">ONU</span>${badge('Revisada', 'b-teal', 'check')}</div>
+      <div class="row" style="justify-content:space-between"><span class="muted" style="font-size:12px">OFAC</span>${badge('Pendiente', 'b-amber', 'clock')}</div>
+      <div class="row" style="gap:6px"><span class="btn danger sm grow">Rechazar</span><span class="btn secondary sm grow">Observar</span><span class="btn success sm grow">Aprobar</span></div>
+    </article>
+    ${[['Hugo Salazar', 'Medio', 'b-amber', 'clock', 'Herencia · hace 6 h'], ['Luis Paredes', 'Bajo', 'b-teal', 'check', 'Sueldo · hace 1 h']].map(([n, r, cls, icon, s]) => `
+      <article class="card" style="padding:10px 12px"><div class="row"><b class="ink">${n}</b><span class="grow"></span>${badge(r, cls, icon)}</div><div class="muted" style="font-size:12px;margin-top:4px">${s}</div></article>`).join('')}`,
+});
+
+S['m-tablero'] = () => boffice({
+  role: 'Admin', active: 'pen',
+  tabs: [['pen', 'Pendientes', 'inbox'], ['rec', 'Reclamos', 'file'], ['eq', 'Equipo', 'users']],
+  body: `
+    <div><h1 style="margin:0;font-size:20px;color:var(--ink);font-weight:600">Pendientes</h1><p class="muted" style="margin:2px 0 0;font-size:12px">5 abiertos · 2 piden una segunda persona</p></div>
+    ${[
+      ['Plazo de fondeo vencido', 'Casa Los Cedros · hace 2 días', 'Decidir'],
+      ['Cancelar propiedad', 'Lofts Surquillo · 1.ª de 2', 'Confirmar'],
+      ['Retiro institucional', 'US$ 12,000.00 · 1.ª de 2', 'Aprobar'],
+      ['Reclamación R-2026-000014', 'Quedan 12 días', 'Responder'],
+      ['Evaluación PLAFT', 'Rosa Meléndez · hace 3 días', 'Ver'],
+    ].map(([t, s, a]) => `<article class="card" style="padding:10px 12px"><div class="row" style="align-items:flex-start"><div class="grow"><b class="ink" style="font-size:13px">${t}</b><div class="muted" style="font-size:12px">${s}</div></div><span class="btn secondary sm">${a}</span></div></article>`).join('')}`,
+});
+
 const mSheet = (inner) => `<div class="sheet"><div class="grab"></div>${inner}</div>`;
 S['m-confirmar'] = () => S['m-propiedad'](mSheet(`
   <h2 style="margin:0 0 10px;font-size:17px;color:var(--ink)">Confirmar compromiso</h2>
@@ -1240,6 +1450,8 @@ const SCREENS = [
   ['notificaciones', 'Notificaciones', 'Inversionista · campana con las no leídas'],
   ['secundario', 'Mercado secundario', 'Inversionista · ofertas y estado de mi venta'],
   ['onboarding', 'Habilitación', 'Inversionista · poder especial marco con firma doble'],
+  ['libro', 'Libro de reclamaciones', 'Público, sin cuenta. Copia en PDF con número de hoja'],
+  ['estados', 'Vacío, carga y error', 'Cartera sin inversiones, explorar cargando y wallet con error'],
   ['depositos', 'Depósitos por validar', 'Backoffice · Tesorería, origen, duplicados y extracto'],
   ['propiedades', 'Propiedades', 'Backoffice · Operaciones y seguimiento de la votación'],
   ['tablero', 'Pendientes', 'Backoffice · Admin, con la antigüedad de cada tarea'],
@@ -1252,6 +1464,14 @@ const SCREENS = [
   ['m-wallet', 'Wallet · móvil', '390 × 844', 'phone'],
   ['m-codigo', 'Código · móvil', '390 × 844', 'phone'],
   ['m-cartera', 'Cartera · móvil', '390 × 844', 'phone'],
+  ['m-secundario', 'Secundario · móvil', '390 × 844', 'phone'],
+  ['m-onboarding', 'Habilitación · móvil', '390 × 844', 'phone'],
+  ['m-perfil', 'Perfil · móvil', '390 × 844', 'phone'],
+  ['m-libro', 'Libro · móvil', '390 × 844', 'phone'],
+  ['m-depositos', 'Depósitos · móvil', '390 × 844', 'phone'],
+  ['m-propiedades', 'Propiedades · móvil', '390 × 844', 'phone'],
+  ['m-plaft', 'PLAFT · móvil', '390 × 844', 'phone'],
+  ['m-tablero', 'Pendientes · móvil', '390 × 844', 'phone'],
 ];
 
 const params = new URLSearchParams(location.search);
