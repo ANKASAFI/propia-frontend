@@ -8,7 +8,9 @@
 >
 > **Versión 2.1 — 2026-10-08.** Añade los controles de prioridad 0, todos sin coste o dentro de una capa gratuita: CSP con `script-src` por hashes, escrita por el build (5.1), tipos generados desde el OpenAPI del backend (11.9), errores del navegador en Sentry con el `requestId` de cada llamada (11.10), `Idempotency-Key` en los `POST` (10.4), y Actions por SHA con auditoría de workflows, SBOM y procedencia firmada (16). Ese código **no se ejecutó** al escribirlo: va marcado 🆕 **V2.1** y su verificación está en el checklist (20).
 >
-> **Versión 2.2 — 2026-10-08.** Aplica las decisiones de producto del ADR-13 del backend: dos audiencias, textos por clave, avisos dentro de la app y tableros. Va marcado 🆕 **V2.2** y no se ejecutó.
+> **Versión 2.2 — 2026-10-08.** Aplica las decisiones de producto del ADR-13 del backend: textos por clave, avisos dentro de la app y tableros. Va marcado 🆕 **V2.2** y no se ejecutó.
+>
+> **Versión 2.3 — 2026-10-09.** Pantallas de PROPIA a partir del prototipo `propia_desktop` (9.6): identidad visual, rutas del inversionista y del backoffice por rol. Diseño, marcado 🆕 **V2.3**, sin ejecutar.
 
 ---
 ## 0. Propósito y cómo usar este documento
@@ -31,6 +33,7 @@ Un agente que implementa el repositorio `<app-frontend>` y que no tiene el repos
 | 🆕 **V2** | Copiar igual. La etiqueta solo dice que no estaba así en el original |
 | 🆕 **V2.1** | Copiar igual. Escrito contra el código verificado pero sin ejecutar: la primera implementación corre el checklist de la sección 20 |
 | 🆕 **V2.2** | Decisión de producto del 2026-10-08 | Copiar igual. Si choca con un bloque anterior, manda V2.2 |
+| 🆕 **V2.3** | Pantallas de PROPIA (9.6) | Diseño. Se construye con las secciones 8, 12 y 14. Si choca con un bloque anterior, manda V2.3 |
 | 🟦 **EJEMPLO DE DOMINIO** | No copiar el contenido de negocio. Copiar la forma |
 | 🟥 **DEUDA — NO REPLICAR** | No copiar. La sección 18 dice qué hacer en su lugar |
 
@@ -98,7 +101,7 @@ Los marcadores de plataforma son los mismos que en el backend y se sustituyen co
 
 | Marcador | Qué es | Valor propuesto |
 |---|---|---|
-| `<org>`, `<app-short>`, `<app_snake>`, `<app>`, `<app-frontend>`, `<GITHUB_ORG>`, `<stage>`, `<ACCOUNT_NONPROD>`, `<ACCOUNT_PROD>`, `<REGION>`, `<DOMINIO_BASE>`, `<ROL_A>`, `<ROL_B>` | Los de la sección 1 del backend | Los mismos |
+| `<org>`, `<app-short>`, `<app_snake>`, `<app>`, `<app-frontend>`, `<GITHUB_ORG>`, `<stage>`, `<ACCOUNT_NONPROD>`, `<ACCOUNT_PROD>`, `<REGION>`, `<DOMINIO_BASE>`, `<ROL_A>`, `<ROL_B>`, `<ROL_C>`, `<ROL_D>` | Los de la sección 1 del backend | Los mismos: `Inversionista`, `Admin`, `Tesoreria`, `Operaciones` |
 | `<prefijo>` | Namespace de los tokens CSS (`--<prefijo>-bg`) y de las clases propias (`. <prefijo>-card` se escribe `.<prefijo>-card`) | `propia` si no se elige otro. 2 a 5 letras, minúsculas |
 | `<descripción corta de la app>` | `<title>` del documento | Pendiente, con el dominio |
 
@@ -1249,7 +1252,7 @@ Cuatro pasos, en este orden:
 2. **Añadir el nombre del icono** al tipo `<Prefijo>IconName` y su `<template v-else-if>` en `components/<Prefijo>Icon.vue`, si el icono no existe aún.
 3. **Añadir la entrada** al array `navItems` de `AppSidebar.vue`:
    ```ts
-   { to: '/mi-ruta', label: 'nav.miRuta', icon: 'mi-icono', kinds: ['interno'] }
+   { to: '/mi-ruta', label: 'nav.miRuta', icon: 'mi-icono', roles: ['<ROL_D>'] }
    ```
 4. **Decidir si va en el bottom nav de móvil.** `AppBottomNav.vue` tiene su propio array `items`, limitado a **4** por el `grid-cols-4`. Si quieres 5, cambia también la clase de la rejilla.
 
@@ -1664,14 +1667,13 @@ Los middleware se ejecutan **en el orden del array**, de izquierda a derecha, y 
 |---|---|
 | Privada, cualquier usuario con sesión | `{ middleware: 'auth' }` |
 | Privada, solo un rol | `{ middleware: ['auth', 'role'] }` y el middleware de rol compara `me.groups` |
-| Privada, solo una audiencia | 🆕 V2.2. `{ middleware: ['auth', 'audience'] }` y compara `me.kind` (`interno` o `externo`) |
 | Login y signup | `{ layout: 'auth', middleware: 'guest' }` |
 
 `auth` siempre va primero. El de rol asume que ya hay sesión; si se declara solo, un 401 de `me()` se propaga como error de navegación en vez de ir al login.
 
 Toda página privada lo declara. El middleware es UX: quien llame a la API sin sesión recibe 401 del backend igual. Sirve para no pintar un shell roto.
 
-El código de los tres middleware está en la sección 10 y pasó `nuxt typecheck`. El de audiencia es 🆕 V2.2: misma forma que el de rol, leyendo `me.kind` en vez de `me.groups`. Un interno y un externo no comparten la lista del sidebar (8.6): cada ítem declara `kinds`.
+El código de los tres middleware está en la sección 10 y pasó `nuxt typecheck`. 🆕 V2.3. El sidebar del inversionista y el del backoffice no se mezclan: cada ítem declara `roles` (8.6) y solo se pinta si `me.groups` tiene alguno.
 
 ### 9.5 Textos, avisos y tableros
 
@@ -1681,7 +1683,55 @@ El código de los tres middleware está en la sección 10 y pasó `nuxt typechec
 - **Avisos.** La campana del topbar lee `GET /api/notifications`. Al entrar, y cada 60 segundos mientras la pestaña está visible. Marcar leído es `POST /api/notifications/{id}/read`. No hay WebSocket: el email lo manda el backend al crear el aviso.
 - **Tableros.** Los gráficos son los de la sección 13, contra endpoints de agregados. Exportar es un botón que baja el archivo que devuelve la API (CSV, xlsx o PDF). El cliente no arma el PDF.
 - **Responsive.** Escritorio primero, usable en el móvil (8.4). No hay modo offline.
-- **Después del login.** 🆕 V2.2. `me.fichaStatus` manda. Si es `draft`, el `Usuario` cae en la ficha y no ve invertir. Si es `signed`, arma la operación, sube el comprobante (PDF, JPEG o PNG, el mismo flujo de documentos) y la envía. No hay pantalla de pago. El `Admin` entra a la cola de operaciones `submitted`, abre el comprobante y aprueba o rechaza. Un 403 `FICHA_NOT_SIGNED` lleva a la ficha. Un 409 `COMPROBANTE_REQUIRED` deja la operación en borrador.
+- **Después del login.** 🆕 V2.3. El inversionista con `investorStatus` distinto de `enabled` cae en `/onboarding`; con `enabled`, en `/explorar`. Un interno cae en la primera pantalla de su rol (9.6).
+
+### 9.6 Pantallas de PROPIA
+
+🆕 **V2.3.** Salen del prototipo `propia_desktop` (React, solo referencia visual y de flujo: no se copia código) y de la sección 28 del backend. El backoffice no está en el prototipo y se diseña con el mismo estilo.
+
+**Identidad visual.** Se adoptan los colores y las fuentes del prototipo como tokens de la sección 7.4, con `<prefijo>` = `propia`. Fraunces para títulos, Inter para texto e IBM Plex Mono para cifras y etiquetas. Las tres fuentes se descargan en el build (`googleFonts.download: true`); la CSP no cambia.
+
+| Token | Valor |
+|---|---|
+| `--propia-ink` | `#0A2148` |
+| `--propia-bg` | `#F5F7FA` |
+| `--propia-surface` | `#FFFFFF` |
+| `--propia-teal` / `--propia-teal-soft` | `#1FB89A` / `#E1F6F1` |
+| `--propia-blue` / `--propia-blue-soft` | `#015FFB` / `#E7EFFF` |
+| `--propia-line` | `#E1E5EC` |
+| `--propia-muted` | `#5B6472` |
+
+El prototipo solo tiene modo claro. El modo oscuro de la sección 7 se mantiene, pero sus valores se definen al construir el primer componente. El móvil sale responsive a partir de este escritorio (8.4): el sidebar pasa a la barra inferior con Explorar, Secundario, Wallet y Mi cartera.
+
+**Sin sesión** solo existen la landing (`/`, con "¿Cómo funciona?"), `/login`, `/signup` y la recuperación de contraseña. El modo visitante del prototipo, que dejaba ver Explorar y Secundario sin cuenta, **no se implementa**.
+
+**Inversionista** (`<ROL_A>`):
+
+| Ruta | Pantalla | Pide `investorStatus = 'enabled'` |
+|---|---|---|
+| `/onboarding` | Los 4 pasos (perfil, estado civil, origen de fondos, poder). El último sale a DocuSign y vuelve a `/onboarding/poder` | — |
+| `/explorar`, `/explorar/[id]` | Propiedades y detalle con el simulador (monto por unidades, cuota ideal, renta mensual estimada) | Solo para "Comprometer" |
+| `/secundario`, `/secundario/[id]` | Ofertas y detalle | Solo para "Comprar" |
+| `/wallet` | Saldos por moneda, movimientos, cargar saldo (cuentas de PROPIA, subir constancia), retirar | Para cargar y retirar |
+| `/cartera`, `/cartera/[propertyId]` | Inversiones, renta, gastos, pagos, documentos, vender mi cuota, mi oferta | Para vender |
+| `/perfil` | Datos personales, seguridad (contraseña y MFA), cuentas para recibir retiros | — |
+
+Si una acción responde 403 `INVESTOR_NOT_ENABLED`, el cliente lleva al paso del onboarding que falta. Con `investorStatus = 'signing'`, una franja arriba dice qué firma falta (la suya o la del cónyuge). Mientras vuelve de DocuSign, `/onboarding/poder` pide `me()` cada 3 segundos, hasta 2 minutos.
+
+**Backoffice** (`/admin`, layout propio, con el mismo sidebar):
+
+| Ruta | Rol | Pantalla |
+|---|---|---|
+| `/admin/depositos` | `<ROL_C>` | Cola de depósitos `submitted`: constancia, banco, monto. Aprobar o rechazar con motivo |
+| `/admin/retiros` | `<ROL_C>` | Cola de retiros `requested`: cuenta destino. Marcar pagado con constancia, o rechazar |
+| `/admin/propiedades`, `/admin/propiedades/[id]` | `<ROL_D>` | Alta y edición, publicar, avanzar el cierre, subir escritura, partida y tasación, valorizaciones |
+| `/admin/rentas` | `<ROL_D>` | Período por propiedad: renta bruta, gastos, vista previa del reparto, distribuir |
+| `/admin/secundario` | `<ROL_D>` | Ofertas con comprador: verificar, retracto, notaría, completar |
+| `/admin/inversionistas` | `<ROL_D>`, `<ROL_B>` | Estado del onboarding, poderes, rechazos, subir constancias de retención |
+| `/admin/usuarios`, `/admin/configuracion` | `<ROL_B>` | Internos y sus grupos, cuentas bancarias de PROPIA, comisión, ventana interna, retracto |
+
+El middleware `role` (10.4) lee `to.meta.roles`. Un interno que entra a `/` va a la primera pantalla de su rol.
+
 
 ---
 ## 10. Autenticación en el cliente, end to end
@@ -1936,23 +1986,20 @@ export default defineNuxtRouteMiddleware(async () => {
 // middleware/role.ts
 import type { Me } from '~/utils/http'
 
-/**
- * Plantilla. El nombre del archivo es el grupo en minúsculas que la ruta exige,
- * o se generaliza leyendo `to.meta.role`. Aquí se muestra el caso de un rol concreto
- * sustituyendo `<ROL_A>` por su forma en minúsculas al crear el archivo.
- */
-export default defineNuxtRouteMiddleware(async () => {
+/** 🆕 V2.3. La página declara `definePageMeta({ middleware: ['auth', 'role'], roles: [...] })`. */
+export default defineNuxtRouteMiddleware(async (to) => {
+  const required = (to.meta.roles as string[] | undefined) ?? []
+  if (required.length === 0) return
   const api = useApi()
   const me: Me = await api.me()
-  const required = '<ROL_A>'
-  if (!me.groups.includes(required)) {
+  if (!required.some((r) => me.groups.includes(r))) {
     return navigateTo('/')
   }
 })
 ```
 
 
-El middleware `role.ts` es la plantilla: el dominio crea `middleware/<rol>.ts` (el nombre del archivo es el que se pone en `definePageMeta`) y compara contra el grupo real, que es `<ROL_A>` o `<ROL_B>` tal como están en Cognito, no una versión en minúsculas inventada. El original comparaba grupos pasados a minúsculas y el backend no: se comparan como llegan en `me.groups`.
+El middleware `role.ts` compara contra los grupos reales (`<ROL_A>`, `<ROL_B>`, `<ROL_C>`, `<ROL_D>`) tal como están en Cognito, no contra una versión en minúsculas inventada. El original comparaba grupos pasados a minúsculas y el backend no: se comparan como llegan en `me.groups`.
 
 `auth.ts` y `guest.ts` están referenciados por las páginas del esqueleto (`pages/index.vue` con `middleware: 'auth'`, `pages/login.vue` con `middleware: 'guest'`) y entraron en el typecheck.
 
@@ -3897,16 +3944,17 @@ CI lo regenera y el cambio desaparece, o el job falla. Si el tipo está mal, el 
 ---
 ## Anexo A — Puntos abiertos
 
-Los de plataforma (dominio, cuentas, `<ROL_A>`, correo, países, Cognito Plus) están en el Anexo A del backend y se responden una vez para los dos repositorios.
+Los de plataforma (dominio, cuentas, DocuSign, cuentas bancarias de PROPIA, textos legales) están en el Anexo A del backend y se responden una vez para los dos repositorios.
 
 Los que solo afectan al cliente:
 
 | Punto | Opciones |
 |---|---|
-| `<prefijo>` de los tokens CSS | El de la marca, corto. Propuesto: el mismo `<app-short>` |
-| `<descripción corta de la app>` | El título de la pestaña. Lo da producto |
+| `<prefijo>` de los tokens CSS | 🆕 V2.3. Cerrado: `propia` (9.6) |
+| `<descripción corta de la app>` | 🆕 V2.3. Propuesto: `PROPIA · Copropiedad inmobiliaria`. Lo confirma producto |
+| Modo oscuro | El prototipo solo tiene modo claro. Los valores oscuros de los tokens se definen con el primer componente |
 | Idioma | 🆕 V2.2. Cerrado: español, con las cadenas en `locales/es.json` desde el primer pantallazo (9.5). Un segundo idioma es otro archivo |
-| Pantallas del dominio | No están en este documento a propósito. Se construyen con las secciones 8, 12 y 14, contra el OpenAPI del backend, cuando el dominio exista |
+| Pantallas del dominio | 🆕 V2.3. Definidas en 9.6. Se construyen con las secciones 8, 12 y 14, contra el OpenAPI del backend |
 | `SENTRY_DSN_WEB` | 🆕 V2.1. El DSN de un proyecto de Sentry de tipo Vue, distinto del del backend. Plan Developer gratuito: 1 usuario y 5.000 errores al mes compartidos entre los dos proyectos. Sin DSN, el build sale sin Sentry y todo lo demás funciona |
 | Pruebas de navegador | No hay Playwright en el núcleo. Se añade cuando exista un flujo (login con MFA, un alta, una subida) que merezca un spec, contra el stage `dev`, no contra mocks del contrato |
 
