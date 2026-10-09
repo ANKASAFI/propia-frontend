@@ -18,7 +18,7 @@ async function submit() {
 </script>
 <template>
   <div class="public" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:var(--bg);position:relative">
-    <div class="row" style="position:absolute;top:24px;left:32px;right:32px"><Logo :size="26" /><span class="grow" /><button class="icon-btn" type="button" @click="toggleTheme"><Icon name="moon" cls="moon" /><Icon name="sun" cls="sun" /></button></div>
+    <div class="row" style="position:absolute;top:24px;left:32px;right:32px"><Logo :size="46" /><span class="grow" /><button class="icon-btn" type="button" @click="toggleTheme"><Icon name="moon" cls="moon" /><Icon name="sun" cls="sun" /></button></div>
     <section class="card" style="width:min(460px,calc(100% - 32px))">
       <form class="card-b" style="padding:32px;display:flex;flex-direction:column;gap:16px" @submit.prevent="submit">
         <span style="width:44px;height:44px;border-radius:50%;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center"><Icon name="mail" /></span>

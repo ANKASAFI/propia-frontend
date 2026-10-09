@@ -84,7 +84,7 @@ function setCur(c: string) {
   <div class="app">
     <aside class="side">
       <div class="brand">
-        <Logo :size="26" on-dark />
+        <Logo :size="46" on-dark />
         <span v-if="user?.role !== 'investor'" class="env">Backoffice</span>
       </div>
       <nav>

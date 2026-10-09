@@ -12,7 +12,7 @@ async function send() {
 </script>
 <template>
   <div class="public" style="display:flex;flex-direction:column;background:var(--bg)">
-    <header class="top"><Logo :size="24" /><span class="muted" style="font-weight:600">Libro de reclamaciones</span><span class="spacer" /><button class="icon-btn" type="button" @click="toggleTheme"><Icon name="moon" cls="moon" /><Icon name="sun" cls="sun" /></button><NuxtLink to="/login" class="btn secondary sm">Iniciar sesión</NuxtLink></header>
+    <header class="top"><Logo :size="42" /><span class="muted" style="font-weight:600">Libro de reclamaciones</span><span class="spacer" /><button class="icon-btn" type="button" @click="toggleTheme"><Icon name="moon" cls="moon" /><Icon name="sun" cls="sun" /></button><NuxtLink to="/login" class="btn secondary sm">Iniciar sesión</NuxtLink></header>
     <div class="content book-grid" style="display:grid;grid-template-columns:380px 1fr;gap:28px;overflow:auto">
       <div>
         <h1 style="margin:0 0 8px;font-size:26px;color:var(--ink);font-weight:600">Hoja de reclamación</h1>

@@ -21,7 +21,7 @@ async function submit() {
 <template>
   <div class="auth-grid" style="display:grid;grid-template-columns:640px 1fr;height:100%">
     <section class="auth-brand" style="background:linear-gradient(160deg,#0A2148 0%,#0B2B5C 55%,#0E4D63 100%);color:#C9D5EA;padding:44px 56px;display:flex;flex-direction:column">
-      <Logo :size="30" on-dark />
+      <Logo :size="56" on-dark />
       <div style="margin-top:auto">
         <span class="badge plain" style="background:rgba(31,184,154,.16);color:#5EE0C2">Copropiedad inscrita en SUNARP</span>
         <h1 style="color:#fff;font-size:34px;line-height:1.18;font-weight:600;letter-spacing:-.02em;margin:18px 0 14px;max-width:470px">Inversión inmobiliaria fraccionada, con respaldo registral.</h1>

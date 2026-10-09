@@ -16,7 +16,7 @@ async function confirm() {
   <div class="public" style="display:flex;align-items:center;justify-content:center;background:var(--bg)">
     <section v-if="info" class="card" style="width:min(520px,calc(100% - 32px))">
       <div class="card-b" style="padding:28px;display:flex;flex-direction:column;gap:14px">
-        <Logo :size="26" />
+        <Logo :size="44" />
         <h2 style="margin:0;color:var(--ink);font-size:22px">{{ info.done || done ? 'Firma registrada' : 'Confirmar firma' }}</h2>
         <p class="muted" style="margin:0">{{ info.name }} · sobre {{ info.envelopeId }}. En producción esta pantalla es DocuSign, con verificación de identidad. Aquí confirmas la misma firma para el entorno local.</p>
         <p v-if="error" class="err">{{ error }}</p>

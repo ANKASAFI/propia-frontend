@@ -6,7 +6,7 @@ definePageMeta({ layout: false })
 <template>
   <div class="public" style="display:flex;flex-direction:column;background:var(--bg)">
     <header class="top">
-      <Logo :size="26" />
+      <Logo :size="46" />
       <span class="spacer" />
       <NuxtLink to="/#como" class="muted" style="font-weight:500;text-decoration:none">Cómo funciona</NuxtLink>
       <NuxtLink to="/#riesgos" class="muted" style="font-weight:500;text-decoration:none">Riesgos</NuxtLink>

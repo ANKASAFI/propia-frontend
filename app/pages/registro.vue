@@ -28,7 +28,7 @@ async function submit() {
 <template>
   <div class="auth-grid" style="display:grid;grid-template-columns:640px 1fr;height:100%">
     <section class="auth-brand" style="background:linear-gradient(160deg,#0A2148 0%,#0B2B5C 55%,#0E4D63 100%);color:#C9D5EA;padding:44px 56px;display:flex;flex-direction:column">
-      <Logo :size="30" on-dark />
+      <Logo :size="56" on-dark />
       <div style="margin-top:auto;max-width:460px">
         <h1 style="color:#fff;font-size:32px;line-height:1.2;font-weight:600;margin:0 0 12px">Crea tu cuenta en un minuto.</h1>
         <p style="margin:0 0 22px;font-size:14.5px">Con la cuenta ves las propiedades y el mercado secundario. Para invertir completas tu habilitación.</p>

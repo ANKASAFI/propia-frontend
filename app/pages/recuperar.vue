@@ -25,7 +25,7 @@ async function change() {
 </script>
 <template>
   <div class="public" style="display:flex;flex-direction:column;background:var(--bg);padding:24px 32px">
-    <div class="row"><Logo :size="26" /><span class="grow" /><NuxtLink to="/login" class="btn secondary sm">Volver a iniciar sesión</NuxtLink><button class="icon-btn" type="button" @click="toggleTheme"><Icon name="moon" cls="moon" /><Icon name="sun" cls="sun" /></button></div>
+    <div class="row"><Logo :size="46" /><span class="grow" /><NuxtLink to="/login" class="btn secondary sm">Volver a iniciar sesión</NuxtLink><button class="icon-btn" type="button" @click="toggleTheme"><Icon name="moon" cls="moon" /><Icon name="sun" cls="sun" /></button></div>
     <div style="margin:auto;width:min(400px,100%)">
       <section class="card"><div class="card-b" style="padding:24px;display:flex;flex-direction:column;gap:14px">
         <span class="badge b-gray plain" style="align-self:flex-start">Paso {{ step }} de 3</span>
