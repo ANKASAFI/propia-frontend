@@ -383,9 +383,10 @@ const NAV = {
     ] },
   ],
   back: [
-    { g: 'Tesorería', items: [['depositos', 'Depósitos', 'inbox', 4], ['retiros', 'Retiros', 'out', 2], ['conciliacion', 'Conciliación', 'receipt']] },
+    { g: 'Tesorería', items: [['depositos', 'Depósitos', 'inbox', 4], ['retiros', 'Retiros', 'out', 2], ['pagos', 'Pagos y conciliación', 'receipt']] },
     { g: 'Operaciones', items: [['propiedades', 'Propiedades', 'building'], ['rentas', 'Rentas y gastos', 'chart'], ['ofertas', 'Ofertas secundarias', 'repeat', 1]] },
-    { g: 'Administración', items: [['usuarios', 'Inversionistas', 'users'], ['auditoria', 'Auditoría', 'history'], ['config', 'Configuración', 'sliders']] },
+    { g: 'Cumplimiento', items: [['plaft', 'Evaluación PLAFT', 'shield', 3], ['alertas', 'Alertas', 'alert']] },
+    { g: 'Administración', items: [['usuarios', 'Inversionistas y equipo', 'users'], ['reclamaciones', 'Reclamaciones', 'file', 1], ['config', 'Configuración', 'sliders']] },
   ],
 };
 
@@ -467,9 +468,9 @@ S.login = () => `
         <div class="field" style="margin-bottom:16px"><label>Correo electrónico</label><div class="input focus">${I('mail')}<span>joel.villanueva@email.com</span></div></div>
         <div class="field"><div class="row" style="justify-content:space-between"><label>Contraseña</label><a style="color:var(--blue);font-size:12.5px;font-weight:500">¿Olvidaste tu contraseña?</a></div><div class="input">${I('lock')}<span class="num">••••••••••••</span><span style="margin-left:auto" class="muted">${I('eye')}</span></div></div>
         <button class="btn primary block" style="height:42px;margin-top:24px">Continuar</button>
-        <div class="row" style="margin-top:22px;gap:10px;color:var(--muted);font-size:12.5px">${I('shield')}<span>Sesión cifrada. Puedes activar la verificación en dos pasos desde tu perfil.</span></div>
+        <div class="row" style="margin-top:22px;gap:10px;color:var(--muted);font-size:12.5px">${I('shield')}<span>Sesión cifrada. Nunca te pediremos tu contraseña por correo.</span></div>
       </div>
-      <div class="row muted" style="justify-content:center;gap:18px;font-size:12px"><span>Términos</span><span>Privacidad</span><span>Ayuda</span></div>
+      <div class="row muted" style="justify-content:center;gap:18px;font-size:12px"><span>Términos</span><span>Privacidad</span><span>Ayuda</span><span class="row" style="gap:6px">${I('file')}Libro de reclamaciones</span></div>
     </section>
   </div>`;
 

@@ -104,7 +104,7 @@ Los marcadores de plataforma son los mismos que en el backend y se sustituyen co
 
 | Marcador | Qué es | Valor propuesto |
 |---|---|---|
-| `<org>`, `<app-short>`, `<app_snake>`, `<app>`, `<app-frontend>`, `<GITHUB_ORG>`, `<stage>`, `<ACCOUNT_NONPROD>`, `<ACCOUNT_PROD>`, `<REGION>`, `<DOMINIO_BASE>`, `<ROL_A>`, `<ROL_B>`, `<ROL_C>`, `<ROL_D>` | Los de la sección 1 del backend | Los mismos: `Inversionista`, `Admin`, `Tesoreria`, `Operaciones` |
+| `<org>`, `<app-short>`, `<app_snake>`, `<app>`, `<app-frontend>`, `<GITHUB_ORG>`, `<stage>`, `<ACCOUNT_NONPROD>`, `<ACCOUNT_PROD>`, `<REGION>`, `<DOMINIO_BASE>`, `<ROL_A>`, `<ROL_B>`, `<ROL_C>`, `<ROL_D>`, `<ROL_E>` | Los de la sección 1 del backend | Los mismos: `Inversionista`, `Admin`, `Tesoreria`, `Operaciones`, `Cumplimiento` (🆕 V2.4) |
 | `<prefijo>` | Namespace de los tokens CSS (`--<prefijo>-bg`) y de las clases propias (`. <prefijo>-card` se escribe `.<prefijo>-card`) | `propia` si no se elige otro. 2 a 5 letras, minúsculas |
 | `<descripción corta de la app>` | `<title>` del documento | `PROPIA · Copropiedad inmobiliaria` |
 
@@ -1715,7 +1715,7 @@ El teal de texto es más oscuro que el de relleno en claro para pasar AA sobre b
 
 **Modo claro y oscuro desde la primera versión.** El patrón triple de la sección 7 se usa tal cual, con los valores de la tabla bajo `:root` y `.dark`. En `nuxt.config.ts`, `colorMode` queda `{ classSuffix: '', preference: 'system', fallback: 'light' }`: la primera vez sigue al sistema operativo y después recuerda la elección. El topbar monta `<ThemeToggle />` (8.9) y el login también lo tiene, arriba a la derecha. Cada pantalla nueva se revisa en los dos temas antes de darla por terminada. El título del documento es `PROPIA · Copropiedad inmobiliaria`. El móvil sale responsive a partir de este escritorio (8.4): el sidebar pasa a la barra inferior con Explorar, Secundario, Wallet y Mi cartera.
 
-**Sin sesión** solo existen la landing (`/`, con "¿Cómo funciona?"), `/login`, `/signup` y la recuperación de contraseña. El modo visitante del prototipo, que dejaba ver Explorar y Secundario sin cuenta, **no se implementa**.
+**Sin sesión** solo existen la landing (`/`, con "¿Cómo funciona?"), `/login`, `/signup`, la recuperación de contraseña y, 🆕 V2.4, `/libro-de-reclamaciones`, que la ley exige accesible sin cuenta. El enlace va en el pie de la landing, del login y de la app. El modo visitante del prototipo, que dejaba ver Explorar y Secundario sin cuenta, **no se implementa**.
 
 **Inversionista** (`<ROL_A>`):
 
@@ -1726,7 +1726,9 @@ El teal de texto es más oscuro que el de relleno en claro para pasar AA sobre b
 | `/secundario`, `/secundario/[id]` | Ofertas y detalle | Solo para "Comprar" |
 | `/wallet` | Saldos por moneda (disponible, comprometido y en retiro; "Liquidado" del prototipo sigue abierto, Anexo A.2 del backend), movimientos, cargar saldo (cuentas de PROPIA, subir constancia), retirar | Para cargar y retirar |
 | `/cartera`, `/cartera/[propertyId]` | Inversiones, renta, gastos, pagos, documentos, vender mi cuota, mi oferta | Para vender |
-| `/perfil` | Datos personales, seguridad (contraseña y, 🆕 V2.4, activar o desactivar el MFA con QR: es opcional), cuentas para recibir retiros | — |
+| `/perfil` | Datos personales, seguridad (contraseña; 🆕 V2.4: sin MFA por ahora), cuentas para recibir retiros, cerrar la cuenta, solicitudes sobre sus datos personales | — |
+
+🆕 V2.4. **Código por email.** Añadir una cuenta de retiro, pedir un retiro, cambiar el email y cerrar la cuenta abren un diálogo que pide `POST /api/security/email-code` y un campo de 6 dígitos; la acción se reenvía con `emailCode`. Un 403 `EMAIL_CODE_REQUIRED` abre el mismo diálogo. Una cuenta de retiro nueva muestra "Disponible para retiros desde …" hasta que pasen 24 h.
 
 🆕 V2.4. La moneda que viene seleccionada en la wallet, los filtros y el simulador es la de `settings.default_currency` (USD). El selector USD / PEN del topbar la cambia y se recuerda en `localStorage`. Los importes se formatean con `Intl.NumberFormat('es-PE', { style: 'currency', currency })`: `US$ 24,000.00` y `S/ 24,000.00`.
 
@@ -1736,16 +1738,19 @@ Si una acción responde 403 `INVESTOR_NOT_ENABLED`, el cliente lleva al paso del
 
 | Ruta | Rol | Pantalla |
 |---|---|---|
-| `/admin/depositos` | `<ROL_C>` | Cola de depósitos `submitted`: constancia, banco, monto. Aprobar o rechazar con motivo |
+| `/admin/depositos` | `<ROL_C>` | Cola de depósitos `submitted`: constancia, banco, monto, número de operación (resalta posibles duplicados). Aprobar o rechazar con motivo. 🆕 V2.4: subir el extracto en CSV y confirmar las parejas en lote |
+| `/admin/pagos` | `<ROL_C>` | 🆕 V2.4. Pagos del cierre de cada propiedad (vendedor, notaría, registro, alcabala) y retiros de ingresos de PROPIA, con constancia |
 | `/admin/retiros` | `<ROL_C>` | Cola de retiros `requested`: cuenta destino. Marcar pagado con constancia, o rechazar |
 | `/admin/propiedades`, `/admin/propiedades/[id]` | `<ROL_D>` | Alta y edición, publicar, avanzar el cierre, subir escritura, partida y tasación, valorizaciones |
 | `/admin/rentas` | `<ROL_D>` | Período por propiedad: renta bruta, gastos, vista previa del reparto, distribuir |
 | `/admin/secundario` | `<ROL_D>` | Ofertas con comprador: verificar, retracto, notaría, completar |
-| `/admin/inversionistas` | `<ROL_D>`, `<ROL_B>` | Estado del onboarding, poderes, rechazos, subir constancias de retención. 🆕 V2.4: cola de evaluación PLAFT (riesgo sugerido, listas consultadas, sustento; aprobar, observar o rechazar) |
+| `/admin/inversionistas` | `<ROL_D>`, `<ROL_B>` | Estado del onboarding, poderes, rechazos, subir constancias de retención. 🆕 V2.4: el Admin suspende, reactiva o marca fallecido, con motivo |
+| `/admin/cumplimiento` | `<ROL_E>` | 🆕 V2.4. Cola de evaluación PLAFT (riesgo sugerido, listas consultadas, sustento; aprobar, observar o rechazar) y alertas de operaciones inusuales |
+| `/admin/reclamaciones` | `<ROL_B>` | 🆕 V2.4. Hojas del libro de reclamaciones y solicitudes sobre datos personales, con los días que quedan para responder |
 | `/admin` | `<ROL_B>` | 🆕 V2.4. Tablero de tareas del Admin: plazos vencidos (ampliar o confirmar la compra de PROPIA), cancelaciones propuestas y segundas aprobaciones |
-| `/admin/usuarios`, `/admin/configuracion` | `<ROL_B>` | Internos y sus grupos, cuentas bancarias de PROPIA, comisión, ventana interna, retracto |
+| `/admin/usuarios`, `/admin/configuracion` | `<ROL_B>` | Internos (🆕 V2.4: se invitan por email con su grupo; la pantalla no deja combinar grupos incompatibles), cuentas bancarias de PROPIA, comisión, ventana interna, retracto, umbrales de doble aprobación |
 
-El middleware `role` (10.4) lee `to.meta.roles`. Un interno que entra a `/` va a la primera pantalla de su rol. 🆕 V2.4: un interno sin MFA (`me.mfaEnabled = false`) va a `/perfil` a activarlo; la API le responde 403 `MFA_REQUIRED` en cualquier ruta interna hasta entonces.
+El middleware `role` (10.4) lee `to.meta.roles`. Un interno que entra a `/` va a la primera pantalla de su rol. 🆕 V2.4: sin MFA por ahora, ni para internos.
 
 
 ---
@@ -2014,7 +2019,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 ```
 
 
-El middleware `role.ts` compara contra los grupos reales (`<ROL_A>`, `<ROL_B>`, `<ROL_C>`, `<ROL_D>`) tal como están en Cognito, no contra una versión en minúsculas inventada. El original comparaba grupos pasados a minúsculas y el backend no: se comparan como llegan en `me.groups`.
+El middleware `role.ts` compara contra los grupos reales (`<ROL_A>`, `<ROL_B>`, `<ROL_C>`, `<ROL_D>`, `<ROL_E>`) tal como están en Cognito, no contra una versión en minúsculas inventada. El original comparaba grupos pasados a minúsculas y el backend no: se comparan como llegan en `me.groups`.
 
 `auth.ts` y `guest.ts` están referenciados por las páginas del esqueleto (`pages/index.vue` con `middleware: 'auth'`, `pages/login.vue` con `middleware: 'guest'`) y entraron en el typecheck.
 
@@ -3878,7 +3883,7 @@ Workflows de la sección 16. El primer deploy espera a que el stage `dev` del ba
 - [ ] El `index.html` generado contiene `apiBase:"/api"` y no contiene un host de API ni un stage.
 - [ ] `rg -n "auth_token|Authorization|localStorage" --glob '!node_modules/**' --glob '!.nuxt/**'` no devuelve nada en el código propio.
 - [ ] `document.cookie` en la pantalla autenticada no muestra la sesión. La pestaña Application del navegador muestra la cookie de access con `HttpOnly`.
-- [ ] Login con MFA recorre el reto y acaba en `me()` con los grupos reales.
+- [ ] 🆕 V2.4. Login sin MFA acaba en `me()` con los grupos reales. Una invitación de interno recorre `NEW_PASSWORD_REQUIRED` y entra.
 - [ ] Una llamada que recibe 401 refresca una sola vez aunque haya varias en paralelo (se ve una sola línea `POST /api/auth/refresh` en la red).
 - [ ] Con el backend apagado, la pantalla dice que no hay servicio y no redirige al login en bucle.
 - [ ] Un usuario desactivado ve el 403 y no un formulario de contraseña.
