@@ -14,7 +14,7 @@
 >
 > **Versión 2.4 — 2026-10-09.** Canvas de diseño final en `docs/design/propia-canvas.html`, con estilo empresarial y modo oscuro desde el inicio (9.6). Marcado 🆕 **V2.4**.
 >
-> **Versión 2.5 — 2026-10-09.** El paso 4 de la habilitación firma el poder y la declaración jurada en un solo documento de DocuSign. El compromiso es una solicitud: un Admin la aprueba en `/admin` y recién entonces se bloquea el saldo (9.6, backend 28.14). Marcado 🆕 **V2.5**.
+> **Versión 2.5 — 2026-10-09.** El paso 4 de la habilitación firma el poder y la declaración jurada en un solo documento de DocuSign. El compromiso es una solicitud: un Admin la aprueba en `/admin` y recién entonces se bloquea el saldo (9.6, backend 28.14). El canvas cubre todas las rutas, con los estados y componentes que faltaban, y el sidebar del backoffice muestra solo el rol de cada persona. Marcado 🆕 **V2.5**.
 
 ---
 ## 0. Propósito y cómo usar este documento
@@ -1696,6 +1696,8 @@ El código de los tres middleware está en la sección 10 y pasó `nuxt typechec
 
 🆕 **V2.4.** La referencia visual ya no es el prototipo, que era tentativo, sino el canvas `docs/design/propia-canvas.html`. Escritorio a 1440 × 900: login, explorar, detalle de propiedad, confirmar compromiso, wallet, código por email, mi cartera, notificaciones, secundario, habilitación, depósitos de Tesorería, propiedades de Operaciones, pendientes del Admin, evaluación PLAFT y sistema visual. Móvil a 390 × 844: login, explorar, propiedad, confirmar, wallet, código, cartera, secundario, habilitación, perfil, libro de reclamaciones y el backoffice de Tesorería, Operaciones, Cumplimiento y Admin. El libro público y los estados vacío, de carga y de error también están en escritorio. Cada una en claro y oscuro. Se abre en el navegador sin build; `?screen=wallet&theme=dark` muestra una sola pantalla. Si el canvas y esta sección discrepan en un valor, manda esta sección. El estilo es de aplicación empresarial: sidebar navy fijo, tablas densas, KPIs en tarjetas, estados con badge e ícono, foco de teclado visible y la acción principal arriba a la derecha.
 
+🆕 **V2.5.** El canvas cubre todas las rutas de esta sección salvo la contraseña nueva del interno invitado, que reutiliza el paso 2 de recuperar contraseña. Escritorio añade: landing, crear cuenta, confirmar correo, recuperar contraseña, sesión expirada, cuenta suspendida o cerrada, 403 y 404; los pasos 1 a 3 de la habilitación, el regreso de DocuSign y sus estados (en evaluación, observada, rechazada, sobre vencido); solicitud de compromiso pendiente, retiro, estado de cuenta, detalle de una posición, vender, bajar el precio, detalle de una oferta y ejercer el retracto; perfil con cuenta de retiro nueva, cambio de correo y cierre de cuenta; y en el backoffice retiros, pagos y conciliación, rentas, ofertas secundarias, inversionistas, alertas PLAFT, reclamaciones, equipo, configuración, alta y cierre de una propiedad, y la aprobación de un compromiso cuando el saldo ya no alcanza. Móvil añade landing, crear cuenta, paso 1, retiro, posición y oferta. El artboard `componentes` fija avisos flotantes, confirmación destructiva, ayuda contextual, paginación, rango de fechas, subida de archivos, tabla vacía, menú de acciones y campos con error o bloqueados. Los importes de un mismo caso cuadran entre pantallas (por ejemplo, la renta de Oficina Vértice: US$ 5,900 brutos − 650 de gastos = 5,250, y US$ 525 para 2 de 20 unidades).
+
 **Identidad visual.** Tokens de la sección 7.4 con `<prefijo>` = `propia`. Inter para toda la interfaz, con `font-variant-numeric: tabular-nums` en importes y KPIs; IBM Plex Mono solo para códigos, cuentas, CCI y números de operación. Fraunces, la serif del prototipo, no se usa. Las dos fuentes se descargan en el build (`googleFonts.download: true`) y sustituyen a Plus Jakarta Sans en `nuxt.config.ts`; la CSP no cambia.
 
 | Token | Claro | Oscuro |
@@ -1734,6 +1736,8 @@ El teal de texto es más oscuro que el de relleno en claro para pasar AA sobre b
 
 🆕 V2.4. La moneda que viene seleccionada en la wallet, los filtros y el simulador es la de `settings.default_currency` (USD). El selector USD / PEN del topbar la cambia y se recuerda en `localStorage`. Los importes se formatean con `Intl.NumberFormat('es-PE', { style: 'currency', currency })`: `US$ 24,000.00` y `S/ 24,000.00`.
 
+🆕 V2.5. Un login que responde 403 `ACCOUNT_DISABLED` muestra la pantalla de cuenta suspendida o cerrada (canvas `acceso-estados`), con el enlace al libro de reclamaciones. `GET /api/wallet` trae `pendingCommitmentsTotal`: retirar, comprar en el secundario, ejercer un retracto o enviar otra solicitud que deje el disponible por debajo de ese total muestra un aviso y deja seguir (backend 28.14, H46). Si un copropietario ya ejerció el retracto, el 409 `RETRACTO_TAKEN` se muestra como «Otro copropietario lo ejerció primero; no te cobramos nada».
+
 Si una acción responde 403 `INVESTOR_NOT_ENABLED`, el cliente lleva al paso del onboarding que falta. Con `investorStatus = 'signing'`, una franja arriba dice qué firma falta (la del titular o la del cónyuge). Las dos firmas del titular ocurren en la misma ceremonia, así que no hay un estado entre el poder y la declaración jurada. Mientras vuelve de DocuSign, `/onboarding/poder` pide `me()` cada 3 segundos, hasta 2 minutos. Un 409 `COMMITMENT_PENDING` deja visible la solicitud ya enviada. Un 409 al aprobar (`INSUFFICIENT_FUNDS` o `UNITS_UNAVAILABLE`) lo ve el Admin en el tablero, y la solicitud sigue pendiente.
 
 **Backoffice** (`/admin`, layout propio, con el mismo sidebar):
@@ -1747,10 +1751,12 @@ Si una acción responde 403 `INVESTOR_NOT_ENABLED`, el cliente lleva al paso del
 | `/admin/rentas` | `<ROL_D>` | Período por propiedad: renta bruta, gastos, vista previa del reparto, distribuir. 🆕 V2.4: comisión de administración, fondo de reserva y gastos pagados con la reserva |
 | `/admin/secundario` | `<ROL_D>` | Ofertas con comprador: verificar, retracto, notaría, completar |
 | `/admin/inversionistas` | `<ROL_D>`, `<ROL_B>` | Estado del onboarding, poderes, rechazos, subir constancias de retención. 🆕 V2.4: el Admin suspende, reactiva o marca fallecido, con motivo |
-| `/admin/cumplimiento` | `<ROL_E>` | 🆕 V2.4. Cola de evaluación PLAFT (riesgo sugerido, listas consultadas, sustento; aprobar, observar o rechazar) y alertas de operaciones inusuales |
+| `/admin/cumplimiento` | `<ROL_E>` | 🆕 V2.4. Cola de evaluación PLAFT (riesgo sugerido, listas consultadas, PEP, beneficiario final, sustento; aprobar, observar o rechazar) y alertas de operaciones inusuales. 🆕 V2.5: reabrir una evaluación rechazada y editar los umbrales PLAFT desde "Reglas" |
 | `/admin/reclamaciones` | `<ROL_B>` | 🆕 V2.4. Hojas del libro de reclamaciones y solicitudes sobre datos personales, con los días que quedan para responder |
 | `/admin` | `<ROL_B>` | 🆕 V2.5. Tablero de tareas del Admin: solicitudes de compromiso (aprobar o rechazar con motivo), plazos vencidos (ampliar o confirmar la compra de PROPIA), cancelaciones propuestas y segundas aprobaciones |
 | `/admin/usuarios`, `/admin/configuracion` | `<ROL_B>` | Internos (🆕 V2.4: se invitan por email con su grupo; la pantalla no deja combinar grupos incompatibles), cuentas bancarias de PROPIA, comisión, ventana interna, retracto, umbrales de doble aprobación |
+
+🆕 V2.5. El sidebar del backoffice muestra solo el grupo del rol de la persona; el Admin ve todos. Una ruta de otro rol muestra la pantalla 403 con el enlace a sus pendientes.
 
 El middleware `role` (10.4) lee `to.meta.roles`. Un interno que entra a `/` va a la primera pantalla de su rol. 🆕 V2.4: sin MFA por ahora, ni para internos.
 
@@ -1769,14 +1775,14 @@ Nada secreto. El estado de UI es el resultado de `GET /api/auth/me`:
 | `sub` | Identificador. No se muestra |
 | `email`, `firstName`, `lastName` | El shell (nombre en la barra) |
 | `groups` | Qué ítems de navegación se pintan. No es la autorización: esa la vuelve a hacer el backend |
-| `userStatus` | `active`, `blocked`, `observed`, `rejected`. `unknown` solo si la fila no existe; el backend responde 401 antes en ese caso |
+| `userStatus` | 🆕 V2.5. `active`, `suspended`, `deceased`, `closed` (backend 28.14, H47). `unknown` solo si la fila no existe; el backend responde 401 antes en ese caso. Lo que antes era `observed` o `rejected` vive en `investorStatus` |
 | `sessionExpiresAt` | Informativo. No se usa para decidir un refresh: el 401 lo decide |
 
 ### 10.2 Recorrido de login
 
 1. `POST /api/auth/login` con `{ email, password }`.
 2. Si el cuerpo es `{ status: "authenticated", expiresAt }`, las cookies ya viajaron en la respuesta. Se llama a `me()` y se navega a `redirect` o a `/`.
-3. Si el cuerpo es `{ status: "challenge", challenge }`, se queda en la pantalla de login y se muestra el paso que toque:
+3. Si el cuerpo es `{ status: "challenge", challenge }`, se queda en la pantalla de login y se muestra el paso que toque. 🆕 V2.5: con el MFA apagado (backend 10.8) en la práctica solo llega `NEW_PASSWORD_REQUIRED`, el de los internos invitados; los demás se dejan escritos para cuando se encienda:
    - `SOFTWARE_TOKEN_MFA` o `EMAIL_OTP`: un campo de código, luego `POST /api/auth/challenge` con `{ code }`.
    - `MFA_SETUP`: primero `POST /api/auth/challenge/mfa-setup` sin código para obtener `{ secretCode, otpauthUri }` y pintar el QR; después el mismo endpoint con `{ code }`.
    - `NEW_PASSWORD_REQUIRED`: un campo de contraseña nueva, `POST /api/auth/challenge` con `{ newPassword }`.
