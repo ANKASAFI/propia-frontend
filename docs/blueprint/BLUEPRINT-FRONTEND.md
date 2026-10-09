@@ -103,7 +103,7 @@ Los marcadores de plataforma son los mismos que en el backend y se sustituyen co
 |---|---|---|
 | `<org>`, `<app-short>`, `<app_snake>`, `<app>`, `<app-frontend>`, `<GITHUB_ORG>`, `<stage>`, `<ACCOUNT_NONPROD>`, `<ACCOUNT_PROD>`, `<REGION>`, `<DOMINIO_BASE>`, `<ROL_A>`, `<ROL_B>`, `<ROL_C>`, `<ROL_D>` | Los de la sección 1 del backend | Los mismos: `Inversionista`, `Admin`, `Tesoreria`, `Operaciones` |
 | `<prefijo>` | Namespace de los tokens CSS (`--<prefijo>-bg`) y de las clases propias (`. <prefijo>-card` se escribe `.<prefijo>-card`) | `propia` si no se elige otro. 2 a 5 letras, minúsculas |
-| `<descripción corta de la app>` | `<title>` del documento | Pendiente, con el dominio |
+| `<descripción corta de la app>` | `<title>` del documento | `PROPIA · Copropiedad inmobiliaria` |
 
 `<AUTOR>` del `package.json` es `<org>`, igual que en el backend.
 
@@ -1701,7 +1701,7 @@ El código de los tres middleware está en la sección 10 y pasó `nuxt typechec
 | `--propia-line` | `#E1E5EC` |
 | `--propia-muted` | `#5B6472` |
 
-El prototipo solo tiene modo claro. El modo oscuro de la sección 7 se mantiene, pero sus valores se definen al construir el primer componente. El móvil sale responsive a partir de este escritorio (8.4): el sidebar pasa a la barra inferior con Explorar, Secundario, Wallet y Mi cartera.
+**Solo modo claro en la primera versión.** En `nuxt.config.ts`, `colorMode` pasa a `{ classSuffix: '', preference: 'light', fallback: 'light' }` y el topbar no monta `<ThemeToggle />` (8.9). El patrón triple de la sección 7 se queda configurado, así que el modo oscuro se activa después con solo definir los tokens bajo `.dark` y volver a montar el toggle. El título del documento es `PROPIA · Copropiedad inmobiliaria`. El móvil sale responsive a partir de este escritorio (8.4): el sidebar pasa a la barra inferior con Explorar, Secundario, Wallet y Mi cartera.
 
 **Sin sesión** solo existen la landing (`/`, con "¿Cómo funciona?"), `/login`, `/signup` y la recuperación de contraseña. El modo visitante del prototipo, que dejaba ver Explorar y Secundario sin cuenta, **no se implementa**.
 
@@ -1712,7 +1712,7 @@ El prototipo solo tiene modo claro. El modo oscuro de la sección 7 se mantiene,
 | `/onboarding` | Los 4 pasos (perfil, estado civil, origen de fondos, poder). El último sale a DocuSign y vuelve a `/onboarding/poder` | — |
 | `/explorar`, `/explorar/[id]` | Propiedades y detalle con el simulador (monto por unidades, cuota ideal, renta mensual estimada) | Solo para "Comprometer" |
 | `/secundario`, `/secundario/[id]` | Ofertas y detalle | Solo para "Comprar" |
-| `/wallet` | Saldos por moneda, movimientos, cargar saldo (cuentas de PROPIA, subir constancia), retirar | Para cargar y retirar |
+| `/wallet` | Saldos por moneda (disponible, comprometido y en retiro; "Liquidado" del prototipo sigue abierto, Anexo A.2 del backend), movimientos, cargar saldo (cuentas de PROPIA, subir constancia), retirar | Para cargar y retirar |
 | `/cartera`, `/cartera/[propertyId]` | Inversiones, renta, gastos, pagos, documentos, vender mi cuota, mi oferta | Para vender |
 | `/perfil` | Datos personales, seguridad (contraseña y MFA), cuentas para recibir retiros | — |
 
@@ -3951,8 +3951,8 @@ Los que solo afectan al cliente:
 | Punto | Opciones |
 |---|---|
 | `<prefijo>` de los tokens CSS | 🆕 V2.3. Cerrado: `propia` (9.6) |
-| `<descripción corta de la app>` | 🆕 V2.3. Propuesto: `PROPIA · Copropiedad inmobiliaria`. Lo confirma producto |
-| Modo oscuro | El prototipo solo tiene modo claro. Los valores oscuros de los tokens se definen con el primer componente |
+| `<descripción corta de la app>` | 🆕 V2.3. Cerrado: `PROPIA · Copropiedad inmobiliaria` |
+| Modo oscuro | 🆕 V2.3. Cerrado: solo modo claro en la primera versión, sin toggle (9.6). El modo oscuro queda preparado para después |
 | Idioma | 🆕 V2.2. Cerrado: español, con las cadenas en `locales/es.json` desde el primer pantallazo (9.5). Un segundo idioma es otro archivo |
 | Pantallas del dominio | 🆕 V2.3. Definidas en 9.6. Se construyen con las secciones 8, 12 y 14, contra el OpenAPI del backend |
 | `SENTRY_DSN_WEB` | 🆕 V2.1. El DSN de un proyecto de Sentry de tipo Vue, distinto del del backend. Plan Developer gratuito: 1 usuario y 5.000 errores al mes compartidos entre los dos proyectos. Sin DSN, el build sale sin Sentry y todo lo demás funciona |
