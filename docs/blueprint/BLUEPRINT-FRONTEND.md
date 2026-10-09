@@ -11,6 +11,8 @@
 > **Versión 2.2 — 2026-10-08.** Aplica las decisiones de producto del ADR-13 del backend: textos por clave, avisos dentro de la app y tableros. Va marcado 🆕 **V2.2** y no se ejecutó.
 >
 > **Versión 2.3 — 2026-10-09.** Pantallas de PROPIA a partir del prototipo `propia_desktop` (9.6): identidad visual, rutas del inversionista y del backoffice por rol. Diseño, marcado 🆕 **V2.3**, sin ejecutar.
+>
+> **Versión 2.4 — 2026-10-09.** Canvas de diseño final en `docs/design/propia-canvas.html`, con estilo empresarial y modo oscuro desde el inicio (9.6). Marcado 🆕 **V2.4**.
 
 ---
 ## 0. Propósito y cómo usar este documento
@@ -34,6 +36,7 @@ Un agente que implementa el repositorio `<app-frontend>` y que no tiene el repos
 | 🆕 **V2.1** | Copiar igual. Escrito contra el código verificado pero sin ejecutar: la primera implementación corre el checklist de la sección 20 |
 | 🆕 **V2.2** | Decisión de producto del 2026-10-08 | Copiar igual. Si choca con un bloque anterior, manda V2.2 |
 | 🆕 **V2.3** | Pantallas de PROPIA (9.6) | Diseño. Se construye con las secciones 8, 12 y 14. Si choca con un bloque anterior, manda V2.3 |
+| 🆕 **V2.4** | Canvas final y modo oscuro (9.6) | La referencia visual es `docs/design/propia-canvas.html`. Si choca con un bloque anterior, manda V2.4 |
 | 🟦 **EJEMPLO DE DOMINIO** | No copiar el contenido de negocio. Copiar la forma |
 | 🟥 **DEUDA — NO REPLICAR** | No copiar. La sección 18 dice qué hacer en su lugar |
 
@@ -1687,21 +1690,30 @@ El código de los tres middleware está en la sección 10 y pasó `nuxt typechec
 
 ### 9.6 Pantallas de PROPIA
 
-🆕 **V2.3.** Salen del prototipo `propia_desktop` (React, solo referencia visual y de flujo: no se copia código) y de la sección 28 del backend. El backoffice no está en el prototipo y se diseña con el mismo estilo.
+🆕 **V2.3.** Salen del prototipo `propia_desktop` (React, solo referencia de flujo: no se copia código) y de la sección 28 del backend.
 
-**Identidad visual.** Se adoptan los colores y las fuentes del prototipo como tokens de la sección 7.4, con `<prefijo>` = `propia`. Fraunces para títulos, Inter para texto e IBM Plex Mono para cifras y etiquetas. Las tres fuentes se descargan en el build (`googleFonts.download: true`); la CSP no cambia.
+🆕 **V2.4.** La referencia visual ya no es el prototipo, que era tentativo, sino el canvas `docs/design/propia-canvas.html`: diez pantallas a 1440 × 900 (login, explorar, detalle de propiedad, wallet, mi cartera, secundario, habilitación, depósitos de Tesorería, propiedades de Operaciones y sistema visual), cada una en claro y oscuro. Se abre en el navegador sin build; `?screen=wallet&theme=dark` muestra una sola pantalla. Si el canvas y esta sección discrepan en un valor, manda esta sección. El estilo es de aplicación empresarial: sidebar navy fijo, tablas densas, KPIs en tarjetas, estados con badge y la acción principal arriba a la derecha.
 
-| Token | Valor |
-|---|---|
-| `--propia-ink` | `#0A2148` |
-| `--propia-bg` | `#F5F7FA` |
-| `--propia-surface` | `#FFFFFF` |
-| `--propia-teal` / `--propia-teal-soft` | `#1FB89A` / `#E1F6F1` |
-| `--propia-blue` / `--propia-blue-soft` | `#015FFB` / `#E7EFFF` |
-| `--propia-line` | `#E1E5EC` |
-| `--propia-muted` | `#5B6472` |
+**Identidad visual.** Tokens de la sección 7.4 con `<prefijo>` = `propia`. Inter para toda la interfaz, con `font-variant-numeric: tabular-nums` en importes y KPIs; IBM Plex Mono solo para códigos, cuentas, CCI y números de operación. Fraunces, la serif del prototipo, no se usa. Las dos fuentes se descargan en el build (`googleFonts.download: true`) y sustituyen a Plus Jakarta Sans en `nuxt.config.ts`; la CSP no cambia.
 
-**Solo modo claro en la primera versión.** En `nuxt.config.ts`, `colorMode` pasa a `{ classSuffix: '', preference: 'light', fallback: 'light' }` y el topbar no monta `<ThemeToggle />` (8.9). El patrón triple de la sección 7 se queda configurado, así que el modo oscuro se activa después con solo definir los tokens bajo `.dark` y volver a montar el toggle. El título del documento es `PROPIA · Copropiedad inmobiliaria`. El móvil sale responsive a partir de este escritorio (8.4): el sidebar pasa a la barra inferior con Explorar, Secundario, Wallet y Mi cartera.
+| Token | Claro | Oscuro |
+|---|---|---|
+| `--propia-bg` | `#F4F6F9` | `#0B1120` |
+| `--propia-surface` / `--propia-surface-2` | `#FFFFFF` / `#F8FAFC` | `#111A2C` / `#0E1626` |
+| `--propia-line` / `--propia-line-strong` | `#E2E7EF` / `#CDD5E1` | `#1E2A40` / `#2C3A55` |
+| `--propia-text` | `#0F1B2D` | `#E5EAF3` |
+| `--propia-ink` (títulos y cifras) | `#0A2148` | `#F2F5FA` |
+| `--propia-muted` / `--propia-subtle` | `#5B6678` / `#8A94A6` | `#97A3B9` / `#6B7891` |
+| `--propia-primary` (botón principal) | `#0A2148` | `#2F6BFF` |
+| `--propia-blue` / `--propia-blue-soft` | `#015FFB` / `#E8F0FF` | `#6B9BFF` / `rgba(91,147,255,.14)` |
+| `--propia-teal` (texto) / `--propia-teal-solid` | `#0E8A70` / `#1FB89A` | `#34D3AE` / `#1FB89A` |
+| `--propia-amber` / `--propia-amber-soft` | `#B45309` / `#FEF3C7` | `#FBBF24` / `rgba(251,191,36,.12)` |
+| `--propia-red` / `--propia-red-soft` | `#B42318` / `#FEE4E2` | `#F97066` / `rgba(249,112,102,.12)` |
+| `--propia-side-bg` (sidebar) | `#0A2148` | `#080D19` |
+
+El teal de texto es más oscuro que el de relleno en claro para pasar AA sobre blanco. En oscuro las tarjetas no llevan sombra: se separan por el borde.
+
+**Modo claro y oscuro desde la primera versión.** El patrón triple de la sección 7 se usa tal cual, con los valores de la tabla bajo `:root` y `.dark`. En `nuxt.config.ts`, `colorMode` queda `{ classSuffix: '', preference: 'system', fallback: 'light' }`: la primera vez sigue al sistema operativo y después recuerda la elección. El topbar monta `<ThemeToggle />` (8.9) y el login también lo tiene, arriba a la derecha. Cada pantalla nueva se revisa en los dos temas antes de darla por terminada. El título del documento es `PROPIA · Copropiedad inmobiliaria`. El móvil sale responsive a partir de este escritorio (8.4): el sidebar pasa a la barra inferior con Explorar, Secundario, Wallet y Mi cartera.
 
 **Sin sesión** solo existen la landing (`/`, con "¿Cómo funciona?"), `/login`, `/signup` y la recuperación de contraseña. El modo visitante del prototipo, que dejaba ver Explorar y Secundario sin cuenta, **no se implementa**.
 
@@ -3952,7 +3964,7 @@ Los que solo afectan al cliente:
 |---|---|
 | `<prefijo>` de los tokens CSS | 🆕 V2.3. Cerrado: `propia` (9.6) |
 | `<descripción corta de la app>` | 🆕 V2.3. Cerrado: `PROPIA · Copropiedad inmobiliaria` |
-| Modo oscuro | 🆕 V2.3. Cerrado: solo modo claro en la primera versión, sin toggle (9.6). El modo oscuro queda preparado para después |
+| Modo oscuro | 🆕 V2.4. Cerrado: claro y oscuro desde la primera versión, con toggle y preferencia del sistema (9.6) |
 | Idioma | 🆕 V2.2. Cerrado: español, con las cadenas en `locales/es.json` desde el primer pantallazo (9.5). Un segundo idioma es otro archivo |
 | Pantallas del dominio | 🆕 V2.3. Definidas en 9.6. Se construyen con las secciones 8, 12 y 14, contra el OpenAPI del backend |
 | `SENTRY_DSN_WEB` | 🆕 V2.1. El DSN de un proyecto de Sentry de tipo Vue, distinto del del backend. Plan Developer gratuito: 1 usuario y 5.000 errores al mes compartidos entre los dos proyectos. Sin DSN, el build sale sin Sentry y todo lo demás funciona |
