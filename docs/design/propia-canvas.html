@@ -362,7 +362,7 @@ const logo = (size = 28, onSide = false) => `
     <span style="font-weight:700;letter-spacing:.06em;font-size:${Math.round(size * 0.62)}px;color:${onSide ? 'var(--logo-ink-side)' : 'var(--logo-ink)'}">PROPIA</span>
   </span>`;
 
-const money = (n, cur = 'S/') => {
+const money = (n, cur = 'US$') => {
   const neg = n < 0;
   const s = Math.abs(n).toFixed(Number.isInteger(n) ? 0 : 2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return `${neg ? '−' : ''}${cur} ${s}`;
@@ -420,7 +420,7 @@ function shell({ nav, user, active, crumbs, body, locked = false, currency = tru
         <div class="crumbs">${crumbs.map((c, k) => k === crumbs.length - 1 ? `<b>${c}</b>` : `<span>${c}</span>${I('right')}`).join('')}</div>
         <span class="spacer"></span>
         <div class="search">${I('search')}<span>Buscar…</span><kbd>⌘K</kbd></div>
-        ${currency ? `<div class="seg"><span class="on">PEN</span><span>USD</span></div>` : ''}
+        ${currency ? `<div class="seg"><span class="on">USD</span><span>PEN</span></div>` : ''}
         <span class="icon-btn" data-toggle-theme title="Cambiar tema">${I('moon', 'moon')}${I('sun', 'sun')}</span>
         <span class="icon-btn">${I('bell')}<span class="dot"></span></span>
       </header>
@@ -455,7 +455,7 @@ S.login = () => `
         </div>
       </div>
       <div class="row" style="gap:36px;margin-top:40px">
-        ${[['9.8%', 'Renta anual est.'], ['S/ 13k', 'Ticket desde'], ['30 días', 'Retracto']].map(([a, b]) => `<div><div class="num" style="color:#fff;font-size:20px;font-weight:600">${a}</div><div style="font-size:12px">${b}</div></div>`).join('')}
+        ${[['9.8%', 'Renta anual est.'], ['US$ 13k', 'Ticket desde'], ['30 días', 'Retracto']].map(([a, b]) => `<div><div class="num" style="color:#fff;font-size:20px;font-weight:600">${a}</div><div style="font-size:12px">${b}</div></div>`).join('')}
       </div>
       <div style="margin-top:36px;font-size:11.5px;opacity:.7">PROPIA SAC · RUC 20601234567 · Lima, Perú</div>
     </section>
@@ -467,7 +467,7 @@ S.login = () => `
         <div class="field" style="margin-bottom:16px"><label>Correo electrónico</label><div class="input focus">${I('mail')}<span>joel.villanueva@email.com</span></div></div>
         <div class="field"><div class="row" style="justify-content:space-between"><label>Contraseña</label><a style="color:var(--blue);font-size:12.5px;font-weight:500">¿Olvidaste tu contraseña?</a></div><div class="input">${I('lock')}<span class="num">••••••••••••</span><span style="margin-left:auto" class="muted">${I('eye')}</span></div></div>
         <button class="btn primary block" style="height:42px;margin-top:24px">Continuar</button>
-        <div class="row" style="margin-top:22px;gap:10px;color:var(--muted);font-size:12.5px">${I('shield')}<span>Verificación en dos pasos y sesión cifrada. Nunca te pediremos tu contraseña por correo.</span></div>
+        <div class="row" style="margin-top:22px;gap:10px;color:var(--muted);font-size:12.5px">${I('shield')}<span>Sesión cifrada. Puedes activar la verificación en dos pasos desde tu perfil.</span></div>
       </div>
       <div class="row muted" style="justify-content:center;gap:18px;font-size:12px"><span>Términos</span><span>Privacidad</span><span>Ayuda</span></div>
     </section>
@@ -505,7 +505,7 @@ S.explorar = () => shell({
       </article>`).join('')}
     </div>
     <section class="card" style="overflow:hidden">
-      <div class="card-h"><h3>Todas las propiedades</h3><span class="sub">5 inmuebles · S/ 2,380,000 en valor</span><div class="right"><span class="btn ghost sm">${I('download')}Exportar</span></div></div>
+      <div class="card-h"><h3>Todas las propiedades</h3><span class="sub">5 inmuebles · US$ 2,380,000 en valor</span><div class="right"><span class="btn ghost sm">${I('download')}Exportar</span></div></div>
       <table class="t">
         <thead><tr><th>Inmueble</th><th>Estado</th><th class="r">Valor</th><th class="r">Por unidad</th><th>Fondeo</th><th class="r">Renta anual est.</th><th>Cierre</th><th></th></tr></thead>
         <tbody>${PROPS.map((p) => `
@@ -539,7 +539,7 @@ S.propiedad = () => {
     <div style="display:grid;grid-template-columns:1fr 380px;gap:20px;min-height:0">
       <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
         <div class="kpis card" style="grid-template-columns:repeat(5,1fr);gap:0">
-          ${[['Valor total', money(p.price)], ['Precio por unidad', money(p.unit)], ['Renta anual est.', '9.8%'], ['Gastos mensuales', 'S/ 1,200'], ['Valorización zona', '+4.2% / año']].map(([a, b], k) => `
+          ${[['Valor total', money(p.price)], ['Precio por unidad', money(p.unit)], ['Renta anual est.', '9.8%'], ['Gastos mensuales', 'US$ 1,200'], ['Valorización zona', '+4.2% / año']].map(([a, b], k) => `
             <div class="kpi" style="${k ? 'border-left:1px solid var(--line)' : ''}"><div class="label">${a}</div><div class="value" style="font-size:19px">${b}</div></div>`).join('')}
         </div>
         <section class="card">
@@ -588,15 +588,15 @@ S.propiedad = () => {
           </div>
           <div class="divider"></div>
           <dl class="dl">
-            <dt>Monto a comprometer</dt><dd style="font-size:15px;font-weight:600">S/ 24,000</dd>
+            <dt>Monto a comprometer</dt><dd style="font-size:15px;font-weight:600">US$ 24,000</dd>
             <dt>Cuota ideal</dt><dd>5.00%</dd>
-            <dt>Renta mensual est.</dt><dd class="up">S/ 196</dd>
-            <dt>Renta anual est.</dt><dd>S/ 2,352</dd>
+            <dt>Renta mensual est.</dt><dd class="up">US$ 196</dd>
+            <dt>Renta anual est.</dt><dd>US$ 2,352</dd>
           </dl>
           <div class="divider"></div>
-          <div class="row" style="justify-content:space-between"><span class="muted">Saldo disponible</span><span class="num ink" style="font-weight:600">S/ 28,500</span></div>
-          <div class="row" style="justify-content:space-between;margin-top:6px"><span class="muted">Después del compromiso</span><span class="num muted">S/ 4,500</span></div>
-          <button class="btn primary block" style="height:42px;margin-top:18px">Comprometer S/ 24,000</button>
+          <div class="row" style="justify-content:space-between"><span class="muted">Saldo disponible</span><span class="num ink" style="font-weight:600">US$ 28,500</span></div>
+          <div class="row" style="justify-content:space-between;margin-top:6px"><span class="muted">Después del compromiso</span><span class="num muted">US$ 4,500</span></div>
+          <button class="btn primary block" style="height:42px;margin-top:18px">Comprometer US$ 24,000</button>
           <div class="alert info" style="margin-top:14px;padding:10px 12px">${I('info')}<span class="txt" style="font-size:12px">El compromiso es irrevocable. Si al ${p.close} quedan unidades, PROPIA compra el resto y el cierre notarial sigue en la fecha prevista.</span></div>
         </div>
       </aside>
@@ -608,14 +608,14 @@ S.wallet = () => shell({
   nav: 'inv', user: 'inv', active: 'wallet', crumbs: ['Inversionista', 'Wallet'],
   body: `
     <div class="page-head">
-      <div><h1>Wallet</h1><p>Saldos en soles. Los dólares se manejan en una wallet separada, sin conversión.</p></div>
+      <div><h1>Wallet</h1><p>Saldos en dólares. Los soles se manejan en una wallet separada, sin conversión.</p></div>
       <div class="actions"><span class="btn secondary">${I('out')}Retirar</span><span class="btn primary">${I('plus')}Cargar saldo</span></div>
     </div>
     <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
-      ${[['Saldo total', 'S/ 73,500', 'Disponible + comprometido + en retiro'], ['Disponible', 'S/ 28,500', 'Listo para invertir o retirar'], ['Comprometido', 'S/ 40,000', '2 propiedades en fondeo'], ['En retiro', 'S/ 5,000', '1 retiro por pagar']].map(([a, b, c], k) => `
+      ${[['Saldo total', 'US$ 73,500', 'Disponible + comprometido + en retiro'], ['Disponible', 'US$ 28,500', 'Listo para invertir o retirar'], ['Comprometido', 'US$ 40,000', '2 propiedades en fondeo'], ['En retiro', 'US$ 5,000', '1 retiro por pagar']].map(([a, b, c], k) => `
         <div class="card kpi"><div class="label">${a}</div><div class="value" style="${k === 0 ? 'font-size:28px' : ''}">${b}</div><div class="foot">${c}</div></div>`).join('')}
     </div>
-    <div class="alert warn">${I('clock')}<span class="txt"><b>Depósito de S/ 10,000 en revisión.</b> Tesorería valida tu constancia (BCP · operación 004512398) en horario hábil. Enviado hoy 10:42.</span><span class="act btn secondary sm">Ver constancia</span></div>
+    <div class="alert warn">${I('clock')}<span class="txt"><b>Depósito de US$ 10,000 en revisión.</b> Tesorería valida tu constancia (BCP · operación 004512398) en horario hábil. Enviado hoy 10:42.</span><span class="act btn secondary sm">Ver constancia</span></div>
     <div style="display:grid;grid-template-columns:1fr 400px;gap:20px;min-height:0">
       <section class="card" style="overflow:hidden">
         <div class="card-h"><h3>Movimientos</h3><div class="right"><div class="seg"><span class="on">Todos</span><span>Entradas</span><span>Salidas</span></div><span class="btn ghost sm">${I('download')}CSV</span></div></div>
@@ -637,7 +637,7 @@ S.wallet = () => shell({
       <aside class="card">
         <div class="card-h"><h3>Cargar saldo</h3><span class="sub">Transferencia a PROPIA SAC</span></div>
         <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
-          ${[['BCP', 'Cuenta corriente soles', '191-2345678-0-12', '002-191-002345678012-45'], ['BBVA', 'Cuenta corriente soles', '0011-0587-0200456789', '011-587-000200456789-32']].map(([b, t, n, c]) => `
+          ${[['BCP', 'Cuenta corriente dólares', '191-2345678-0-12', '002-191-002345678012-45'], ['BBVA', 'Cuenta corriente dólares', '0011-0587-0200456789', '011-587-000200456789-32']].map(([b, t, n, c]) => `
             <div style="border:1px solid var(--line);border-radius:8px;padding:12px">
               <div class="row"><b class="ink">${b}</b><span class="muted" style="font-size:12px">${t}</span><span class="grow"></span><span class="muted">${I('copy')}</span></div>
               <div class="row" style="justify-content:space-between;margin-top:8px;font-size:12px"><span class="muted">Cuenta</span><span class="mono ink">${n}</span></div>
@@ -661,19 +661,19 @@ S.cartera = () => {
       <div class="actions"><span class="btn secondary">${I('download')}Constancia de retención 2025</span><span class="btn primary">${I('repeat')}Vender mi cuota</span></div>
     </div>
     <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
-      <div class="card kpi"><div class="label">Invertido</div><div class="value">S/ 100,000</div><div class="foot">3 inmuebles · 4 unidades</div></div>
-      <div class="card kpi"><div class="label">Valorización estimada</div><div class="value">S/ 102,700</div><div class="foot"><span class="up">${I('trend')} +2.7%</span> desde la compra</div></div>
-      <div class="card kpi"><div class="label">Renta acumulada</div><div class="value">S/ 9,975</div><div class="foot">Desde mar 2024</div></div>
-      <div class="card kpi"><div class="label">Próximo pago</div><div class="value">S/ 525</div><div class="foot">1 nov 2026 · Oficina Vértice</div></div>
+      <div class="card kpi"><div class="label">Invertido</div><div class="value">US$ 100,000</div><div class="foot">3 inmuebles · 4 unidades</div></div>
+      <div class="card kpi"><div class="label">Valorización estimada</div><div class="value">US$ 102,700</div><div class="foot"><span class="up">${I('trend')} +2.7%</span> desde la compra</div></div>
+      <div class="card kpi"><div class="label">Renta acumulada</div><div class="value">US$ 9,975</div><div class="foot">Desde mar 2024</div></div>
+      <div class="card kpi"><div class="label">Próximo pago</div><div class="value">US$ 525</div><div class="foot">1 nov 2026 · Oficina Vértice</div></div>
     </div>
     <section class="card" style="overflow:hidden">
       <div class="card-h"><h3>Posiciones</h3></div>
       <table class="t">
         <thead><tr><th>Inmueble</th><th>Estado</th><th class="r">Unidades</th><th class="r">Cuota ideal</th><th class="r">Invertido</th><th class="r">Valorización</th><th class="r">Renta / mes</th><th class="r">Rentabilidad</th></tr></thead>
         <tbody>
-          <tr><td><div class="row"><span class="thumb g3" style="width:34px;height:34px">${I('building')}</span><div><div class="strong">Oficina Vértice</div><div class="muted" style="font-size:12px">Miraflores · desde 15 mar 2024</div></div></div></td><td><span class="badge b-teal">En operación</span></td><td class="r num">2</td><td class="r num">10.00%</td><td class="r num strong">S/ 60,000</td><td class="r num">S/ 62,700</td><td class="r num up">S/ 525</td><td class="r num up">10.5%</td></tr>
-          <tr><td><div class="row"><span class="thumb g1" style="width:34px;height:34px">${I('building')}</span><div><div class="strong">Edificio Alba</div><div class="muted" style="font-size:12px">San Isidro · cierra 31 oct 2026</div></div></div></td><td><span class="badge b-blue">En fondeo</span></td><td class="r num">1</td><td class="r num">5.00%</td><td class="r num strong">S/ 24,000</td><td class="r num muted">—</td><td class="r num muted">—</td><td class="r num muted">9.8% est.</td></tr>
-          <tr><td><div class="row"><span class="thumb g2" style="width:34px;height:34px">${I('home')}</span><div><div class="strong">Casa Terrazas del Sur</div><div class="muted" style="font-size:12px">Barranco · cierra 15 nov 2026</div></div></div></td><td><span class="badge b-blue">En fondeo</span></td><td class="r num">1</td><td class="r num">5.00%</td><td class="r num strong">S/ 16,000</td><td class="r num muted">—</td><td class="r num muted">—</td><td class="r num muted">8.4% est.</td></tr>
+          <tr><td><div class="row"><span class="thumb g3" style="width:34px;height:34px">${I('building')}</span><div><div class="strong">Oficina Vértice</div><div class="muted" style="font-size:12px">Miraflores · desde 15 mar 2024</div></div></div></td><td><span class="badge b-teal">En operación</span></td><td class="r num">2</td><td class="r num">10.00%</td><td class="r num strong">US$ 60,000</td><td class="r num">US$ 62,700</td><td class="r num up">US$ 525</td><td class="r num up">10.5%</td></tr>
+          <tr><td><div class="row"><span class="thumb g1" style="width:34px;height:34px">${I('building')}</span><div><div class="strong">Edificio Alba</div><div class="muted" style="font-size:12px">San Isidro · cierra 31 oct 2026</div></div></div></td><td><span class="badge b-blue">En fondeo</span></td><td class="r num">1</td><td class="r num">5.00%</td><td class="r num strong">US$ 24,000</td><td class="r num muted">—</td><td class="r num muted">—</td><td class="r num muted">9.8% est.</td></tr>
+          <tr><td><div class="row"><span class="thumb g2" style="width:34px;height:34px">${I('home')}</span><div><div class="strong">Casa Terrazas del Sur</div><div class="muted" style="font-size:12px">Barranco · cierra 15 nov 2026</div></div></div></td><td><span class="badge b-blue">En fondeo</span></td><td class="r num">1</td><td class="r num">5.00%</td><td class="r num strong">US$ 16,000</td><td class="r num muted">—</td><td class="r num muted">—</td><td class="r num muted">8.4% est.</td></tr>
         </tbody>
       </table>
     </section>
@@ -730,9 +730,9 @@ S.secundario = () => shell({
         <div class="card-b">
           <div class="row" style="margin-bottom:14px"><span class="thumb g3" style="width:40px;height:40px">${I('building')}</span><div><b class="ink">Oficina Vértice</b><div class="muted" style="font-size:12px">1 unidad · 5% cuota ideal</div></div></div>
           <dl class="dl">
-            <dt>Precio de venta</dt><dd>S/ 31,500</dd>
-            <dt>Comisión PROPIA (3%)</dt><dd class="muted">− S/ 945</dd>
-            <dt><b class="ink">Recibirías (neto)</b></dt><dd style="font-size:15px;font-weight:600">S/ 30,555</dd>
+            <dt>Precio de venta</dt><dd>US$ 31,500</dd>
+            <dt>Comisión PROPIA (3%)</dt><dd class="muted">− US$ 945</dd>
+            <dt><b class="ink">Recibirías (neto)</b></dt><dd style="font-size:15px;font-weight:600">US$ 30,555</dd>
           </dl>
           <div class="divider"></div>
           <div class="timeline">
@@ -751,7 +751,7 @@ S.secundario = () => shell({
 S.onboarding = () => shell({
   nav: 'inv', user: 'inv', active: 'perfil', locked: true, crumbs: ['Inversionista', 'Habilitación de cuenta'], currency: false,
   body: `
-    <div class="alert warn">${I('pen')}<span class="txt"><b>Falta la firma de tu cónyuge.</b> Le enviamos el poder a <span class="mono">m.ruiz@email.com</span>. Cuando firme, tu cuenta queda habilitada para invertir.</span><span class="act btn secondary sm">Reenviar correo</span></div>
+    <div class="alert warn">${I('pen')}<span class="txt"><b>Falta la firma de tu cónyuge.</b> Le enviamos el poder a <span class="mono">m.ruiz@email.com</span>. Cuando firme, pasamos tu perfil a evaluación y te avisamos al quedar habilitado.</span><span class="act btn secondary sm">Reenviar correo</span></div>
     <div class="card card-b">
       <div class="steps">
         <div class="step done"><span class="n">${I('check')}</span><div><div class="lbl">Perfil</div><div class="s">Datos y documento</div></div><span class="bar"></span></div>
@@ -784,7 +784,8 @@ S.onboarding = () => shell({
           <div class="timeline">
             <div class="tl done"><span class="d">${I('check')}</span><div><b>Firmaste el poder</b><span>Con verificación de identidad</span></div></div>
             <div class="tl cur"><span class="d"></span><div><b>Firma del cónyuge</b><span>Por correo, sin crear cuenta</span></div></div>
-            <div class="tl"><span class="d"></span><div><b>Cuenta habilitada</b><span>Automático al completar el sobre</span></div></div>
+            <div class="tl"><span class="d"></span><div><b>Evaluación PLAFT</b><span>Revisión del equipo de PROPIA</span></div></div>
+            <div class="tl"><span class="d"></span><div><b>Cuenta habilitada</b><span>Te avisamos por correo</span></div></div>
             <div class="tl"><span class="d"></span><div><b>Carga tu primer saldo</b><span>Transferencia a PROPIA SAC</span></div></div>
           </div>
           <div class="muted" style="font-size:12px;display:flex;gap:8px">${I('lock')}<span>Mientras tanto puedes explorar propiedades, pero no comprometer ni comprar.</span></div>
@@ -802,8 +803,8 @@ S.depositos = () => shell({
     </div>
     <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
       <div class="card kpi"><div class="label">Pendientes</div><div class="value">4</div><div class="foot">El más antiguo hace 3 h 12 min</div></div>
-      <div class="card kpi"><div class="label">Monto pendiente</div><div class="value">S/ 38,200</div><div class="foot">+ US$ 5,000</div></div>
-      <div class="card kpi"><div class="label">Validados hoy</div><div class="value">7</div><div class="foot">S/ 112,400 acreditados</div></div>
+      <div class="card kpi"><div class="label">Monto pendiente</div><div class="value">US$ 38,200</div><div class="foot">+ S/ 18,500</div></div>
+      <div class="card kpi"><div class="label">Validados hoy</div><div class="value">7</div><div class="foot">US$ 112,400 acreditados</div></div>
       <div class="card kpi"><div class="label">Tiempo medio de validación</div><div class="value">2 h 14 min</div><div class="foot"><span class="up">−18 min</span> vs. semana pasada</div></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 440px;gap:20px;min-height:0;flex:1">
@@ -812,10 +813,10 @@ S.depositos = () => shell({
           <thead><tr><th>Inversionista</th><th>Banco destino</th><th class="r">Monto</th><th>N.º operación</th><th>Enviado</th></tr></thead>
           <tbody>
             ${[
-              ['Joel Villanueva Torres', 'DNI 45****21', 'BCP · Soles', 'S/ 10,000', '004512398', 'Hoy 10:42', true],
-              ['Ana Lucía Paredes', 'DNI 70****88', 'BBVA · Soles', 'S/ 16,000', '88120455', 'Hoy 09:15', false],
-              ['Ricardo Mendoza', 'CE 00****19', 'BCP · Dólares', 'US$ 5,000', '004498712', 'Hoy 08:03', false],
-              ['Carla Vásquez Ríos', 'DNI 41****07', 'BBVA · Soles', 'S/ 12,200', '88117302', 'Ayer 18:47', false],
+              ['Joel Villanueva Torres', 'DNI 45****21', 'BCP · Dólares', 'US$ 10,000', '004512398', 'Hoy 10:42', true],
+              ['Ana Lucía Paredes', 'DNI 70****88', 'BBVA · Dólares', 'US$ 16,000', '88120455', 'Hoy 09:15', false],
+              ['Ricardo Mendoza', 'CE 00****19', 'BCP · Soles', 'S/ 18,500', '004498712', 'Hoy 08:03', false],
+              ['Carla Vásquez Ríos', 'DNI 41****07', 'BBVA · Dólares', 'US$ 12,200', '88117302', 'Ayer 18:47', false],
             ].map(([n, d, b, m, o, t, s]) => `<tr class="${s ? 'sel' : ''}"><td><div class="strong">${n}</div><div class="muted mono" style="font-size:11.5px">${d}</div></td><td>${b}</td><td class="r num strong">${m}</td><td class="mono muted">${o}</td><td class="muted">${t}</td></tr>`).join('')}
           </tbody>
         </table>
@@ -829,11 +830,11 @@ S.depositos = () => shell({
             <div class="vr"><span>N.º de operación</span><span>004512398</span></div>
             <div class="vr"><span>Cuenta destino</span><span>191-2345678-0-12</span></div>
             <div class="vr"><span>Beneficiario</span><span>PROPIA SAC</span></div>
-            <div class="vr" style="margin-top:6px"><span>Monto</span><span class="amt">S/ 10,000.00</span></div>
+            <div class="vr" style="margin-top:6px"><span>Monto</span><span class="amt">US$ 10,000.00</span></div>
           </div>
           <dl class="dl" style="font-size:13px">
-            <dt>Monto declarado</dt><dd>S/ 10,000.00</dd>
-            <dt>Cuenta PROPIA</dt><dd>BCP corriente soles</dd>
+            <dt>Monto declarado</dt><dd>US$ 10,000.00</dd>
+            <dt>Cuenta PROPIA</dt><dd>BCP corriente dólares</dd>
           </dl>
           <div class="field"><label>Motivo (solo si rechazas)</label><div class="input"><span class="ph">Selecciona un motivo</span><span style="margin-left:auto" class="muted">${I('chev')}</span></div></div>
           <div class="row" style="gap:10px"><span class="btn danger grow">${I('x')}Rechazar</span><span class="btn success grow">${I('check')}Aprobar y acreditar</span></div>
@@ -845,12 +846,12 @@ S.depositos = () => shell({
 
 S.propiedades = () => {
   const cols = [
-    ['Borrador', 'b-gray', [['Residencial Arequipa 1120', 'Lince', 'S/ 410,000', '—', 0]]],
-    ['En fondeo', 'b-blue', [['Edificio Alba', 'San Isidro', 'S/ 480,000', 'Cierra 31 oct', 14], ['Casa Terrazas del Sur', 'Barranco', 'S/ 320,000', 'Cierra 15 nov', 7], ['Lofts Surquillo', 'Surquillo', 'S/ 260,000', 'Cierra 20 dic', 3]]],
-    ['Fondeada', 'b-teal', [['Dúplex Los Laureles', 'La Molina', 'S/ 540,000', 'Lista para notaría', 20]]],
-    ['En notaría', 'b-amber', [['Torre Pardo 540', 'Miraflores', 'S/ 720,000', 'Firma 14 oct', 20]]],
-    ['Inscrita', 'b-teal', [['Departamento Salaverry', 'Jesús María', 'S/ 290,000', 'Partida 14582233', 20]]],
-    ['En operación', 'b-teal', [['Oficina Vértice', 'Miraflores', 'S/ 600,000', 'S/ 5,250 al mes', 20], ['Casa Benavides', 'Surco', 'S/ 380,000', 'S/ 2,870 al mes', 20]]],
+    ['Borrador', 'b-gray', [['Residencial Arequipa 1120', 'Lince', 'US$ 410,000', '—', 0]]],
+    ['En fondeo', 'b-blue', [['Edificio Alba', 'San Isidro', 'US$ 480,000', 'Cierra 31 oct', 14], ['Casa Terrazas del Sur', 'Barranco', 'US$ 320,000', 'Cierra 15 nov', 7], ['Lofts Surquillo', 'Surquillo', 'US$ 260,000', 'Cierra 20 dic', 3]]],
+    ['Fondeada', 'b-teal', [['Dúplex Los Laureles', 'La Molina', 'US$ 540,000', 'Lista para notaría', 20]]],
+    ['En notaría', 'b-amber', [['Torre Pardo 540', 'Miraflores', 'US$ 720,000', 'Firma 14 oct', 20]]],
+    ['Inscrita', 'b-teal', [['Departamento Salaverry', 'Jesús María', 'US$ 290,000', 'Partida 14582233', 20]]],
+    ['En operación', 'b-teal', [['Oficina Vértice', 'Miraflores', 'US$ 600,000', 'US$ 5,250 al mes', 20], ['Casa Benavides', 'Surco', 'US$ 380,000', 'US$ 2,870 al mes', 20]]],
   ];
   return shell({
     nav: 'back', user: 'ops', active: 'propiedades', crumbs: ['Operaciones', 'Propiedades'], currency: false,
@@ -860,10 +861,10 @@ S.propiedades = () => {
       <div class="actions"><div class="seg"><span class="on" style="padding:4px 8px">${I('grid')}</span><span style="padding:4px 8px">${I('list')}</span></div><span class="btn primary">${I('plus')}Nueva propiedad</span></div>
     </div>
     <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
-      <div class="card kpi"><div class="label">Valor bajo administración</div><div class="value">S/ 4,000,000</div><div class="foot">10 inmuebles</div></div>
-      <div class="card kpi"><div class="label">Fondeo en curso</div><div class="value">S/ 1,060,000</div><div class="foot">24 de 60 unidades comprometidas</div></div>
+      <div class="card kpi"><div class="label">Valor bajo administración</div><div class="value">US$ 4,000,000</div><div class="foot">10 inmuebles</div></div>
+      <div class="card kpi"><div class="label">Fondeo en curso</div><div class="value">US$ 1,060,000</div><div class="foot">24 de 60 unidades comprometidas</div></div>
       <div class="card kpi"><div class="label">Acciones pendientes</div><div class="value">3</div><div class="foot">1 notaría · 1 tasación · 1 cierre vence</div></div>
-      <div class="card kpi"><div class="label">Renta distribuida (sep)</div><div class="value">S/ 8,120</div><div class="foot">143 inversionistas</div></div>
+      <div class="card kpi"><div class="label">Renta distribuida (sep)</div><div class="value">US$ 8,120</div><div class="foot">143 inversionistas</div></div>
     </div>
     <div class="kanban">
       ${cols.map(([t, b, cards]) => `
@@ -892,7 +893,7 @@ S.sistema = () => {
       </div></section>
     <section class="card"><div class="card-h"><h3>Tipografía</h3></div>
       <div class="card-b" style="display:flex;flex-direction:column;gap:14px">
-        <div><div style="font-size:28px;font-weight:600;color:var(--ink);letter-spacing:-.01em" class="num">S/ 73,500</div><span class="muted mono" style="font-size:11.5px">KPI · 28/600 · tabular</span></div>
+        <div><div style="font-size:28px;font-weight:600;color:var(--ink);letter-spacing:-.01em" class="num">US$ 73,500</div><span class="muted mono" style="font-size:11.5px">KPI · 28/600 · tabular</span></div>
         <div><div style="font-size:22px;font-weight:600;color:var(--ink)">Título de página</div><span class="muted mono" style="font-size:11.5px">H1 · 22/600</span></div>
         <div><div style="font-size:14px;font-weight:600;color:var(--ink)">Título de tarjeta</div><span class="muted mono" style="font-size:11.5px">H3 · 14/600</span></div>
         <div><div>Texto de interfaz para formularios, tablas y descripciones.</div><span class="muted mono" style="font-size:11.5px">Cuerpo · 13.5/400</span></div>
@@ -909,7 +910,7 @@ S.sistema = () => {
       </div></section>
     <section class="card"><div class="card-h"><h3>Campos</h3></div>
       <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
-        <div class="field"><label>Monto a retirar</label><div class="input focus"><span class="muted">S/</span><span class="num">5,000.00</span></div><span class="hint">Disponible: S/ 28,500</span></div>
+        <div class="field"><label>Monto a retirar</label><div class="input focus"><span class="muted">S/</span><span class="num">5,000.00</span></div><span class="hint">Disponible: US$ 28,500</span></div>
         <div class="field"><label>Cuenta destino</label><div class="input"><span>BCP · Ahorros ****8812</span><span style="margin-left:auto" class="muted">${I('chev')}</span></div></div>
       </div></section>
     <section class="card"><div class="card-h"><h3>Avisos</h3></div>

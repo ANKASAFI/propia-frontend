@@ -1721,12 +1721,14 @@ El teal de texto es más oscuro que el de relleno en claro para pasar AA sobre b
 
 | Ruta | Pantalla | Pide `investorStatus = 'enabled'` |
 |---|---|---|
-| `/onboarding` | Los 4 pasos (perfil, estado civil, origen de fondos, poder). El último sale a DocuSign y vuelve a `/onboarding/poder` | — |
+| `/onboarding` | Los 4 pasos (perfil, estado civil, origen de fondos con declaración PEP, poder). El último sale a DocuSign y vuelve a `/onboarding/poder`. 🆕 V2.4: con `investorStatus = 'review'` muestra "Evaluación en curso" y, si Operaciones la observó, el pedido y el botón para subir el sustento | — |
 | `/explorar`, `/explorar/[id]` | Propiedades y detalle con el simulador (monto por unidades, cuota ideal, renta mensual estimada) | Solo para "Comprometer" |
 | `/secundario`, `/secundario/[id]` | Ofertas y detalle | Solo para "Comprar" |
 | `/wallet` | Saldos por moneda (disponible, comprometido y en retiro; "Liquidado" del prototipo sigue abierto, Anexo A.2 del backend), movimientos, cargar saldo (cuentas de PROPIA, subir constancia), retirar | Para cargar y retirar |
 | `/cartera`, `/cartera/[propertyId]` | Inversiones, renta, gastos, pagos, documentos, vender mi cuota, mi oferta | Para vender |
-| `/perfil` | Datos personales, seguridad (contraseña y MFA), cuentas para recibir retiros | — |
+| `/perfil` | Datos personales, seguridad (contraseña y, 🆕 V2.4, activar o desactivar el MFA con QR: es opcional), cuentas para recibir retiros | — |
+
+🆕 V2.4. La moneda que viene seleccionada en la wallet, los filtros y el simulador es la de `settings.default_currency` (USD). El selector USD / PEN del topbar la cambia y se recuerda en `localStorage`. Los importes se formatean con `Intl.NumberFormat('es-PE', { style: 'currency', currency })`: `US$ 24,000.00` y `S/ 24,000.00`.
 
 Si una acción responde 403 `INVESTOR_NOT_ENABLED`, el cliente lleva al paso del onboarding que falta. Con `investorStatus = 'signing'`, una franja arriba dice qué firma falta (la suya o la del cónyuge). Mientras vuelve de DocuSign, `/onboarding/poder` pide `me()` cada 3 segundos, hasta 2 minutos.
 
@@ -1739,10 +1741,11 @@ Si una acción responde 403 `INVESTOR_NOT_ENABLED`, el cliente lleva al paso del
 | `/admin/propiedades`, `/admin/propiedades/[id]` | `<ROL_D>` | Alta y edición, publicar, avanzar el cierre, subir escritura, partida y tasación, valorizaciones |
 | `/admin/rentas` | `<ROL_D>` | Período por propiedad: renta bruta, gastos, vista previa del reparto, distribuir |
 | `/admin/secundario` | `<ROL_D>` | Ofertas con comprador: verificar, retracto, notaría, completar |
-| `/admin/inversionistas` | `<ROL_D>`, `<ROL_B>` | Estado del onboarding, poderes, rechazos, subir constancias de retención |
+| `/admin/inversionistas` | `<ROL_D>`, `<ROL_B>` | Estado del onboarding, poderes, rechazos, subir constancias de retención. 🆕 V2.4: cola de evaluación PLAFT (riesgo sugerido, listas consultadas, sustento; aprobar, observar o rechazar) |
+| `/admin` | `<ROL_B>` | 🆕 V2.4. Tablero de tareas del Admin: plazos vencidos (ampliar o confirmar la compra de PROPIA), cancelaciones propuestas y segundas aprobaciones |
 | `/admin/usuarios`, `/admin/configuracion` | `<ROL_B>` | Internos y sus grupos, cuentas bancarias de PROPIA, comisión, ventana interna, retracto |
 
-El middleware `role` (10.4) lee `to.meta.roles`. Un interno que entra a `/` va a la primera pantalla de su rol.
+El middleware `role` (10.4) lee `to.meta.roles`. Un interno que entra a `/` va a la primera pantalla de su rol. 🆕 V2.4: un interno sin MFA (`me.mfaEnabled = false`) va a `/perfil` a activarlo; la API le responde 403 `MFA_REQUIRED` en cualquier ruta interna hasta entonces.
 
 
 ---
