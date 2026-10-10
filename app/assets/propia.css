@@ -290,7 +290,7 @@
   }
   .logo { display: block; flex: none; color: var(--logo-ink); overflow: visible; }
   .logo.on-dark { color: #FFFFFF; }
-  .logo .word { font-family: "Anybody Wide", Inter, sans-serif; font-weight: 800; font-size: 78.5px; fill: currentColor; }
+  .logo .word { font-family: "Anybody Wide", Inter, sans-serif; font-weight: 800; font-size: 187.5px; fill: currentColor; }
   .logo .mark { fill: none; stroke: var(--logo-mark); stroke-linecap: square; stroke-linejoin: miter; }
   .logo.on-dark .mark { stroke: #6AA4FF; }
   .swatch b { display: block; color: var(--ink); font-weight: 600; font-size: 12.5px; }
