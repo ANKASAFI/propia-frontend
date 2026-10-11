@@ -11,6 +11,10 @@
 > **Versión 2.2 — 2026-10-08.** Aplica las decisiones de producto del ADR-13 del backend: textos por clave, avisos dentro de la app y tableros. Va marcado 🆕 **V2.2** y no se ejecutó.
 >
 > **Versión 2.3 — 2026-10-09.** Pantallas de PROPIA a partir del prototipo `propia_desktop` (9.6): identidad visual, rutas del inversionista y del backoffice por rol. Diseño, marcado 🆕 **V2.3**, sin ejecutar.
+>
+> **Versión 2.4 — 2026-10-09.** Canvas de diseño final en `docs/design/propia-canvas.html`, con estilo empresarial y modo oscuro desde el inicio (9.6). Marcado 🆕 **V2.4**.
+>
+> **Versión 2.5 — 2026-10-09.** El paso 4 de la habilitación firma el poder y la declaración jurada en un solo documento de DocuSign. El compromiso es una solicitud: un Admin la aprueba en `/admin` y recién entonces se bloquea el saldo (9.6, backend 28.14). El canvas cubre todas las rutas, con los estados y componentes que faltaban, y el sidebar del backoffice muestra solo el rol de cada persona. Marcado 🆕 **V2.5**.
 
 ---
 ## 0. Propósito y cómo usar este documento
@@ -34,6 +38,7 @@ Un agente que implementa el repositorio `<app-frontend>` y que no tiene el repos
 | 🆕 **V2.1** | Copiar igual. Escrito contra el código verificado pero sin ejecutar: la primera implementación corre el checklist de la sección 20 |
 | 🆕 **V2.2** | Decisión de producto del 2026-10-08 | Copiar igual. Si choca con un bloque anterior, manda V2.2 |
 | 🆕 **V2.3** | Pantallas de PROPIA (9.6) | Diseño. Se construye con las secciones 8, 12 y 14. Si choca con un bloque anterior, manda V2.3 |
+| 🆕 **V2.4** | Canvas final y modo oscuro (9.6) | La referencia visual es `docs/design/propia-canvas.html`. Si choca con un bloque anterior, manda V2.4 |
 | 🟦 **EJEMPLO DE DOMINIO** | No copiar el contenido de negocio. Copiar la forma |
 | 🟥 **DEUDA — NO REPLICAR** | No copiar. La sección 18 dice qué hacer en su lugar |
 
@@ -101,7 +106,7 @@ Los marcadores de plataforma son los mismos que en el backend y se sustituyen co
 
 | Marcador | Qué es | Valor propuesto |
 |---|---|---|
-| `<org>`, `<app-short>`, `<app_snake>`, `<app>`, `<app-frontend>`, `<GITHUB_ORG>`, `<stage>`, `<ACCOUNT_NONPROD>`, `<ACCOUNT_PROD>`, `<REGION>`, `<DOMINIO_BASE>`, `<ROL_A>`, `<ROL_B>`, `<ROL_C>`, `<ROL_D>` | Los de la sección 1 del backend | Los mismos: `Inversionista`, `Admin`, `Tesoreria`, `Operaciones` |
+| `<org>`, `<app-short>`, `<app_snake>`, `<app>`, `<app-frontend>`, `<GITHUB_ORG>`, `<stage>`, `<ACCOUNT_NONPROD>`, `<ACCOUNT_PROD>`, `<REGION>`, `<DOMINIO_BASE>`, `<ROL_A>`, `<ROL_B>`, `<ROL_C>`, `<ROL_D>`, `<ROL_E>` | Los de la sección 1 del backend | Los mismos: `Inversionista`, `Admin`, `Tesoreria`, `Operaciones`, `Cumplimiento` (🆕 V2.4) |
 | `<prefijo>` | Namespace de los tokens CSS (`--<prefijo>-bg`) y de las clases propias (`. <prefijo>-card` se escribe `.<prefijo>-card`) | `propia` si no se elige otro. 2 a 5 letras, minúsculas |
 | `<descripción corta de la app>` | `<title>` del documento | `PROPIA · Copropiedad inmobiliaria` |
 
@@ -1687,50 +1692,73 @@ El código de los tres middleware está en la sección 10 y pasó `nuxt typechec
 
 ### 9.6 Pantallas de PROPIA
 
-🆕 **V2.3.** Salen del prototipo `propia_desktop` (React, solo referencia visual y de flujo: no se copia código) y de la sección 28 del backend. El backoffice no está en el prototipo y se diseña con el mismo estilo.
+🆕 **V2.3.** Salen del prototipo `propia_desktop` (React, solo referencia de flujo: no se copia código) y de la sección 28 del backend.
 
-**Identidad visual.** Se adoptan los colores y las fuentes del prototipo como tokens de la sección 7.4, con `<prefijo>` = `propia`. Fraunces para títulos, Inter para texto e IBM Plex Mono para cifras y etiquetas. Las tres fuentes se descargan en el build (`googleFonts.download: true`); la CSP no cambia.
+🆕 **V2.4.** La referencia visual ya no es el prototipo, que era tentativo, sino el canvas `docs/design/propia-canvas.html`. Escritorio a 1440 × 900: login, explorar, detalle de propiedad, confirmar compromiso, wallet, código por email, mi cartera, notificaciones, secundario, habilitación, depósitos de Tesorería, propiedades de Operaciones, pendientes del Admin, evaluación PLAFT y sistema visual. Móvil a 390 × 844: login, explorar, propiedad, confirmar, wallet, código, cartera, secundario, habilitación, perfil, libro de reclamaciones y el backoffice de Tesorería, Operaciones, Cumplimiento y Admin. El libro público y los estados vacío, de carga y de error también están en escritorio. Cada una en claro y oscuro. Se abre en el navegador sin build; `?screen=wallet&theme=dark` muestra una sola pantalla. Si el canvas y esta sección discrepan en un valor, manda esta sección. El estilo es de aplicación empresarial: sidebar navy fijo, tablas densas, KPIs en tarjetas, estados con badge e ícono, foco de teclado visible y la acción principal arriba a la derecha.
 
-| Token | Valor |
-|---|---|
-| `--propia-ink` | `#0A2148` |
-| `--propia-bg` | `#F5F7FA` |
-| `--propia-surface` | `#FFFFFF` |
-| `--propia-teal` / `--propia-teal-soft` | `#1FB89A` / `#E1F6F1` |
-| `--propia-blue` / `--propia-blue-soft` | `#015FFB` / `#E7EFFF` |
-| `--propia-line` | `#E1E5EC` |
-| `--propia-muted` | `#5B6472` |
+🆕 **V2.5.** El canvas cubre todas las rutas de esta sección salvo la contraseña nueva del interno invitado, que reutiliza el paso 2 de recuperar contraseña. Escritorio añade: landing, crear cuenta, confirmar correo, recuperar contraseña, sesión expirada, cuenta suspendida o cerrada, 403 y 404; los pasos 1 a 3 de la habilitación, el regreso de DocuSign y sus estados (en evaluación, observada, rechazada, sobre vencido); solicitud de compromiso pendiente, retiro, estado de cuenta, detalle de una posición, vender, bajar el precio, detalle de una oferta y ejercer el retracto; perfil con cuenta de retiro nueva, cambio de correo y cierre de cuenta; y en el backoffice retiros, pagos y conciliación, rentas, ofertas secundarias, inversionistas, alertas PLAFT, reclamaciones, equipo, configuración, alta y cierre de una propiedad, y la aprobación de un compromiso cuando el saldo ya no alcanza. Móvil añade landing, crear cuenta, paso 1, retiro, posición y oferta. El artboard `componentes` fija avisos flotantes, confirmación destructiva, ayuda contextual, paginación, rango de fechas, subida de archivos, tabla vacía, menú de acciones y campos con error o bloqueados. Los importes de un mismo caso cuadran entre pantallas (por ejemplo, la renta de Oficina Vértice: US$ 5,900 brutos − 650 de gastos = 5,250, y US$ 525 para 2 de 20 unidades).
 
-**Solo modo claro en la primera versión.** En `nuxt.config.ts`, `colorMode` pasa a `{ classSuffix: '', preference: 'light', fallback: 'light' }` y el topbar no monta `<ThemeToggle />` (8.9). El patrón triple de la sección 7 se queda configurado, así que el modo oscuro se activa después con solo definir los tokens bajo `.dark` y volver a montar el toggle. El título del documento es `PROPIA · Copropiedad inmobiliaria`. El móvil sale responsive a partir de este escritorio (8.4): el sidebar pasa a la barra inferior con Explorar, Secundario, Wallet y Mi cartera.
+**Identidad visual.** Tokens de la sección 7.4 con `<prefijo>` = `propia`. Inter para toda la interfaz, con `font-variant-numeric: tabular-nums` en importes y KPIs; IBM Plex Mono solo para códigos, cuentas, CCI y números de operación. Fraunces, la serif del prototipo, no se usa. Las dos fuentes se descargan en el build (`googleFonts.download: true`) y sustituyen a Plus Jakarta Sans en `nuxt.config.ts`; la CSP no cambia.
 
-**Sin sesión** solo existen la landing (`/`, con "¿Cómo funciona?"), `/login`, `/signup` y la recuperación de contraseña. El modo visitante del prototipo, que dejaba ver Explorar y Secundario sin cuenta, **no se implementa**.
+| Token | Claro | Oscuro |
+|---|---|---|
+| `--propia-bg` | `#F4F6F9` | `#0B1120` |
+| `--propia-surface` / `--propia-surface-2` | `#FFFFFF` / `#F8FAFC` | `#111A2C` / `#0E1626` |
+| `--propia-line` / `--propia-line-strong` | `#E2E7EF` / `#CDD5E1` | `#1E2A40` / `#2C3A55` |
+| `--propia-text` | `#0F1B2D` | `#E5EAF3` |
+| `--propia-ink` (títulos y cifras) | `#0A2148` | `#F2F5FA` |
+| `--propia-muted` / `--propia-subtle` | `#5B6678` / `#8A94A6` | `#97A3B9` / `#6B7891` |
+| `--propia-primary` (botón principal) | `#0A2148` | `#2F6BFF` |
+| `--propia-blue` / `--propia-blue-soft` | `#015FFB` / `#E8F0FF` | `#6B9BFF` / `rgba(91,147,255,.14)` |
+| `--propia-teal` (texto) / `--propia-teal-solid` | `#0E8A70` / `#1FB89A` | `#34D3AE` / `#1FB89A` |
+| `--propia-amber` / `--propia-amber-soft` | `#B45309` / `#FEF3C7` | `#FBBF24` / `rgba(251,191,36,.12)` |
+| `--propia-red` / `--propia-red-soft` | `#B42318` / `#FEE4E2` | `#F97066` / `rgba(249,112,102,.12)` |
+| `--propia-side-bg` (sidebar) | `#0A2148` | `#080D19` |
+
+El teal de texto es más oscuro que el de relleno en claro para pasar AA sobre blanco. En oscuro las tarjetas no llevan sombra: se separan por el borde.
+
+**Modo claro y oscuro desde la primera versión.** El patrón triple de la sección 7 se usa tal cual, con los valores de la tabla bajo `:root` y `.dark`. En `nuxt.config.ts`, `colorMode` queda `{ classSuffix: '', preference: 'system', fallback: 'light' }`: la primera vez sigue al sistema operativo y después recuerda la elección. El topbar monta `<ThemeToggle />` (8.9) y el login también lo tiene, arriba a la derecha. Cada pantalla nueva se revisa en los dos temas antes de darla por terminada. El título del documento es `PROPIA · Copropiedad inmobiliaria`. El móvil sale responsive a partir de este escritorio (8.4): el sidebar pasa a la barra inferior con Explorar, Secundario, Wallet y Mi cartera.
+
+**Sin sesión** solo existen la landing (`/`, con "¿Cómo funciona?"), `/login`, `/signup`, la recuperación de contraseña y, 🆕 V2.4, `/libro-de-reclamaciones`, que la ley exige accesible sin cuenta. El enlace va en el pie de la landing, del login y de la app. El modo visitante del prototipo, que dejaba ver Explorar y Secundario sin cuenta, **no se implementa**.
 
 **Inversionista** (`<ROL_A>`):
 
 | Ruta | Pantalla | Pide `investorStatus = 'enabled'` |
 |---|---|---|
-| `/onboarding` | Los 4 pasos (perfil, estado civil, origen de fondos, poder). El último sale a DocuSign y vuelve a `/onboarding/poder` | — |
-| `/explorar`, `/explorar/[id]` | Propiedades y detalle con el simulador (monto por unidades, cuota ideal, renta mensual estimada) | Solo para "Comprometer" |
+| `/onboarding` | Los 4 pasos (perfil, estado civil, origen de fondos con declaración PEP, poder y declaración jurada). 🆕 V2.5: el último sale a DocuSign con un solo documento y dos firmas del titular, y vuelve a `/onboarding/poder`. Con `investorStatus = 'review'` muestra "Evaluación en curso" y, si Cumplimiento la observó, el pedido y el botón para subir el sustento | — |
+| `/explorar`, `/explorar/[id]` | Propiedades y detalle con el simulador (monto por unidades, cuota ideal, renta mensual estimada). 🆕 V2.4: pestaña Documentos con partida, tasación, contrato de arriendo y estudio de títulos. 🆕 V2.5: "Solicitar compromiso" no bloquea el saldo; la pantalla dice cuánto quedaría si un Admin aprueba. Con una solicitud pendiente, muestra ese estado y permite cancelarla | Solo para solicitar el compromiso y para ver los documentos |
 | `/secundario`, `/secundario/[id]` | Ofertas y detalle | Solo para "Comprar" |
-| `/wallet` | Saldos por moneda (disponible, comprometido y en retiro; "Liquidado" del prototipo sigue abierto, Anexo A.2 del backend), movimientos, cargar saldo (cuentas de PROPIA, subir constancia), retirar | Para cargar y retirar |
-| `/cartera`, `/cartera/[propertyId]` | Inversiones, renta, gastos, pagos, documentos, vender mi cuota, mi oferta | Para vender |
-| `/perfil` | Datos personales, seguridad (contraseña y MFA), cuentas para recibir retiros | — |
+| `/wallet` | Saldos por moneda (disponible, comprometido y en retiro; 🆕 V2.4 debajo y separado, "Liquidado": acumulado informativo de lo cobrado por ventas, que no suma al total, backend 28.13 H40), movimientos, 🆕 V2.4 estado de cuenta en PDF (mes o año), cargar saldo (cuentas de PROPIA, subir constancia), retirar | Para cargar y retirar |
+| `/cartera`, `/cartera/[propertyId]` | Inversiones, renta, gastos, pagos, documentos, vender mi cuota, mi oferta. 🆕 V2.4: si la propiedad está en `sale_vote`, un banner arriba con la oferta, la tasación, lo que recibiría (estimado), la cuenta regresiva y los botones Sí / No (se puede cambiar hasta el cierre); con `sold`, el monto recibido (backend 28.13, H28) | Para vender |
+| `/perfil` | Datos personales, seguridad (contraseña; 🆕 V2.4: sin MFA por ahora), cuentas para recibir retiros, cerrar la cuenta, solicitudes sobre sus datos personales. 🆕 V2.4: `/perfil/sesiones` con los dispositivos conocidos y "Cerrar todas las sesiones"; el perfil pide fecha de nacimiento (mayor de 18) y si es domiciliado en Perú | — |
 
-Si una acción responde 403 `INVESTOR_NOT_ENABLED`, el cliente lleva al paso del onboarding que falta. Con `investorStatus = 'signing'`, una franja arriba dice qué firma falta (la suya o la del cónyuge). Mientras vuelve de DocuSign, `/onboarding/poder` pide `me()` cada 3 segundos, hasta 2 minutos.
+🆕 V2.4. **Código por email.** Añadir una cuenta de retiro, pedir un retiro, cambiar el email y cerrar la cuenta abren un diálogo que pide `POST /api/security/email-code` y un campo de 6 dígitos; la acción se reenvía con `emailCode`. Un 403 `EMAIL_CODE_REQUIRED` abre el mismo diálogo. Una cuenta de retiro nueva muestra "Disponible para retiros desde …" hasta que pasen 24 h.
+
+🆕 V2.4. La moneda que viene seleccionada en la wallet, los filtros y el simulador es la de `settings.default_currency` (USD). El selector USD / PEN del topbar la cambia y se recuerda en `localStorage`. Los importes se formatean con `Intl.NumberFormat('es-PE', { style: 'currency', currency })`: `US$ 24,000.00` y `S/ 24,000.00`.
+
+🆕 V2.5. Un login que responde 403 `ACCOUNT_DISABLED` muestra la pantalla de cuenta suspendida o cerrada (canvas `acceso-estados`), con el enlace al libro de reclamaciones. `GET /api/wallet` trae `pendingCommitmentsTotal`: retirar, comprar en el secundario, ejercer un retracto o enviar otra solicitud que deje el disponible por debajo de ese total muestra un aviso y deja seguir (backend 28.14, H46). Si un copropietario ya ejerció el retracto, el 409 `RETRACTO_TAKEN` se muestra como «Otro copropietario lo ejerció primero; no te cobramos nada».
+
+Si una acción responde 403 `INVESTOR_NOT_ENABLED`, el cliente lleva al paso del onboarding que falta. Con `investorStatus = 'signing'`, una franja arriba dice qué firma falta (la del titular o la del cónyuge). Las dos firmas del titular ocurren en la misma ceremonia, así que no hay un estado entre el poder y la declaración jurada. Mientras vuelve de DocuSign, `/onboarding/poder` pide `me()` cada 3 segundos, hasta 2 minutos. Un 409 `COMMITMENT_PENDING` deja visible la solicitud ya enviada. Un 409 al aprobar (`INSUFFICIENT_FUNDS` o `UNITS_UNAVAILABLE`) lo ve el Admin en el tablero, y la solicitud sigue pendiente.
 
 **Backoffice** (`/admin`, layout propio, con el mismo sidebar):
 
 | Ruta | Rol | Pantalla |
 |---|---|---|
-| `/admin/depositos` | `<ROL_C>` | Cola de depósitos `submitted`: constancia, banco, monto. Aprobar o rechazar con motivo |
+| `/admin/depositos` | `<ROL_C>` | Cola de depósitos `submitted`: constancia, banco, monto, número de operación (resalta posibles duplicados). Aprobar o rechazar con motivo. 🆕 V2.4: subir el extracto en CSV y confirmar las parejas en lote |
+| `/admin/pagos` | `<ROL_C>` | 🆕 V2.4. Pagos del cierre de cada propiedad (vendedor, notaría, registro, alcabala) y retiros de ingresos de PROPIA, con constancia |
 | `/admin/retiros` | `<ROL_C>` | Cola de retiros `requested`: cuenta destino. Marcar pagado con constancia, o rechazar |
-| `/admin/propiedades`, `/admin/propiedades/[id]` | `<ROL_D>` | Alta y edición, publicar, avanzar el cierre, subir escritura, partida y tasación, valorizaciones |
-| `/admin/rentas` | `<ROL_D>` | Período por propiedad: renta bruta, gastos, vista previa del reparto, distribuir |
+| `/admin/propiedades`, `/admin/propiedades/[id]` | `<ROL_D>` | Alta y edición, publicar, avanzar el cierre, subir escritura, partida y tasación, valorizaciones. 🆕 V2.4: proponer la venta total y seguir la votación (barra de participaciones a favor frente al umbral) y completar la venta |
+| `/admin/rentas` | `<ROL_D>` | Período por propiedad: renta bruta, gastos, vista previa del reparto, distribuir. 🆕 V2.4: comisión de administración, fondo de reserva y gastos pagados con la reserva |
 | `/admin/secundario` | `<ROL_D>` | Ofertas con comprador: verificar, retracto, notaría, completar |
-| `/admin/inversionistas` | `<ROL_D>`, `<ROL_B>` | Estado del onboarding, poderes, rechazos, subir constancias de retención |
-| `/admin/usuarios`, `/admin/configuracion` | `<ROL_B>` | Internos y sus grupos, cuentas bancarias de PROPIA, comisión, ventana interna, retracto |
+| `/admin/inversionistas` | `<ROL_D>`, `<ROL_B>` | Estado del onboarding, poderes, rechazos, subir constancias de retención. 🆕 V2.4: el Admin suspende, reactiva o marca fallecido, con motivo |
+| `/admin/cumplimiento` | `<ROL_E>` | 🆕 V2.4. Cola de evaluación PLAFT (riesgo sugerido, listas consultadas, PEP, beneficiario final, sustento; aprobar, observar o rechazar) y alertas de operaciones inusuales. 🆕 V2.5: reabrir una evaluación rechazada y editar los umbrales PLAFT desde "Reglas" |
+| `/admin/reclamaciones` | `<ROL_B>` | 🆕 V2.4. Hojas del libro de reclamaciones y solicitudes sobre datos personales, con los días que quedan para responder |
+| `/admin` | `<ROL_B>` | 🆕 V2.5. Tablero de tareas del Admin: solicitudes de compromiso (aprobar o rechazar con motivo), plazos vencidos (ampliar o confirmar la compra de PROPIA), cancelaciones propuestas y segundas aprobaciones |
+| `/admin/usuarios`, `/admin/configuracion` | `<ROL_B>` | Internos (🆕 V2.4: se invitan por email con su grupo; la pantalla no deja combinar grupos incompatibles), cuentas bancarias de PROPIA, comisión, ventana interna, retracto, umbrales de doble aprobación |
 
-El middleware `role` (10.4) lee `to.meta.roles`. Un interno que entra a `/` va a la primera pantalla de su rol.
+🆕 V2.5. El sidebar del backoffice muestra solo el grupo del rol de la persona; el Admin ve todos. Una ruta de otro rol muestra la pantalla 403 con el enlace a sus pendientes.
+
+El middleware `role` (10.4) lee `to.meta.roles`. Un interno que entra a `/` va a la primera pantalla de su rol. 🆕 V2.4: sin MFA por ahora, ni para internos.
 
 
 ---
@@ -1747,14 +1775,14 @@ Nada secreto. El estado de UI es el resultado de `GET /api/auth/me`:
 | `sub` | Identificador. No se muestra |
 | `email`, `firstName`, `lastName` | El shell (nombre en la barra) |
 | `groups` | Qué ítems de navegación se pintan. No es la autorización: esa la vuelve a hacer el backend |
-| `userStatus` | `active`, `blocked`, `observed`, `rejected`. `unknown` solo si la fila no existe; el backend responde 401 antes en ese caso |
+| `userStatus` | 🆕 V2.5. `active`, `suspended`, `deceased`, `closed` (backend 28.14, H47). `unknown` solo si la fila no existe; el backend responde 401 antes en ese caso. Lo que antes era `observed` o `rejected` vive en `investorStatus` |
 | `sessionExpiresAt` | Informativo. No se usa para decidir un refresh: el 401 lo decide |
 
 ### 10.2 Recorrido de login
 
 1. `POST /api/auth/login` con `{ email, password }`.
 2. Si el cuerpo es `{ status: "authenticated", expiresAt }`, las cookies ya viajaron en la respuesta. Se llama a `me()` y se navega a `redirect` o a `/`.
-3. Si el cuerpo es `{ status: "challenge", challenge }`, se queda en la pantalla de login y se muestra el paso que toque:
+3. Si el cuerpo es `{ status: "challenge", challenge }`, se queda en la pantalla de login y se muestra el paso que toque. 🆕 V2.5: con el MFA apagado (backend 10.8) en la práctica solo llega `NEW_PASSWORD_REQUIRED`, el de los internos invitados; los demás se dejan escritos para cuando se encienda:
    - `SOFTWARE_TOKEN_MFA` o `EMAIL_OTP`: un campo de código, luego `POST /api/auth/challenge` con `{ code }`.
    - `MFA_SETUP`: primero `POST /api/auth/challenge/mfa-setup` sin código para obtener `{ secretCode, otpauthUri }` y pintar el QR; después el mismo endpoint con `{ code }`.
    - `NEW_PASSWORD_REQUIRED`: un campo de contraseña nueva, `POST /api/auth/challenge` con `{ newPassword }`.
@@ -1999,7 +2027,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 ```
 
 
-El middleware `role.ts` compara contra los grupos reales (`<ROL_A>`, `<ROL_B>`, `<ROL_C>`, `<ROL_D>`) tal como están en Cognito, no contra una versión en minúsculas inventada. El original comparaba grupos pasados a minúsculas y el backend no: se comparan como llegan en `me.groups`.
+El middleware `role.ts` compara contra los grupos reales (`<ROL_A>`, `<ROL_B>`, `<ROL_C>`, `<ROL_D>`, `<ROL_E>`) tal como están en Cognito, no contra una versión en minúsculas inventada. El original comparaba grupos pasados a minúsculas y el backend no: se comparan como llegan en `me.groups`.
 
 `auth.ts` y `guest.ts` están referenciados por las páginas del esqueleto (`pages/index.vue` con `middleware: 'auth'`, `pages/login.vue` con `middleware: 'guest'`) y entraron en el typecheck.
 
@@ -2876,6 +2904,8 @@ const logoSrc = computed(() =>
 Dos PNG en `public/images/`, uno por tema. El factor `0.42` es la relación de aspecto del logotipo original: ajústalo al tuyo. Invocado con `:size="56"` en auth, `:size="104"` en el sidebar expandido, `:size="42"` colapsado y `:size="28"` en la barra superior móvil.
 
 **Mejora recomendada:** usa un SVG con `fill="currentColor"` en lugar de dos PNG. Elimina los assets duplicados, escala sin pérdida y hereda el color.
+
+🆕 **V2.4.** El logotipo de PROPIA es la opción 5: la palabra PROPIA en Inter 800, el corchete azul en forma de casa a la izquierda y la escuadra azul al final. En claro el texto usa `--propia-ink` y la marca es `#015FFB`. En oscuro, y también sobre el sidebar y el panel de login, el texto es claro y la marca es `#6AA4FF`. El lockup está en `docs/design/logo.svg` (sigue `prefers-color-scheme`). El favicon es solo el símbolo de la casa: `docs/design/favicon.svg`, con fondo claro u oscuro según el sistema, más `public/favicon.svg`, `public/favicon.ico` y `public/apple-touch-icon.png`. `<Prefijo>Mark` apunta a ese SVG. La relación de aspecto del lockup es cerca de 5.2.
 
 ### 12.6 Cómo crear un componente nuevo
 
@@ -3863,7 +3893,7 @@ Workflows de la sección 16. El primer deploy espera a que el stage `dev` del ba
 - [ ] El `index.html` generado contiene `apiBase:"/api"` y no contiene un host de API ni un stage.
 - [ ] `rg -n "auth_token|Authorization|localStorage" --glob '!node_modules/**' --glob '!.nuxt/**'` no devuelve nada en el código propio.
 - [ ] `document.cookie` en la pantalla autenticada no muestra la sesión. La pestaña Application del navegador muestra la cookie de access con `HttpOnly`.
-- [ ] Login con MFA recorre el reto y acaba en `me()` con los grupos reales.
+- [ ] 🆕 V2.4. Login sin MFA acaba en `me()` con los grupos reales. Una invitación de interno recorre `NEW_PASSWORD_REQUIRED` y entra.
 - [ ] Una llamada que recibe 401 refresca una sola vez aunque haya varias en paralelo (se ve una sola línea `POST /api/auth/refresh` en la red).
 - [ ] Con el backend apagado, la pantalla dice que no hay servicio y no redirige al login en bucle.
 - [ ] Un usuario desactivado ve el 403 y no un formulario de contraseña.
@@ -3952,7 +3982,7 @@ Los que solo afectan al cliente:
 |---|---|
 | `<prefijo>` de los tokens CSS | 🆕 V2.3. Cerrado: `propia` (9.6) |
 | `<descripción corta de la app>` | 🆕 V2.3. Cerrado: `PROPIA · Copropiedad inmobiliaria` |
-| Modo oscuro | 🆕 V2.3. Cerrado: solo modo claro en la primera versión, sin toggle (9.6). El modo oscuro queda preparado para después |
+| Modo oscuro | 🆕 V2.4. Cerrado: claro y oscuro desde la primera versión, con toggle y preferencia del sistema (9.6) |
 | Idioma | 🆕 V2.2. Cerrado: español, con las cadenas en `locales/es.json` desde el primer pantallazo (9.5). Un segundo idioma es otro archivo |
 | Pantallas del dominio | 🆕 V2.3. Definidas en 9.6. Se construyen con las secciones 8, 12 y 14, contra el OpenAPI del backend |
 | `SENTRY_DSN_WEB` | 🆕 V2.1. El DSN de un proyecto de Sentry de tipo Vue, distinto del del backend. Plan Developer gratuito: 1 usuario y 5.000 errores al mes compartidos entre los dos proyectos. Sin DSN, el build sale sin Sentry y todo lo demás funciona |

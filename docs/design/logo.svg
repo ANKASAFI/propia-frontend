@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1260 510">
+  <style>
+    @font-face { font-family: "Anybody Wide"; src: url("../../public/fonts/Anybody-ExtraBold-Wide.ttf") format("truetype"); font-weight: 800; }
+    .word { fill: #0A2148; font-family: "Anybody Wide", Inter, sans-serif; font-weight: 800; font-size: 187.5px; }
+    .mark { fill: none; stroke: #015FFB; stroke-linecap: square; stroke-linejoin: miter; }
+    @media (prefers-color-scheme: dark) {
+      .word { fill: #FFFFFF; }
+      .mark { stroke: #6AA4FF; }
+    }
+  </style>
+  <path class="mark" d="M312 219 L312 179 L183 78 L53 178 L53 367 L157 367" stroke-width="54"/>
+  <text class="word" x="194" y="390" letter-spacing="7">PROPIA</text>
+  <path class="mark" d="M1203 394 L1203 457 L1130 457" stroke-width="50"/>
+</svg>
