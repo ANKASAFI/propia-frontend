@@ -1,35 +1,29 @@
 <script setup lang="ts">
 const data = ref<any>(null)
+const { currency } = useSession()
 const months = ['nov', 'dic', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct']
-onMounted(async () => { data.value = await api('/api/portfolio') })
-async function vote(id: string, choice: 'yes' | 'no') {
-  await api(`/api/properties/${id}/vote`, { method: 'POST', body: { choice } })
-  data.value = await api('/api/portfolio')
-}
+async function load() { data.value = await api(`/api/portfolio?currency=${currency.value}`) }
+onMounted(load)
+watch(currency, load)
 const maxBar = 600
 </script>
 <template>
   <Shell v-if="data" active="cartera" :crumbs="['Inversionista', 'Mi cartera']">
     <div class="page-head">
-      <div><h1>Mi cartera</h1><p>Vender se activa cuando la cuota está inscrita y no hay una votación en curso.</p></div>
-    </div>
-    <div v-for="v in data.vote" :key="v.id" class="alert warn" style="align-items:center">
-      <Icon name="users" />
-      <span class="txt"><b>Votación abierta · {{ v.name }}.</b> Oferta {{ money(v.salePrice) }} · {{ v.voteYes }} de {{ v.unitsTotal }} a favor · cierra {{ v.voteEnds }}.</span>
-      <span class="act row"><button class="btn secondary sm" type="button" @click="vote(v.id, 'no')"><Icon name="x" />No</button><button class="btn primary sm" type="button" @click="vote(v.id, 'yes')"><Icon name="check" />Sí, vender</button></span>
+      <div><h1>Mi cartera</h1><p>Puedes vender tu cuota cuando ya está inscrita. El inmueble sigue en copropiedad.</p></div>
     </div>
     <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
-      <div class="card kpi"><div class="label">Invertido</div><div class="value">{{ money(data.invested) }}</div><div class="foot">{{ data.countProps }} inmuebles · {{ data.countUnits }} unidades</div></div>
-      <div class="card kpi"><div class="label">Valorización estimada</div><div class="value">{{ money(data.valuation) }}</div><div class="foot"><span class="up"><Icon name="trend" /> {{ data.invested ? ((data.valuation - data.invested) / data.invested * 100).toFixed(1) : 0 }}%</span> desde la compra</div></div>
-      <div class="card kpi"><div class="label">Renta acumulada</div><div class="value">{{ money(data.rentAccumulated) }}</div><div class="foot">Neto de gastos</div></div>
-      <div class="card kpi"><div class="label">Próximo pago</div><div class="value">{{ data.next ? money(data.next.amount) : '—' }}</div><div class="foot">{{ data.next ? data.next.when + ' · ' + data.next.name : 'Sin renta prevista' }}</div></div>
+      <div class="card kpi"><div class="label">Invertido</div><div class="value">{{ money(data.invested, currency) }}</div><div class="foot">{{ data.countProps }} inmuebles · {{ data.countUnits }} unidades</div></div>
+      <div class="card kpi"><div class="label">Valorización estimada</div><div class="value">{{ money(data.valuation, currency) }}</div><div class="foot"><span class="up"><Icon name="trend" /> {{ data.invested ? ((data.valuation - data.invested) / data.invested * 100).toFixed(1) : 0 }}%</span> desde la compra</div></div>
+      <div class="card kpi"><div class="label">Renta acumulada</div><div class="value">{{ money(data.rentAccumulated, currency) }}</div><div class="foot">Neto de gastos</div></div>
+      <div class="card kpi"><div class="label">Próximo pago</div><div class="value">{{ data.next ? money(data.next.amount, currency) : '—' }}</div><div class="foot">{{ data.next ? data.next.when + ' · ' + data.next.name : 'Sin renta prevista' }}</div></div>
     </div>
     <section class="card" style="overflow:hidden">
       <div class="card-h"><h3>Posiciones</h3></div>
       <table class="t">
         <thead><tr><th>Inmueble</th><th>Estado</th><th class="r">Unidades</th><th class="r">Invertido</th><th class="r">Valorización</th><th class="r">Renta / mes</th><th class="r">Rentab.</th><th /></tr></thead>
         <tbody>
-          <tr v-if="!data.positions.length"><td colspan="8" class="muted" style="padding:28px">Todavía no tienes cuotas. Explora un inmueble en fondeo para enviar tu primera solicitud.</td></tr>
+          <tr v-if="!data.positions.length"><td colspan="8" class="muted" style="padding:28px">No tienes cuotas en {{ currency === 'PEN' ? 'soles' : 'dólares' }}.</td></tr>
           <tr v-for="p in data.positions" :key="p.id">
             <td><div class="row"><span class="thumb" :class="p.gradient" style="width:34px;height:34px"><Icon :name="p.icon" /></span><div><div class="strong">{{ p.name }}</div><div class="muted" style="font-size:12px">{{ p.city }}</div></div></div></td>
             <td><Badge :label="p.statusLabel" :cls="p.statusClass" /></td>

@@ -3,18 +3,19 @@ const route = useRoute()
 const filter = ref('todas')
 const props = ref<any[]>([])
 const error = ref('')
-const { me } = useSession()
+const { me, currency } = useSession()
 const locked = computed(() => me.value?.user?.investorStatus !== 'enabled')
 async function load() {
   try { props.value = await api('/api/properties') } catch (e: any) { error.value = e.message }
 }
 onMounted(load)
 const q = computed(() => String(route.query.q || '').toLowerCase())
-const visible = computed(() => props.value.filter((p) => {
+const inCurrency = computed(() => props.value.filter((p) => (p.currency || 'USD') === currency.value))
+const visible = computed(() => inCurrency.value.filter((p) => {
   if (q.value && !`${p.name} ${p.city} ${p.kind}`.toLowerCase().includes(q.value)) return false
   if (filter.value === 'funding') return p.status === 'funding'
-  if (filter.value === 'operating') return ['operating', 'sale_vote', 'selling'].includes(p.status)
-  return !['draft', 'cancelled', 'sold'].includes(p.status)
+  if (filter.value === 'operating') return p.status === 'operating'
+  return !['draft', 'cancelled'].includes(p.status)
 }))
 const cards = computed(() => visible.value.filter((p) => p.status === 'funding').slice(0, 3))
 const total = computed(() => visible.value.reduce((s, p) => s + Number(p.price), 0))
@@ -22,7 +23,7 @@ const total = computed(() => visible.value.reduce((s, p) => s + Number(p.price),
 <template>
   <Shell active="explorar" :crumbs="['Inversionista', 'Explorar']" :locked="locked">
     <div class="page-head">
-      <div><h1>Explorar propiedades</h1><p>Inmuebles en fondeo, en cierre y en operación. Cada unidad es una cuota ideal inscrita en SUNARP.</p></div>
+      <div><h1>Explorar propiedades</h1><p>{{ currency === 'PEN' ? 'Inmuebles en soles. PROPIA no convierte: cada inmueble está en una sola moneda.' : 'Inmuebles en dólares. Cada unidad es una cuota ideal inscrita en SUNARP.' }}</p></div>
       <div class="actions">
         <div class="seg">
           <button type="button" :class="{ on: filter === 'todas' }" @click="filter = 'todas'">Todas</button>
@@ -33,6 +34,7 @@ const total = computed(() => visible.value.reduce((s, p) => s + Number(p.price),
     </div>
     <div v-if="error" class="alert bad"><Icon name="alert" /><span class="txt">{{ error }}</span></div>
     <div v-if="!props.length && !error" class="kpis" style="grid-template-columns:repeat(3,1fr)"><div v-for="n in 3" :key="n" class="card" style="height:220px" /></div>
+    <div v-if="props.length && !visible.length" class="alert info"><Icon name="info" /><span class="txt">No hay inmuebles en {{ currency === 'PEN' ? 'soles' : 'dólares' }} con este filtro. Cambia la moneda arriba para ver el otro catálogo.</span></div>
     <div class="split" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
       <NuxtLink v-for="p in cards" :key="p.id" :to="`/explorar/${p.id}`" class="card" style="overflow:hidden;text-decoration:none;color:inherit">
         <div class="thumb" :class="p.gradient" style="height:120px;border-radius:0">
@@ -54,7 +56,7 @@ const total = computed(() => visible.value.reduce((s, p) => s + Number(p.price),
       </NuxtLink>
     </div>
     <section class="card" style="overflow:hidden">
-      <div class="card-h"><h3>Todas las propiedades</h3><span class="sub">{{ visible.length }} inmuebles · {{ money(total) }} en valor</span></div>
+      <div class="card-h"><h3>Todas las propiedades</h3><span class="sub">{{ visible.length }} inmuebles · {{ money(total, currency) }} en valor</span></div>
       <table class="t">
         <thead><tr><th>Inmueble</th><th>Estado</th><th class="r">Valor</th><th class="r">Por unidad</th><th>Fondeo</th><th class="r">Renta anual est.</th><th>Cierre</th><th /></tr></thead>
         <tbody>

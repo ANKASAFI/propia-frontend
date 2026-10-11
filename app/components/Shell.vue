@@ -6,7 +6,7 @@ const props = withDefaults(defineProps<{
   locked?: boolean
 }>(), { showCurrency: true, locked: false })
 
-const { me, currency, theme, toggleTheme, initTheme, refresh } = useSession()
+const { me, currency, theme, toggleTheme, initTheme, setCurrency } = useSession()
 const notes = ref<any[]>([])
 const openNotes = ref(false)
 const q = ref('')
@@ -75,8 +75,8 @@ function search() {
   navigateTo({ path: '/explorar', query: { q: q.value.trim() } })
 }
 
-function setCur(c: string) {
-  currency.value = c
+function setCur(c: 'USD' | 'PEN') {
+  setCurrency(c)
 }
 </script>
 

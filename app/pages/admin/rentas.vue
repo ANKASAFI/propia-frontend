@@ -4,7 +4,7 @@ const runs = ref<any[]>([])
 const form = reactive({ propertyId: '', period: '2026-10', gross: '', expenses: '' })
 const error = ref('')
 async function load() {
-  props.value = (await api<any[]>('/api/properties')).filter((p) => ['operating', 'sale_vote', 'selling'].includes(p.status))
+  props.value = (await api<any[]>('/api/properties')).filter((p) => p.status === 'operating')
   runs.value = await api('/api/admin/rents')
   if (!form.propertyId && props.value[0]) form.propertyId = props.value[0].id
 }

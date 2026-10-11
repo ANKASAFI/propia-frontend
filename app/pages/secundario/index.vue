@@ -4,20 +4,26 @@ const data = ref<any>(null)
 const positions = ref<any[]>([])
 const error = ref('')
 const sell = reactive({ propertyId: '', units: 1, price: '' })
-const { me } = useSession()
+const { me, currency } = useSession()
 const locked = computed(() => me.value?.user?.investorStatus !== 'enabled')
 async function load() { data.value = await api('/api/secondary') }
-onMounted(async () => {
-  await load()
+async function loadPositions() {
   try {
-    const portfolio = await api<any>('/api/portfolio')
+    const portfolio = await api<any>(`/api/portfolio?currency=${currency.value}`)
     positions.value = portfolio.positions.filter((p: any) => p.canSell || p.commitmentStatus === 'owned')
   } catch { positions.value = [] }
+  if (!positions.value.some((p) => p.propertyId === sell.propertyId)) {
+    sell.propertyId = positions.value[0]?.propertyId || ''
+  }
+}
+onMounted(async () => {
+  await load()
+  await loadPositions()
   if (route.query.vender) sell.propertyId = String(route.query.vender)
-  else if (positions.value[0]) sell.propertyId = positions.value[0].propertyId
 })
+watch(currency, loadPositions)
 const mine = computed(() => data.value?.offers.find((o: any) => o.mine && !['cancelled', 'completed'].includes(o.status)))
-const list = computed(() => data.value?.offers.filter((o: any) => o.status !== 'cancelled') || [])
+const list = computed(() => data.value?.offers.filter((o: any) => o.status !== 'cancelled' && (o.currency || 'USD') === currency.value) || [])
 async function act(path: string) {
   error.value = ''
   try { await api(path, { method: 'POST' }); await load() } catch (e: any) { error.value = e.message }
@@ -86,7 +92,7 @@ async function create() {
               <div class="field"><label>Precio total</label><div class="input"><input v-model="sell.price" inputmode="decimal" required /></div></div>
             </div>
             <button class="btn primary block" :disabled="locked">Publicar oferta</button>
-            <span class="hint">Solo si la cuota está inscrita y el inmueble no está en votación.</span>
+            <span class="hint">Solo si tu cuota ya está inscrita. Vendes tu parte, no el inmueble.</span>
           </form>
         </aside>
       </div>

@@ -13,8 +13,18 @@ export async function api<T = any>(url: string, opts: any = {}): Promise<T> {
 export function useSession() {
   const me = useState<any>('me', () => null)
   const loaded = useState('me-loaded', () => false)
-  const currency = useState('currency', () => 'USD')
+  const currency = useState<'USD' | 'PEN'>('currency', () => 'USD')
   const theme = useState('theme', () => 'light')
+
+  function setCurrency(c: 'USD' | 'PEN') {
+    currency.value = c
+    localStorage.setItem('propia-currency', c)
+  }
+
+  function initCurrency() {
+    const saved = localStorage.getItem('propia-currency')
+    if (saved === 'USD' || saved === 'PEN') currency.value = saved
+  }
 
   async function refresh() {
     try {
@@ -35,5 +45,5 @@ export function useSession() {
     theme.value = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'
   }
 
-  return { me, loaded, currency, theme, refresh, toggleTheme, initTheme }
+  return { me, loaded, currency, theme, refresh, toggleTheme, initTheme, setCurrency, initCurrency }
 }
